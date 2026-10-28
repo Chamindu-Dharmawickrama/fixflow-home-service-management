@@ -38,3 +38,8 @@ Thumbs.db
 
 # deployment tooling
 .vercel/
+
+# private planning material - kept locally, never pushed to GitHub
+/docs/
+/prompts/
+CLAUDE.md

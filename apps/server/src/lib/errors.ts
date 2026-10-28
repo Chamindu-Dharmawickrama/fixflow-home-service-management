@@ -94,6 +94,14 @@ export function validation(
   return new AppError(422, ErrorCode.VALIDATION_ERROR, message, { ...options, fieldErrors });
 }
 
+/** 503 — a dependency the request needs (for example the database) is not available. */
+export function serviceUnavailable(
+  message = "The service is temporarily unavailable.",
+  options: Options = {},
+): AppError {
+  return new AppError(503, ErrorCode.SERVICE_UNAVAILABLE, message, options);
+}
+
 /** 429 — a rate limit was exceeded. */
 export function rateLimited(
   retryAfterSeconds: number,

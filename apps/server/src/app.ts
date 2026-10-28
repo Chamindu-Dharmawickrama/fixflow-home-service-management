@@ -9,7 +9,7 @@ import { errorHandler } from "./middleware/error-handler.js";
 import { notFoundHandler } from "./middleware/not-found.js";
 import { clientIp, rateLimitByName } from "./middleware/rate-limit.js";
 import { requestId } from "./middleware/request-id.js";
-import { healthRouter } from "./modules/health/health.routes.js";
+import { createHealthRouter } from "./modules/health/health.routes.js";
 
 /** Largest JSON body accepted; larger requests get `413 PAYLOAD_TOO_LARGE`. */
 const JSON_BODY_LIMIT = "100kb";
@@ -49,7 +49,7 @@ export function createApp(deps: AppDeps, options: CreateAppOptions = {}): Expres
   app.use(express.json({ limit: JSON_BODY_LIMIT, strict: true }));
   app.use(rateLimitByName(deps, "global", clientIp));
 
-  app.use(`${API_PREFIX}/health`, healthRouter);
+  app.use(`${API_PREFIX}/health`, createHealthRouter(deps));
   for (const router of options.extraRouters ?? []) {
     app.use(API_PREFIX, router);
   }

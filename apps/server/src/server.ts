@@ -28,6 +28,11 @@ function main(): void {
 
   const deps = createProductionDeps(config);
   const { logger } = deps;
+  if (config.database.url === undefined) {
+    logger.warn(
+      "DATABASE_URL is not set: the API starts without a database and /api/v1/health/ready reports 503",
+    );
+  }
   const server = createApp(deps).listen(config.port, () => {
     logger.info({ port: config.port, env: config.nodeEnv }, "FixFlow API listening");
   });
@@ -38,7 +43,12 @@ function main(): void {
   });
 
   // Stop accepting connections and exit cleanly on Ctrl+C or a platform SIGTERM.
-  const shutdown = createShutdownHandler({ server, logger });
+  const shutdown = createShutdownHandler({
+    server,
+    logger,
+    // Close the connection pool once in-flight requests have finished.
+    cleanup: () => deps.prisma.$disconnect(),
+  });
   for (const signal of ["SIGINT", "SIGTERM"] as const) {
     process.once(signal, () => {
       shutdown(signal);

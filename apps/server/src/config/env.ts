@@ -32,7 +32,18 @@ export interface Config {
     readonly multiplier: number;
     readonly upstash: UpstashCredentials | undefined;
   };
+  readonly database: {
+    /**
+     * The runtime connection URL (Neon: the pooled endpoint). Required in production; elsewhere
+     * the API starts without it and `/api/v1/health/ready` reports 503.
+     */
+    readonly url: string | undefined;
+  };
 }
+
+const DEMO_PASSWORD_MIN_LENGTH = 10;
+const DEMO_PASSWORD_MAX_LENGTH = 128;
+const DEMO_PASSWORD_EXPECTED = `${DEMO_PASSWORD_MIN_LENGTH}-${DEMO_PASSWORD_MAX_LENGTH} characters`;
 
 /**
  * The fixed text shown for an invalid variable. Messages never include the offending value
@@ -48,6 +59,11 @@ const EXPECTED: Readonly<Record<string, string>> = {
   UPSTASH_REDIS_REST_TOKEN: "a non-empty string",
   RATE_LIMIT_DRIVER: RATE_LIMIT_DRIVERS.join(", "),
   RATE_LIMIT_MULTIPLIER: "a number greater than 0",
+  DATABASE_URL: "a postgresql:// connection URL with a host and a database name",
+  DIRECT_DATABASE_URL: "a postgresql:// connection URL with a host and a database name",
+  TEST_DATABASE_URL: "a postgresql:// connection URL with a host and a database name",
+  DEMO_ADMIN_PASSWORD: DEMO_PASSWORD_EXPECTED,
+  DEMO_CUSTOMER_PASSWORD: DEMO_PASSWORD_EXPECTED,
 };
 
 const DEFAULT_PORT = 4000;
@@ -71,6 +87,23 @@ function isHttpsUrl(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+function isPostgresUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      (url.protocol === "postgresql:" || url.protocol === "postgres:") &&
+      url.hostname !== "" &&
+      url.pathname.length > 1
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isDemoPassword(value: string): boolean {
+  return value.length >= DEMO_PASSWORD_MIN_LENGTH && value.length <= DEMO_PASSWORD_MAX_LENGTH;
 }
 
 const envSchema = z.object({
@@ -101,6 +134,14 @@ const envSchema = z.object({
     .transform(Number)
     .refine((value) => value > 0 && value <= MAX_RATE_LIMIT_MULTIPLIER)
     .default(1),
+  DATABASE_URL: z.string().refine(isPostgresUrl).optional(),
+  // Prisma CLI only (prisma.config.ts): migrations need a direct, non-pooled connection.
+  DIRECT_DATABASE_URL: z.string().refine(isPostgresUrl).optional(),
+  // Integration tests only; src/test/db.ts refuses to touch any other database.
+  TEST_DATABASE_URL: z.string().refine(isPostgresUrl).optional(),
+  // Seed only (prisma/seed.ts); read through loadDemoPasswords, never placed in Config.
+  DEMO_ADMIN_PASSWORD: z.string().refine(isDemoPassword).optional(),
+  DEMO_CUSTOMER_PASSWORD: z.string().refine(isDemoPassword).optional(),
 });
 
 type ParsedEnv = z.output<typeof envSchema>;
@@ -188,6 +229,9 @@ function crossFieldProblems(parsed: ParsedEnv): ConfigProblem[] {
     if (parsed.WEB_ORIGIN === undefined) {
       add("WEB_ORIGIN", "is required in production");
     }
+    if (parsed.DATABASE_URL === undefined) {
+      add("DATABASE_URL", "is required in production");
+    }
     if (driver === "memory") {
       // The in-memory limiter is per process: it would silently stop limiting across instances
       // and restarts. Production must use Upstash, so refuse to start rather than degrade.
@@ -239,6 +283,7 @@ function buildConfig(parsed: ParsedEnv): Config {
       multiplier: parsed.RATE_LIMIT_MULTIPLIER,
       upstash: url !== undefined && token !== undefined ? { url, token } : undefined,
     },
+    database: { url: parsed.DATABASE_URL },
   });
 }
 
@@ -260,4 +305,40 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   }
 
   return buildConfig(result.data);
+}
+
+export interface DemoPasswords {
+  readonly admin: string;
+  readonly customer: string;
+}
+
+/**
+ * The passwords for the seeded demo accounts. Only `prisma/seed.ts` calls this. They are kept out
+ * of {@link Config} on purpose: that object is passed everywhere and must never hold a credential
+ * that could end up in a log line. Throws {@link ConfigError} naming what is missing or too weak.
+ */
+export function loadDemoPasswords(env: NodeJS.ProcessEnv = process.env): DemoPasswords {
+  const input = readKnownVariables(env);
+  const problems: ConfigProblem[] = [];
+  const read = (variable: "DEMO_ADMIN_PASSWORD" | "DEMO_CUSTOMER_PASSWORD"): string => {
+    const value = input[variable];
+    if (value === undefined) {
+      problems.push({ variable, reason: "is required to seed the demo accounts" });
+      return "";
+    }
+    if (!isDemoPassword(value)) {
+      problems.push({
+        variable,
+        reason: `is invalid; expected ${EXPECTED[variable] ?? "a valid value"}`,
+      });
+    }
+    return value;
+  };
+
+  const admin = read("DEMO_ADMIN_PASSWORD");
+  const customer = read("DEMO_CUSTOMER_PASSWORD");
+  if (problems.length > 0) {
+    throw new ConfigError(problems);
+  }
+  return { admin, customer };
 }

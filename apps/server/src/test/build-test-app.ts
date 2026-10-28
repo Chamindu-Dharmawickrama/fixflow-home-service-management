@@ -4,6 +4,7 @@ import { createApp } from "../app.js";
 import { type Config, loadConfig, type LogLevel } from "../config/env.js";
 import type { AppDeps } from "../deps.js";
 import { FakeClock } from "../lib/clock.js";
+import { createUnavailablePrisma, type PrismaClient } from "../lib/db.js";
 import { createLogger } from "../lib/logger.js";
 import {
   MemoryRateLimiter,
@@ -24,6 +25,11 @@ export interface TestAppOverrides {
   /** Log level for the captured logger. Defaults to `silent`; use `info` to assert on logs. */
   logLevel?: LogLevel;
   clock?: FakeClock;
+  /**
+   * The database client. Unit tests leave it out and get a stand-in that throws on first use, so
+   * they can never reach a database; integration tests pass the client from `getTestPrisma()`.
+   */
+  prisma?: PrismaClient;
   rateLimiter?: RateLimiter;
   /** Explicit rules for named limits, for example a low `global` limit to provoke a 429. */
   rateLimits?: Partial<Record<RateLimitName, RateLimitRule>>;
@@ -68,6 +74,7 @@ export function buildTestDeps(overrides: TestAppOverrides = {}): {
     config,
     clock,
     logger: createLogger({ level: config.logLevel, pretty: false }, logs.stream),
+    prisma: overrides.prisma ?? createUnavailablePrisma("this test did not configure a database"),
     rateLimiter: overrides.rateLimiter ?? new MemoryRateLimiter(clock),
     rateLimits: resolveRateLimits({
       multiplier: config.rateLimit.multiplier,
@@ -77,7 +84,7 @@ export function buildTestDeps(overrides: TestAppOverrides = {}): {
   return { deps, clock, logs };
 }
 
-/** Builds the real app with test dependencies. Later tasks add the database client here. */
+/** Builds the real app with test dependencies. */
 export function buildTestApp(overrides: TestAppOverrides = {}): TestApp {
   const { deps, clock, logs } = buildTestDeps(overrides);
   const extraRouters = [

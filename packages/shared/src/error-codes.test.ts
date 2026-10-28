@@ -19,6 +19,7 @@ describe("ErrorCode", () => {
         "NOT_FOUND",
         "PAYLOAD_TOO_LARGE",
         "RATE_LIMITED",
+        "SERVICE_UNAVAILABLE",
         "STALE_STATE",
         "UNAUTHENTICATED",
         "VALIDATION_ERROR",

@@ -25,6 +25,8 @@ export const ErrorCode = {
   RATE_LIMITED: "RATE_LIMITED",
   /** 500 — an unexpected server failure. The message is always generic. */
   INTERNAL_ERROR: "INTERNAL_ERROR",
+  /** 503 — a dependency (for example the database) is not available; see `/api/v1/health/ready`. */
+  SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

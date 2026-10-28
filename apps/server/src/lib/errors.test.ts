@@ -10,6 +10,7 @@ import {
   notFound,
   payloadTooLarge,
   rateLimited,
+  serviceUnavailable,
   unauthorized,
   validation,
 } from "./errors.js";
@@ -62,6 +63,7 @@ describe("error helpers", () => {
     ["payloadTooLarge", payloadTooLarge(), 413, "PAYLOAD_TOO_LARGE"],
     ["validation", validation({ name: "Required." }), 422, "VALIDATION_ERROR"],
     ["rateLimited", rateLimited(30), 429, "RATE_LIMITED"],
+    ["serviceUnavailable", serviceUnavailable(), 503, "SERVICE_UNAVAILABLE"],
   ])("%s maps to its HTTP status and error code", (_name, error, status, code) => {
     expect(error.status).toBe(status);
     expect(error.code).toBe(code);

@@ -16,7 +16,24 @@ jobs:
   verify:
     name: Lint, typecheck, test, build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      # The integration tests' only database. src/test/db.ts refuses any other one.
+      TEST_DATABASE_URL: postgresql://fixflow_test:fixflow_test@localhost:5432/fixflow_test
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: fixflow_test
+          POSTGRES_USER: fixflow_test
+          POSTGRES_PASSWORD: fixflow_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fixflow_test -d fixflow_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -41,6 +58,14 @@ jobs:
 
       - name: Unit tests
         run: npm run test
+
+      - name: Apply migrations to the empty test database
+        run: npm run db:deploy
+        env:
+          DIRECT_DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+
+      - name: Integration tests
+        run: npm run test:integration
 
       - name: Build
         run: npm run build

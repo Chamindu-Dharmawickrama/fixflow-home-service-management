@@ -1,28 +1,58 @@
 import { createApp } from "./app.js";
+import { loadLocalEnvFile } from "./config/dotenv.js";
+import { type Config, ConfigError, loadConfig } from "./config/env.js";
+import { createProductionDeps } from "./deps.js";
+import { createShutdownHandler } from "./lib/shutdown.js";
 
-const DEFAULT_PORT = 4000;
-
-function readPort(): number {
-  const raw = process.env.PORT;
-  if (raw === undefined || raw === "") {
-    return DEFAULT_PORT;
+function readConfigOrReport(): Config | undefined {
+  try {
+    return loadConfig();
+  } catch (error) {
+    if (error instanceof ConfigError) {
+      // The logger is built from the configuration, so a bad configuration is reported directly.
+      console.error(error.message);
+      return undefined;
+    }
+    throw error;
   }
-  const port = Number(raw);
-  if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error("PORT must be an integer between 1 and 65535");
-  }
-  return port;
 }
 
-const port = readPort();
-const server = createApp().listen(port, () => {
-  console.info(`FixFlow API listening on port ${port}`);
-});
+function main(): void {
+  loadLocalEnvFile();
 
-// Stop accepting connections and exit cleanly on Ctrl+C or a platform SIGTERM.
-for (const signal of ["SIGINT", "SIGTERM"] as const) {
-  process.once(signal, () => {
-    server.close(() => process.exit(0));
-    server.closeIdleConnections();
+  const config = readConfigOrReport();
+  if (config === undefined) {
+    process.exitCode = 1;
+    return;
+  }
+
+  const deps = createProductionDeps(config);
+  const { logger } = deps;
+  const server = createApp(deps).listen(config.port, () => {
+    logger.info({ port: config.port, env: config.nodeEnv }, "FixFlow API listening");
+  });
+
+  server.on("error", (error) => {
+    logger.fatal({ err: error }, "Server failed to start");
+    process.exit(1);
+  });
+
+  // Stop accepting connections and exit cleanly on Ctrl+C or a platform SIGTERM.
+  const shutdown = createShutdownHandler({ server, logger });
+  for (const signal of ["SIGINT", "SIGTERM"] as const) {
+    process.once(signal, () => {
+      shutdown(signal);
+    });
+  }
+
+  process.on("unhandledRejection", (reason) => {
+    logger.fatal({ err: reason }, "Unhandled promise rejection");
+    process.exit(1);
+  });
+  process.on("uncaughtException", (error) => {
+    logger.fatal({ err: error }, "Uncaught exception");
+    process.exit(1);
   });
 }
+
+main();

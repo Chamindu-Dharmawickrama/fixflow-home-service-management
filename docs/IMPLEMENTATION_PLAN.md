@@ -234,7 +234,7 @@ See `DECISIONS_AND_OPEN_QUESTIONS.md` for the rationale. The most consequential 
 | Hosting topology | Vercel web proxies `/api/v1` to the Render API, so session cookies are first-party (D-06) |
 | Identity | Local email/password (Argon2id) and Google Sign-In; admin allowlist; seeded demo accounts with documented credentials (D-07, D-08, D-09, D-51). D-08 is still **PROPOSED** |
 | Sessions and CSRF | Opaque DB-backed sessions in an HTTP-only cookie; SameSite=Lax plus Origin check (D-10, D-11) |
-| Redis | Upstash for rate limiting only (D-12) — **PROPOSED** |
+| Redis | Upstash for rate limiting only (D-12) |
 | Money | `decimal.js`, `Decimal(12,2)`, half-up 2 dp, shared calculation, server authoritative (D-18, D-19, D-44) |
 | Statuses | Explicit transition maps; `expectedStatus`; time-based sync without cron (D-21–D-26, D-46) |
 | Scheduling | Block overlaps per technician using half-open intervals and a row lock (D-25) — **PROPOSED** |

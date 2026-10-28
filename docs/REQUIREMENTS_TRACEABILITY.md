@@ -159,7 +159,7 @@
 | BR-03 | Customer access scoped by authenticated ID, not browser-supplied IDs | T05, all API tasks | Integration cross-customer 404; T25 matrix | Planned |
 | BR-04 | Only admin manages catalogue, settings, all records | T05, T07 | Integration 403 for customers | Planned |
 | BR-05 | Totals computed server-side with decimal arithmetic | T14, T20 | Unit + integration (client totals ignored) | Planned |
-| BR-06 | Quantity > 0; prices, discounts, taxes, payments within allowed ranges | T02 (limits), T14, T20, T21 | Validation integration tests at limits | Planned |
+| BR-06 | Quantity > 0; prices, discounts, taxes, payments within allowed ranges | T02 (limits), T14, T20, T21 | Validation integration tests at limits | In progress (T02: the `LIMITS` constants exist in `@fixflow/shared` and are unit-tested for consistency; enforcement arrives with T14, T20, T21) |
 | BR-07 | SENT quotation immutable; replacements preserve previous offer | T14 | Integration | Planned |
 | BR-08 | Accept/decline only SENT, unexpired, own quotation | T15 | Integration | Planned |
 | BR-09 | Scheduling requires accepted quotation, customer, address, valid times | T17 | Integration | Planned |
@@ -263,10 +263,10 @@
 | DM-05 | Transactions for multi-record operations | T03 + domain tasks | Integration failure-injection tests roll back fully | Planned |
 | DM-06 | Avoid duplicate conversion/issuance on double-click | T15, T17, T20 | Concurrency integration tests | Planned |
 | DM-07 | Status-based voiding instead of deleting history | T14, T20, T21 | No delete routes; void fields populated | Planned |
-| API-01 | Validate params, query, body | T02, all API tasks | Integration 422 tests | Planned |
-| API-02 | 401/403/404/409/422 used consistently | T02, all API tasks, T25 | Error-contract tests; matrix | Planned |
-| API-03 | Consistent error format | T02 | Error-handler tests | Planned |
-| API-04 | Pagination with max page size | T02, list endpoints | Integration | Planned |
+| API-01 | Validate params, query, body | T02, all API tasks | Integration 422 tests (`middleware/validate.test.ts`) | In progress (T02: `validate({ params, query, body })` with strict bodies, covered by Supertest tests; every endpoint adopts it) |
+| API-02 | 401/403/404/409/422 used consistently | T02, all API tasks, T25 | Error-contract tests; matrix | In progress (T02: the status/code mapping and `AppError` helpers are tested for 400, 404, 409, 413, 422, 429, 500; 401/403 are exercised once T05 adds guards) |
+| API-03 | Consistent error format | T02 | Error-handler tests (`middleware/error-handler.test.ts`) | Verified (T02: `{ error: { code, message, fieldErrors?, details?, requestId } }` for every error; no stack or internal message in a 500) |
+| API-04 | Pagination with max page size | T02, list endpoints | Integration (`lib/pagination.test.ts`, `middleware/validate.test.ts`) | In progress (T02: `createPaginationSchema`, `toPrismaPage` and `paginated` are done and tested, with `pageSize` capped at 100; list endpoints adopt them) |
 | API-05 | Totals, roles, ownership, transitions server-side | All API tasks | Integration | Planned |
 | API-06 | Duplicate-submission protection | T11, T14, T15, T17, T20, T21 | Concurrency/idempotency tests | Planned |
 | API-07 | No hashes, secrets, internal notes in serializers | All API tasks, T25 | DTO leak tests | Planned |
@@ -275,12 +275,12 @@
 | SEC-AUTH-03 | Every admin endpoint protected | T05, T25 | Authorization matrix | Planned |
 | SEC-AUTH-04 | Ownership for requests, quotes, jobs, invoices, notifications, PDFs | T05, T06, T11, T15, T18, T22, T25 | Cross-customer tests | Planned |
 | SEC-AUTH-05 | Validate uploads if introduced | — | N/A: no uploads (D-30) | N/A |
-| SEC-AUTH-06 | Rate limiting on login, registration, abuse-prone endpoints | T02, T05, T11, T15, T24 | Integration 429 | Planned |
+| SEC-AUTH-06 | Rate limiting on login, registration, abuse-prone endpoints | T02, T05, T11, T15, T24 | Integration 429 (`lib/rate-limit/*.test.ts`, `middleware/rate-limit.test.ts`) | In progress (T02: the mechanism exists: memory and Upstash drivers, `rateLimit` middleware, a 300/min global per-IP limit, 429 + `Retry-After`; the Upstash driver is mock-tested only, live check pending; the per-endpoint limits come with T05, T11, T15, T24) |
 | SEC-AUTH-07 | No hard-coded secrets; no committed `.env` | T01, T25 | `.gitignore`; secret scan | In progress (T01: `.gitignore` excludes `.env*` except `.env.example`; example files hold names and comments only. Secret scan: T25) |
 | SEC-DATA-01 | Fictional demo identities and addresses | T03, T24 | Seed review (`.test` emails, 555-01xx phones) | Planned |
 | SEC-DATA-02 | Collect only required data | T10, T11 | Schema review | Planned |
 | SEC-DATA-03 | Private notes separate from customer-visible | T12, T13 | Integration | Planned |
-| SEC-DATA-04 | No descriptions/emails/addresses in broad logs | T02, T25 | Redaction test; log review | Planned |
+| SEC-DATA-04 | No descriptions/emails/addresses in broad logs | T02, T25 | Redaction test (`lib/logger.test.ts`); log review | In progress (T02: pino redaction of cookies, authorization, `set-cookie` and `password`/`token`/`credential`/`secret` fields; request/response bodies and query strings are not logged; tests capture log output; T25 does the final log review) |
 | SEC-DATA-05 | Clear demo privacy notice / portfolio disclosure | T08, T24 | E2E banner + `/privacy` | Planned |
 | SEC-DATA-06 | Restrict demo admin access; rotate if abused | T05, T24, T26 | Demo-mode tests; runbook | Planned |
 | SEC-TXN-01 | Transactions for multi-record changes | T03 + domain tasks | Integration | Planned |
@@ -301,13 +301,13 @@
 | NFR-01 | Usability (first-time request/new-request discovery without training) | T11, T12, T23, T25 | E2E journey; manual walkthrough | Planned |
 | NFR-02 | Responsiveness | T04, all UI tasks, T25 | Overflow + screenshot checks at 4 widths | Planned |
 | NFR-03 | Accessibility (WCAG 2.2 AA practices) | T04, all UI tasks, T25 | axe + keyboard | Planned |
-| NFR-04 | Performance (pagination, no unbounded sets) | T02, list tasks, T25 | Max pageSize tests; query review | Planned |
+| NFR-04 | Performance (pagination, no unbounded sets) | T02, list tasks, T25 | Max pageSize tests; query review | In progress (T02: `pageSize` max 100 and `page` max 100,000 are enforced by the shared schema; list endpoints and the query review come later) |
 | NFR-05 | Reliability (visible errors; success only after server success) | T04, T06, T25 | E2E network-error tests | Planned |
 | NFR-06 | Maintainability (TS, modules, lint, migrations, setup docs) | T01, T02, T03, T27 | CI | In progress (T01: strict TypeScript, ESLint, Prettier, README skeleton) |
-| NFR-07 | Security | T02, T05, T25 | Matrix, headers, audit | Planned |
+| NFR-07 | Security | T02, T05, T25 | Matrix, headers, audit | In progress (T02: helmet headers, CORS restricted to `WEB_ORIGIN`, `X-Powered-By` removed, 100 kb body limit, strict validation, log redaction; auth, CSRF and the access matrix come with T05 and T25) |
 | NFR-08 | Data integrity | T03 + domain tasks | Constraint + transaction tests | Planned |
-| NFR-09 | Observability (structured logs, health endpoint, safe errors) | T02, T03 | Integration health/ready; log tests | Planned |
-| NFR-10 | Portability (env config; local dev without prod creds) | T01, T02, T03 | Fresh-clone check (T27) | In progress (T01: both apps start with no credentials or `.env`) |
+| NFR-09 | Observability (structured logs, health endpoint, safe errors) | T02, T03 | Integration health/ready; log tests | In progress (T02: structured JSON logs with request IDs, safe 500s, liveness endpoint; the readiness check arrives with T03) |
+| NFR-10 | Portability (env config; local dev without prod creds) | T01, T02, T03 | Fresh-clone check (T27) | In progress (T01: both apps start with no credentials or `.env`; T02: the API validates its environment at startup, names invalid variables without printing values, and needs no credentials outside production) |
 | NFR-11 | SEO (titles, descriptions, semantic content, shareable URLs) | T08 | Metadata tests; sitemap | Planned |
 | NFR-12 | Browser support (Chrome, Edge, Firefox, Safari; mobile emulation) | T25, T26 | Playwright chromium/firefox/webkit | Planned |
 
@@ -377,7 +377,7 @@
 | DD-05 | Internally consistent sample data | T24 | Invariant checker | Planned |
 | DD-06 | 2–3 minute demo script/video | T27 | `docs/DEMO_SCRIPT.md` (recording by owner) | Planned |
 | DEP-01 | Local, preview/staging, production environments isolated | T03, T09, T26 | `docs/DEPLOYMENT.md` | Planned |
-| DEP-02 | Documented env vars; no secrets in `NEXT_PUBLIC_*` | T01, T02, T09 | `.env.example` review | In progress (T01: `apps/server/.env.example` and `apps/web/.env.example` list `PORT` and `API_INTERNAL_URL`; later tasks add the rest) |
+| DEP-02 | Documented env vars; no secrets in `NEXT_PUBLIC_*` | T01, T02, T09 | `.env.example` review | In progress (T01: `apps/web/.env.example` lists `API_INTERNAL_URL`; T02: `apps/server/.env.example` documents every API variable known so far with defaults and comments; later tasks add the rest) |
 | DEP-03 | Repository layout (apps/web, apps/server, packages/shared, CI) | T01 | Tree | Verified (2026-10-28: `apps/web`, `apps/server`, `packages/shared`, `e2e`, `.github/workflows/ci.yml`) |
 | DEP-04 | CI: lint, typecheck, tests | T01, T03, T25 | GitHub Actions run | In progress (T01: `.github/workflows/ci.yml` runs format check, lint, typecheck, unit tests and build; not yet run on GitHub; integration tests: T03; E2E: T25) |
 | DEP-05 | README minimum content (§21.4) | T27 | Checklist | Planned |

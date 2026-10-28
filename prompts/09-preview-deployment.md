@@ -28,7 +28,7 @@
 - `render.yaml` (Blueprint) for the API web service:
   - root and build settings for the monorepo
   - Node 24 (`NODE_VERSION`/`.node-version`)
-  - build command `npm ci && npm run db:generate -w @fixflow/api && npm run db:deploy -w @fixflow/api && npm run build -w @fixflow/api` (adjust to the real scripts)
+  - build command `npm ci && npm run db:generate -w @fixflow/server && npm run db:deploy -w @fixflow/server && npm run build -w @fixflow/server` (adjust to the real scripts)
   - start command
   - health check path `/api/v1/health`
   - every env var key declared, with secrets marked `sync: false`

@@ -55,7 +55,7 @@ Use current stable versions at implementation time, commit the lockfile, and kee
 ```text
 apps/web/          Next.js app — src/app (routes), src/features/{marketing,auth,admin,portal},
                    src/components/{ui,forms,layout}, src/lib/{api,auth,formatting}
-apps/api/          Express API — src/{config,lib,middleware}, src/modules/<module>/, prisma/, src/test/
+apps/server/       Express API — src/{config,lib,middleware}, src/modules/<module>/, prisma/, src/test/
 packages/shared/   @fixflow/shared — enums, status labels, error codes, DTO types, validation limits,
                    pure money calculation (no I/O, no framework code)
 e2e/               Playwright end-to-end tests
@@ -70,9 +70,11 @@ Defined by T01/T03; keep this list accurate if scripts change.
 
 ```text
 npm install                 # from repo root
-npm run dev                 # web (3000) + api (4000) concurrently
+npm run dev                 # shared watcher + web (3000) + api (4000) concurrently
 npm run lint | typecheck | build
+npm run format | format:check  # Prettier (docs/, prompts/ and CLAUDE.md are ignored)
 npm run test                # unit tests, all workspaces
+npx playwright install chromium   # one-time browser download for test:e2e
 npm run test:integration    # API integration tests (requires TEST_DATABASE_URL)
 npm run test:e2e            # Playwright
 npm run db:test:up          # local Docker Postgres for tests

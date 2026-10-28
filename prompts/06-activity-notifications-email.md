@@ -69,7 +69,7 @@ Emitting the workflow events themselves (each workflow task calls these services
 3. Implement notifications (services, routes, tests), then email (sender interface, both transports, templates, dispatcher).
 4. Write an integration test that simulates a business operation (a test-only service function) in one transaction: it creates an activity event and notifications and queues an email. Assert that a failing `EmailSender` still leaves the operation committed and the log `FAILED`, and that a successful log transport records `LOGGED`, not `SENT`.
 5. Build the bell and the timeline component. To verify the UI in development without fake features, use notifications created by integration-test fixtures or a dev-only seed step clearly labelled as demo data, and document it.
-6. If SMTP credentials exist, send one real test email through a documented script, `npm run email:test -w @fixflow/api -- --to <address>` (dev only), and record the result.
+6. If SMTP credentials exist, send one real test email through a documented script, `npm run email:test -w @fixflow/server -- --to <address>` (dev only), and record the result.
 
 ## F. Quality requirements
 

@@ -1,0 +1,40 @@
+{
+  "name": "fixflow",
+  "version": "0.0.0",
+  "private": true,
+  "description": "FixFlow — home-service management web application for a single small business (portfolio project)",
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=10"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "e2e"
+  ],
+  "scripts": {
+    "dev": "npm run build:shared && concurrently --kill-others-on-fail --names shared,server,web --prefix-colors cyan,green,magenta \"npm:dev:shared\" \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:shared": "npm run dev -w @fixflow/shared",
+    "dev:server": "npm run dev -w @fixflow/server",
+    "dev:web": "npm run dev -w @fixflow/web",
+    "build:shared": "npm run build -w @fixflow/shared",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run build:shared && eslint .",
+    "typecheck": "npm run build:shared && npm run typecheck --workspaces --if-present",
+    "test": "npm run build:shared && npm run test --workspaces --if-present",
+    "test:e2e": "npm run build:shared && npm run test:e2e -w @fixflow/e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "concurrently": "^10.0.6",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.4.3",
+    "eslint-plugin-simple-import-sort": "^14.0.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.1"
+  }
+}

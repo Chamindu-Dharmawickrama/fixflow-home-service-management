@@ -28,11 +28,11 @@ Each file in this directory is a self-contained task prompt for one Claude Code 
 
 | Order | Task | File | Objective | Prerequisites | Confirm first | Status |
 |---|---|---|---|---|---|---|
-| 1 | T01 | [01-repository-foundation.md](01-repository-foundation.md) | Monorepo, tooling, proxy, CI skeleton | — (Node 24) | D-05 | NOT_STARTED |
+| 1 | T01 | [01-repository-foundation.md](01-repository-foundation.md) | Monorepo, tooling, proxy, CI skeleton | — (Node 24) | D-05 | COMPLETED |
 | 2 | T02 | [02-api-platform.md](02-api-platform.md) | Config, logging, errors, validation, pagination, rate limiting | T01 | D-12 | NOT_STARTED |
 | 3 | T03 | [03-database-schema.md](03-database-schema.md) | Prisma/Neon, full schema and constraints, references, test DB, base seed | T02 | D-17, D-29 | NOT_STARTED |
-| 4 | T04 | [04-design-system.md](04-design-system.md) | Design system doc, tokens, components, shells, styleguide | T01 | D-32 (Q-08) | NOT_STARTED |
-| 5 | T05 | [05-authentication.md](05-authentication.md) | Email/password + Google sign-in, password reset, sessions, guards, CSRF, auth UI | T03, T04 | D-08 | NOT_STARTED |
+| 4 | T04 | [04-design-system.md](04-design-system.md) | Design system doc, tokens, components, shells, styleguide | T01 | D-32 (Q-08), D-55 | NOT_STARTED |
+| 5 | T05 | [05-authentication.md](05-authentication.md) | Email/password + Google sign-in, password reset, sessions, guards, CSRF, auth UI | T03, T04 | D-08, D-55 | NOT_STARTED |
 | 6 | T06 | [06-activity-notifications-email.md](06-activity-notifications-email.md) | Timelines, in-app notifications, SMTP/log email | T05 | — | NOT_STARTED |
 | 7 | T07 | [07-settings-service-catalogue.md](07-settings-service-catalogue.md) | Business settings, service catalogue admin and public API | T06 | — | NOT_STARTED |
 | 8 | T08 | [08-public-website.md](08-public-website.md) | Homepage, services, service detail, privacy, SEO | T07 | Q-05 (imagery) | NOT_STARTED |

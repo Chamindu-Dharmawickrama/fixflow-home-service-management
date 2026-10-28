@@ -24,7 +24,7 @@
 ## D. Scope
 
 **In scope**
-- Prisma (current stable) in `apps/api` (`prisma/schema.prisma`, migrations in `prisma/migrations`). Configure it according to the current Prisma docs for this major version: pooled `DATABASE_URL` at runtime, direct `DIRECT_DATABASE_URL` for migrations, `sslmode=require` for Neon, a client singleton in `src/lib/db.ts`, and disconnect on shutdown. Add these vars, `TEST_DATABASE_URL`, and the seed-only `DEMO_ADMIN_PASSWORD`/`DEMO_CUSTOMER_PASSWORD` to the env schema and `.env.example` (example values clearly marked demo-only).
+- Prisma (current stable) in `apps/server` (`prisma/schema.prisma`, migrations in `prisma/migrations`). Configure it according to the current Prisma docs for this major version: pooled `DATABASE_URL` at runtime, direct `DIRECT_DATABASE_URL` for migrations, `sslmode=require` for Neon, a client singleton in `src/lib/db.ts`, and disconnect on shutdown. Add these vars, `TEST_DATABASE_URL`, and the seed-only `DEMO_ADMIN_PASSWORD`/`DEMO_CUSTOMER_PASSWORD` to the env schema and `.env.example` (example values clearly marked demo-only).
 - `docker-compose.yml` (root) with a `postgres` service for tests: current major Postgres, port 5433, a named volume, and db/user `fixflow_test`. Root script `db:test:up` and `db:test:down`.
 - The **complete MVP schema** (see E.3), including enums, relations, unique constraints, indexes, and raw-SQL partial unique indexes and CHECK constraints added in a migration.
 - `src/lib/password.ts`: Argon2id `hashPassword()`/`verifyPassword()` via the D-51 library, unit-tested. The seed needs it; T05 adds the password policy and auth flows on top.

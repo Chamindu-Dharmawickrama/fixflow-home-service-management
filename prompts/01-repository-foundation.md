@@ -27,16 +27,16 @@
 **In scope**
 - Root `package.json` with npm workspaces `apps/*`, `packages/*`, `e2e`; `engines.node` `>=24 <25`; `packageManager` (npm); `.nvmrc` (`24`).
 - `apps/web`: Next.js (App Router, TypeScript, Tailwind CSS, ESLint, `src/` dir, `@/*` alias), created non-interactively. Remove the boilerplate content and leave a minimal neutral page (T04/T08 replace it).
-- `apps/api`: Express 5 + TypeScript, with `tsx` watch for dev and a production build (tsc or tsup) that emits runnable JS. `src/app.ts` exports `createApp()`, `src/server.ts` listens on `PORT` (default 4000), and `GET /api/v1/health` returns `{ "data": { "status": "ok" } }`.
+- `apps/server`: Express 5 + TypeScript, with `tsx` watch for dev and a production build (tsc or tsup) that emits runnable JS. `src/app.ts` exports `createApp()`, `src/server.ts` listens on `PORT` (default 4000), and `GET /api/v1/health` returns `{ "data": { "status": "ok" } }`.
 - `packages/shared` (`@fixflow/shared`): TypeScript package that builds to `dist` with type declarations and exports `API_PREFIX = "/api/v1"`. Both apps consume it, so verify the build and dev resolution work in both.
 - `e2e`: Playwright package with a config that starts web and API (or reuses running servers), plus one smoke test.
 - `tsconfig.base.json` with `strict`, `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes` (if it causes friction with libraries, record the reason and drop only that flag). Each package extends it.
 - ESLint flat config (TypeScript and Next rules, import ordering) and Prettier, with root scripts `lint`, `format`, `format:check`.
-- Vitest in `apps/api`, `apps/web` and `packages/shared`, each with at least one real test. API: the health route via Supertest. Shared: a constant export. Web: one small utility test, or a render test if a component exists.
+- Vitest in `apps/server`, `apps/web` and `packages/shared`, each with at least one real test. API: the health route via Supertest. Shared: a constant export. Web: one small utility test, or a render test if a component exists.
 - Root scripts: `dev` (`concurrently` web and API, with coloured prefixes), `build`, `lint`, `typecheck`, `test`, `test:e2e`, `format`, `format:check`. Scripts must run every workspace and return a non-zero exit code on failure.
 - Next.js rewrite: `/api/v1/:path*` → `${API_INTERNAL_URL}/api/v1/:path*`. `API_INTERNAL_URL` is server-only and defaults to `http://localhost:4000` in development.
 - `.gitignore` (node_modules, build output, `.env*` except `.env.example`, `.data/`, Playwright reports, coverage, `artifacts/`), `.editorconfig`, `.gitattributes` (LF).
-- `apps/api/.env.example` and `apps/web/.env.example` listing the variables used so far, with comments. Never put real values in them.
+- `apps/server/.env.example` and `apps/web/.env.example` listing the variables used so far, with comments. Never put real values in them.
 - GitHub Actions `.github/workflows/ci.yml`: Node 24, `npm ci`, then lint, typecheck, test and build. Cache npm. (T03 adds Postgres and integration tests; T25 adds E2E.)
 - `README.md` skeleton: one-paragraph summary, prerequisites (Node 24, npm, Docker for tests later), setup and run commands, and a pointer to `docs/`. T27 finalizes it.
 
@@ -47,7 +47,7 @@ Prisma and database (T03), env validation, logging and error model (T02), design
 
 1. Verify the prerequisites. Check `git status` and confirm that no application files exist yet.
 2. Create the root workspace files first, then scaffold `apps/web` with `create-next-app` using explicit non-interactive flags. Do not let it create a nested git repo or its own lockfile; the root lockfile is authoritative. Use npm for every install.
-3. Scaffold `apps/api` by hand: `package.json` (`"type": "module"` or CJS; choose one, be consistent, and record the choice in the README), `src/app.ts`, `src/server.ts` and `src/app.test.ts`.
+3. Scaffold `apps/server` by hand: `package.json` (`"type": "module"` or CJS; choose one, be consistent, and record the choice in the README), `src/app.ts`, `src/server.ts` and `src/app.test.ts`.
 4. Create `packages/shared`. Make `apps/web` transpile or consume it (for example `transpilePackages`), and make the API build resolve it in both dev and production builds. Confirm with a real import in both apps.
 5. Add the rewrite in `next.config.*`. The browser must never need the API's URL.
 6. Configure ESLint and Prettier at the root so that `npm run lint` covers every package. Fix all lint errors and do not disable rules globally to get a pass.

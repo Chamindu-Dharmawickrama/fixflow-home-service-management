@@ -276,7 +276,7 @@
 | SEC-AUTH-04 | Ownership for requests, quotes, jobs, invoices, notifications, PDFs | T05, T06, T11, T15, T18, T22, T25 | Cross-customer tests | Planned |
 | SEC-AUTH-05 | Validate uploads if introduced | — | N/A: no uploads (D-30) | N/A |
 | SEC-AUTH-06 | Rate limiting on login, registration, abuse-prone endpoints | T02, T05, T11, T15, T24 | Integration 429 | Planned |
-| SEC-AUTH-07 | No hard-coded secrets; no committed `.env` | T01, T25 | `.gitignore`; secret scan | Planned |
+| SEC-AUTH-07 | No hard-coded secrets; no committed `.env` | T01, T25 | `.gitignore`; secret scan | In progress (T01: `.gitignore` excludes `.env*` except `.env.example`; example files hold names and comments only. Secret scan: T25) |
 | SEC-DATA-01 | Fictional demo identities and addresses | T03, T24 | Seed review (`.test` emails, 555-01xx phones) | Planned |
 | SEC-DATA-02 | Collect only required data | T10, T11 | Schema review | Planned |
 | SEC-DATA-03 | Private notes separate from customer-visible | T12, T13 | Integration | Planned |
@@ -303,11 +303,11 @@
 | NFR-03 | Accessibility (WCAG 2.2 AA practices) | T04, all UI tasks, T25 | axe + keyboard | Planned |
 | NFR-04 | Performance (pagination, no unbounded sets) | T02, list tasks, T25 | Max pageSize tests; query review | Planned |
 | NFR-05 | Reliability (visible errors; success only after server success) | T04, T06, T25 | E2E network-error tests | Planned |
-| NFR-06 | Maintainability (TS, modules, lint, migrations, setup docs) | T01, T02, T03, T27 | CI | Planned |
+| NFR-06 | Maintainability (TS, modules, lint, migrations, setup docs) | T01, T02, T03, T27 | CI | In progress (T01: strict TypeScript, ESLint, Prettier, README skeleton) |
 | NFR-07 | Security | T02, T05, T25 | Matrix, headers, audit | Planned |
 | NFR-08 | Data integrity | T03 + domain tasks | Constraint + transaction tests | Planned |
 | NFR-09 | Observability (structured logs, health endpoint, safe errors) | T02, T03 | Integration health/ready; log tests | Planned |
-| NFR-10 | Portability (env config; local dev without prod creds) | T01, T02, T03 | Fresh-clone check (T27) | Planned |
+| NFR-10 | Portability (env config; local dev without prod creds) | T01, T02, T03 | Fresh-clone check (T27) | In progress (T01: both apps start with no credentials or `.env`) |
 | NFR-11 | SEO (titles, descriptions, semantic content, shareable URLs) | T08 | Metadata tests; sitemap | Planned |
 | NFR-12 | Browser support (Chrome, Edge, Firefox, Safari; mobile emulation) | T25, T26 | Playwright chromium/firefox/webkit | Planned |
 
@@ -340,7 +340,7 @@
 | AC-UQ-02 | Every primary CTA has real action + loading/error/success | All UI tasks, T25 | E2E + review | Planned |
 | AC-UQ-03 | Key screens correct at 360/768/1024/1440 | T04, all UI tasks, T25 | Playwright viewport checks | Planned |
 | AC-UQ-04 | Seeded fictional records for full demo scenario | T24 | Seed invariant checker | Planned |
-| AC-UQ-05 | Fresh clone configured/started via README, no manual DB edits | T01, T03, T27 | Fresh-clone dry run | Planned |
+| AC-UQ-05 | Fresh clone configured/started via README, no manual DB edits | T01, T03, T27 | Fresh-clone dry run | In progress (T01: install and run steps in README; database steps: T03; dry run: T27) |
 | AC-UQ-06 | Env vars + HTTPS in deployment; no committed secrets | T09, T26 | Deployment verification | Planned |
 | AC-UQ-07 | Critical automated tests pass; E2E scenario repeatable | T25, T26 | CI + prod smoke | Planned |
 
@@ -377,11 +377,11 @@
 | DD-05 | Internally consistent sample data | T24 | Invariant checker | Planned |
 | DD-06 | 2–3 minute demo script/video | T27 | `docs/DEMO_SCRIPT.md` (recording by owner) | Planned |
 | DEP-01 | Local, preview/staging, production environments isolated | T03, T09, T26 | `docs/DEPLOYMENT.md` | Planned |
-| DEP-02 | Documented env vars; no secrets in `NEXT_PUBLIC_*` | T01, T02, T09 | `.env.example` review | Planned |
-| DEP-03 | Repository layout (apps/web, apps/api, packages/shared, CI) | T01 | Tree | Planned |
-| DEP-04 | CI: lint, typecheck, tests | T01, T03, T25 | GitHub Actions run | Planned |
+| DEP-02 | Documented env vars; no secrets in `NEXT_PUBLIC_*` | T01, T02, T09 | `.env.example` review | In progress (T01: `apps/server/.env.example` and `apps/web/.env.example` list `PORT` and `API_INTERNAL_URL`; later tasks add the rest) |
+| DEP-03 | Repository layout (apps/web, apps/server, packages/shared, CI) | T01 | Tree | Verified (2026-10-28: `apps/web`, `apps/server`, `packages/shared`, `e2e`, `.github/workflows/ci.yml`) |
+| DEP-04 | CI: lint, typecheck, tests | T01, T03, T25 | GitHub Actions run | In progress (T01: `.github/workflows/ci.yml` runs format check, lint, typecheck, unit tests and build; not yet run on GitHub; integration tests: T03; E2E: T25) |
 | DEP-05 | README minimum content (§21.4) | T27 | Checklist | Planned |
-| DEP-06 | Current stable versions; lockfiles committed | T01 | Lockfile present | Planned |
+| DEP-06 | Current stable versions; lockfiles committed | T01 | Lockfile present | Implemented (single root `package-lock.json`; TypeScript and ESLint are one major behind `latest` for compatibility, see D-53; the lockfile is not committed until the owner commits) |
 | DEP-07 | Backup/reset approach; local never targets prod DB | T24, T26 | Runbook; guard tests | Planned |
 | PF-01 | Case study structure (§22.1) | T27 | `docs/PORTFOLIO_CASE_STUDY.md` | Planned |
 | PF-02 | Screenshot selection and order (§22.2) | T27 | `docs/screenshots/` from real app | Planned |

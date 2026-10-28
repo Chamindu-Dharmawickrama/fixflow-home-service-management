@@ -72,7 +72,7 @@ Each task's full scope, instructions, acceptance criteria and verification steps
 ### Phase 1 — Foundation
 
 **T01 — Repository, tooling and CI foundation** · deps: none · `prompts/01-repository-foundation.md`
-- Deliverables: npm workspaces (`apps/web`, `apps/api`, `packages/shared`, `e2e`); strict TypeScript; ESLint and Prettier; Vitest per package; a Playwright smoke test; a Next.js app with the `/api/v1` rewrite proxy; an Express 5 app with `GET /api/v1/health`; `.env.example` files; `.nvmrc`; a GitHub Actions CI workflow; a README skeleton.
+- Deliverables: npm workspaces (`apps/web`, `apps/server`, `packages/shared`, `e2e`); strict TypeScript; ESLint and Prettier; Vitest per package; a Playwright smoke test; a Next.js app with the `/api/v1` rewrite proxy; an Express 5 app with `GET /api/v1/health`; `.env.example` files; `.nvmrc`; a GitHub Actions CI workflow; a README skeleton.
 - Acceptance: clean `npm install`; `npm run dev` starts both apps; `curl :3000/api/v1/health` returns the API response through the proxy; `lint`, `typecheck`, `test`, `build` and `test:e2e` pass.
 
 **T02 — API platform foundation** · deps: T01 · `prompts/02-api-platform.md`

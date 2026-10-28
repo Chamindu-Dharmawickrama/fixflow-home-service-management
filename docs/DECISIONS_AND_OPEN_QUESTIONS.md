@@ -67,7 +67,7 @@ Neon (PostgreSQL), Upstash (Redis), Google Sign-In, Nodemailer over SMTP, Vercel
 Next.js App Router + TypeScript, Tailwind CSS, shadcn/ui, Lucide, React Hook Form + Zod; Express 5 + TypeScript; Prisma; Vitest, Supertest, Testing Library, Playwright; pino; helmet. Charts are **not** planned for the MVP: the dashboard uses KPI cards and lists (spec §10.3 asks for "four or five meaningful KPI cards"). Recharts may be added only if a chart conveys information a list cannot.
 
 **D-04 — Monorepo with npm workspaces** · `ACCEPTED` · spec §21.3
-`apps/web`, `apps/api`, `packages/shared`, `e2e`. npm workspaces are used because npm is already installed and the project has only four packages; pnpm/Turborepo add tooling without clear benefit (spec: "choose the simplest structure you can maintain"). `concurrently` runs both dev servers.
+`apps/web`, `apps/server`, `packages/shared`, `e2e`. npm workspaces are used because npm is already installed and the project has only four packages; pnpm/Turborepo add tooling without clear benefit (spec: "choose the simplest structure you can maintain"). `concurrently` runs both dev servers.
 
 **D-05 — Node.js 24 LTS** · `ACCEPTED` · **Action required before T01**
 The local machine has **Node 20.19.4, which reached end-of-life in April 2026**. Use Node 24 LTS (supported by Vercel and Render, and required or recommended by current Next.js and Prisma releases). Pin it with `.nvmrc` and `engines`. T01 must stop if the active Node major is not 24.
@@ -85,7 +85,33 @@ Neon branches: `main` = production demo, `dev` = local development, plus optiona
 All entity IDs are UUIDs. Human-readable references are separate unique columns.
 
 **D-48 — Deployment specifics** · `PROPOSED` · Needed by T09
-Render web service for `apps/api`, described in a committed `render.yaml` with secret values marked `sync: false`. The build runs `npm ci`, `prisma generate`, `prisma migrate deploy` and the TypeScript build; migrations run in the build step because pre-deploy commands are not available on every Render plan. Vercel project root is `apps/web`. The free Render tier sleeps after inactivity (cold starts of about a minute). The web app must therefore show a friendly "waking up the demo server" or retry state rather than failing. A paid Render instance is recommended for the public demo (Q-09).
+Render web service for `apps/server`, described in a committed `render.yaml` with secret values marked `sync: false`. The build runs `npm ci`, `prisma generate`, `prisma migrate deploy` and the TypeScript build; migrations run in the build step because pre-deploy commands are not available on every Render plan. Vercel project root is `apps/web`. The free Render tier sleeps after inactivity (cold starts of about a minute). The web app must therefore show a friendly "waking up the demo server" or retry state rather than failing. A paid Render instance is recommended for the public demo (Q-09).
+
+**D-53 — Toolchain pins forced by peer dependencies** · `PROPOSED` (made in T01, 2026-10-28; confirm or change)
+T01 asks for current stable versions. Two tools are deliberately one major behind `latest` because the lint toolchain cannot run on the newer one yet:
+- **TypeScript `~6.0.3`**, not 7.0.2. `typescript-eslint` 8.72.1 (a dependency of `eslint-config-next`) declares `typescript <6.1.0`.
+- **ESLint `^9.39.5`**, not 10.x. `eslint-plugin-react`, `eslint-plugin-jsx-a11y` and `eslint-plugin-import` (all dependencies of `eslint-config-next`) cap their `eslint` peer at `^9`. `npm install eslint@^10` fails with `ERESOLVE` (verified 2026-10-28); `--legacy-peer-deps` is not used. The registry marks ESLint 9.39.5 deprecated, so this is a stop-gap.
+- Revisit when `typescript-eslint` supports TypeScript 7 and the Next.js lint plugins support ESLint 10 (tracked as a follow-up in the progress file).
+- No TypeScript strictness flag was dropped: `strict`, `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes` are all on in every package.
+
+**D-54 — Module format and `@fixflow/shared` resolution** · `PROPOSED` (made in T01; the task prompt delegated the choice)
+- `apps/server`, `packages/shared` and `e2e` are ES modules (`"type": "module"`, `module`/`moduleResolution` `NodeNext`), compiled with plain `tsc` (no bundler). Relative imports in them end in `.js`. API dev runs `tsx watch`; production runs `node dist/server.js`. `apps/web` keeps Next.js's own module handling (its Vitest config is `vitest.config.mts` for that reason).
+- `@fixflow/shared` compiles to `dist/` (JS and `.d.ts`) and is consumed through its `exports` map: at runtime by the API, through `transpilePackages` by the web app, and for types by every `tsc` run. It therefore must be built before `lint`, `typecheck`, `test`, `test:e2e` and `dev`; the root scripts do this, and `npm run dev` also runs `tsc --watch` for it. `packages/*` is listed first in the root `workspaces` so `npm run build` builds it before the apps.
+- Rejected: a bundler such as tsup (one more dependency for no benefit here) and path aliases or project references that point at shared source (the same configuration would have to be repeated in tsc, Vitest, Next.js and ESLint).
+
+**D-55 — Next.js Cache Components and Partial Prefetching (scaffold defaults)** · `PROPOSED` (made in T01) · **owner to confirm before T04/T05**
+`create-next-app` 16.4.3 generates `cacheComponents: true` and `partialPrefetching: true`. The bundled Next.js docs call these the recommended defaults for new App Router apps and say both will be enabled everywhere in the next major release, with the options removed. T01 keeps them rather than opting out.
+- Data fetching stays dynamic by default, which suits our model: Server Components call the API with the forwarded session cookie, and nothing user-specific is cached. Do not use `use cache` for session-dependent or customer data.
+- Runtime reads (`cookies()`, `headers()`, `searchParams`, uncached `fetch`) cannot be prerendered. They must sit behind a `<Suspense>` boundary, otherwise the dev overlay reports a "blocking-route" insight (`dist/docs/01-app/01-getting-started/08-caching.md`). This matches the loading-skeleton rule in CLAUDE.md §10, but T04 (shells) and T05 (route protection) must design for it. Follow `dist/docs/01-app/02-guides/authentication-with-cache-components.md`.
+- Navigated-away routes stay mounted but hidden (`<Activity>`), so dialogs, forms and effects behave differently from a plain unmount, which matters for the UI and for Playwright tests (`dist/docs/01-app/02-guides/preserving-ui-state.md`).
+- Alternative: set both options to `false`. This is a one-line change in `apps/web/next.config.ts`, but it would have to be undone when the next major removes the options.
+- Related: `next dev` generates an `AGENTS.md` for detected coding agents by default. T01 sets `agentRules: false` so it cannot compete with `CLAUDE.md` or leave an untracked file.
+
+**D-56 — Backend renamed from `api` to `server`** · `ACCEPTED` (owner request, 2026-10-28)
+The backend folder is `apps/server`, its package is `@fixflow/server`, its root script is `dev:server` (dev-log prefix `[server]`), and workspace commands use `-w @fixflow/server`.
+- Deliberately **unchanged**, because they describe the API contract or the web client rather than the backend folder: the URL prefix `/api/v1` and `API_PREFIX`, the `API_INTERNAL_URL` variable, the web app's `apps/web/src/lib/api/` client folder, and the planned `docs/API.md`.
+- This differs from the example layout in spec §21.3 (`apps/api`). The spec calls that layout "recommended" and the source documents are not edited, so the spec still shows `apps/api`.
+- Path references in `README.md`, `CLAUDE.md`, the task prompts and the planning documents were updated. The T01 entry in `IMPLEMENTATION_PROGRESS.md` still shows the commands as they were run, against `apps/api`.
 
 ### Identity, sessions and access
 

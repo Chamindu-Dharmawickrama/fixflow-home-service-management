@@ -48,7 +48,7 @@ Database, Prisma and readiness check (T03); sessions, auth guards and CSRF Origi
 
 ## E. Implementation instructions
 
-1. Inspect `apps/api` as T01 left it and keep its structure and module format.
+1. Inspect `apps/server` as T01 left it and keep its structure and module format.
 2. Implement config first and make `server.ts` fail fast on invalid config. Tests use explicit overrides, not real env files.
 3. Implement the logger and request-ID middleware, then the security middleware, then the error model and handler, then validation and pagination, then the clock and rate limiting. Mount them in the correct order in `createApp`: request ID → logger → helmet/CORS → body parsing → global rate limit → routes → 404 → error handler.
 4. Add a test-only router in the test harness (not in production code) that throws each error type, so the error contract can be tested.

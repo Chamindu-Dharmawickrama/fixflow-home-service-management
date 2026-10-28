@@ -1,0 +1,16 @@
+{
+  "name": "@fixflow/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "FixFlow Playwright end-to-end tests",
+  "type": "module",
+  "scripts": {
+    "install:browsers": "playwright install chromium",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^24.19.2"
+  }
+}

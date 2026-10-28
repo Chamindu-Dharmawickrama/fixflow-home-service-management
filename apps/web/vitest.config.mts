@@ -9,7 +9,9 @@ export default defineConfig({
     },
   },
   test: {
-    environment: "node",
+    // Component tests need a DOM; the pure-function tests run fine in it too.
+    environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],
+    setupFiles: ["./src/test/setup.ts"],
   },
 });

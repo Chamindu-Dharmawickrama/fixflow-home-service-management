@@ -1,0 +1,36 @@
+import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
+
+import { cn } from "@/lib/utils";
+
+export interface EmptyStateProps {
+  icon: LucideIcon;
+  title: string;
+  /** Say why it is empty and what to do next. */
+  description: ReactNode;
+  /** The next step, usually a `Button` or a link-styled `Button asChild`. */
+  action?: ReactNode;
+  className?: string | undefined;
+}
+
+/**
+ * The state of a list, search or section that has nothing in it yet (FR-083). An empty state is
+ * guidance, not an apology: it names what is missing and offers the action that fills it.
+ */
+export function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col items-center gap-3 rounded-xl border border-dashed border-border-strong bg-surface px-6 py-12 text-center",
+        className,
+      )}
+    >
+      <span className="flex size-12 items-center justify-center rounded-full bg-brand-soft text-brand">
+        <Icon aria-hidden="true" className="size-6" />
+      </span>
+      <h2 className="text-lg font-semibold text-ink">{title}</h2>
+      <p className="max-w-md text-pretty text-sm text-ink-secondary">{description}</p>
+      {action ? <div className="mt-2">{action}</div> : null}
+    </div>
+  );
+}

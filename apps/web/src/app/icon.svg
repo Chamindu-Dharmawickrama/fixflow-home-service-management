@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- The FixFlow mark (components/ui/logo.tsx) with the literal values of --color-brand, --color-surface and --color-accent-fill. -->
+  <rect width="32" height="32" rx="8" fill="#14505e"/>
+  <path d="M7 15.5 16 8l9 7.5" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M7.5 22.5q2.125-3 4.25 0t4.25 0 4.25 0 4.25 0" fill="none" stroke="#14b8a6" stroke-width="2.4" stroke-linecap="round"/>
+</svg>

@@ -2,7 +2,7 @@
 
 FixFlow is a self-initiated portfolio project: a web application that helps **one** small home-service company (the fictional demo business _CoolBreeze Home Services_) run its day-to-day work. Customers request a service and approve a quotation; the business schedules and completes the job, issues an invoice and records the payment. It has a public website, a business admin dashboard (`/app`) and a customer portal (`/portal`). All data in the demo is fictional.
 
-> **Status:** early development. So far there is the repository foundation (tooling, a placeholder home page), the API platform (configuration, logging, error contract, validation, pagination, rate limiting, health endpoints) and the database layer (the complete data model with database-enforced invariants, migrations, reference numbers, an activity writer, a test database and a base seed). There are no product features yet. Progress is tracked in [`docs/IMPLEMENTATION_PROGRESS.md`](docs/IMPLEMENTATION_PROGRESS.md).
+> **Status:** early development. So far there is the repository foundation (tooling, a placeholder home page), the API platform (configuration, logging, error contract, validation, pagination, rate limiting, health endpoints) the database layer (the complete data model with database-enforced invariants, migrations, reference numbers, an activity writer, a test database and a base seed) and the design system (tokens, components, application shells and a development-only `/styleguide`). There are no product features yet. Progress is tracked in [`docs/IMPLEMENTATION_PROGRESS.md`](docs/IMPLEMENTATION_PROGRESS.md).
 
 ## Prerequisites
 
@@ -62,28 +62,30 @@ npm run dev
 | API     | http://localhost:4000/api/v1/health | Express                                                                   |
 | Proxy   | http://localhost:3000/api/v1/health | The web app forwards `/api/v1/*` to the API (same origin for the browser) |
 
+In development only, `http://localhost:3000/styleguide` renders every design-system component and state, with example public, sign-in, dashboard and portal screens under `/styleguide/shells/*`. A production build answers 404 for all of it.
+
 The browser only ever talks to the web origin. Next.js rewrites `/api/v1/*` to `${API_INTERNAL_URL}/api/v1/*` (`API_INTERNAL_URL` is server-only and defaults to `http://localhost:4000`), which keeps the session cookie first-party.
 
 ## Commands
 
 All commands run from the repository root and cover every workspace.
 
-| Command                           | What it does                                                                                       |
-| --------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `npm run dev`                     | Shared package watcher, API (`:4000`) and web app (`:3000`)                                        |
-| `npm run build`                   | Production build of the shared package, API (generates the Prisma client first) and web app        |
-| `npm run lint`                    | ESLint (TypeScript type-aware rules, Next.js rules for the web)                                    |
-| `npm run typecheck`               | `tsc --noEmit` in each workspace                                                                   |
-| `npm run test`                    | Unit tests (Vitest) in each workspace; no database needed                                          |
-| `npm run test:integration`        | API integration tests (`*.int.test.ts`) against `TEST_DATABASE_URL`; applies the migrations first  |
-| `npm run test:e2e`                | Playwright smoke test in Chromium (starts or reuses both apps)                                     |
-| `npm run db:test:up` / `down`     | Start / stop the local PostgreSQL (`docker-compose.yml`, port 5433)                                |
-| `npm run db:generate`             | Generate the Prisma client into `apps/server/src/generated/prisma` (git-ignored)                   |
-| `npm run db:migrate -- --name x`  | `prisma migrate dev`: create and apply a migration to the **development** database                 |
-| `npm run db:deploy`               | `prisma migrate deploy`: apply existing migrations (the way schema changes reach shared databases) |
-| `npm run db:seed`                 | Load the idempotent base demo data into the database named by `DATABASE_URL`                       |
-| `npm run db:studio`               | Open Prisma Studio on the database named by `DIRECT_DATABASE_URL`                                  |
-| `npm run format` / `format:check` | Prettier write / check                                                                             |
+| Command                           | What it does                                                                                                    |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                     | Shared package watcher, API (`:4000`) and web app (`:3000`)                                                     |
+| `npm run build`                   | Production build of the shared package, API (generates the Prisma client first) and web app                     |
+| `npm run lint`                    | ESLint (TypeScript type-aware rules, Next.js rules for the web)                                                 |
+| `npm run typecheck`               | `tsc --noEmit` in each workspace                                                                                |
+| `npm run test`                    | Unit tests (Vitest) in each workspace; no database needed                                                       |
+| `npm run test:integration`        | API integration tests (`*.int.test.ts`) against `TEST_DATABASE_URL`; applies the migrations first               |
+| `npm run test:e2e`                | Playwright tests in Chromium: smoke, styleguide layout and accessibility, keyboard (starts or reuses both apps) |
+| `npm run db:test:up` / `down`     | Start / stop the local PostgreSQL (`docker-compose.yml`, port 5433)                                             |
+| `npm run db:generate`             | Generate the Prisma client into `apps/server/src/generated/prisma` (git-ignored)                                |
+| `npm run db:migrate -- --name x`  | `prisma migrate dev`: create and apply a migration to the **development** database                              |
+| `npm run db:deploy`               | `prisma migrate deploy`: apply existing migrations (the way schema changes reach shared databases)              |
+| `npm run db:seed`                 | Load the idempotent base demo data into the database named by `DATABASE_URL`                                    |
+| `npm run db:studio`               | Open Prisma Studio on the database named by `DIRECT_DATABASE_URL`                                               |
+| `npm run format` / `format:check` | Prettier write / check                                                                                          |
 
 `@fixflow/shared` compiles to `dist/`, and both apps import that output. The Prisma client is generated code and is not committed. The root scripts build and generate what they need first (`lint`, `typecheck`, `test`, `test:integration`, `test:e2e`, `dev`); `npm run build` relies on `packages/*` being listed first in the root `workspaces`, so keep that order.
 
@@ -107,6 +109,6 @@ prompts/           Task prompts used to build the project step by step
 
 ## Documentation
 
-How the system fits together is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md); the HTTP conventions (response envelope, errors, pagination, rate limits) and the endpoint reference are in [`docs/API.md`](docs/API.md).
+The visual identity, tokens, status vocabulary, patterns and screen blueprints are in [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md). How the system fits together is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md); the HTTP conventions (response envelope, errors, pagination, rate limits) and the endpoint reference are in [`docs/API.md`](docs/API.md).
 
 Start with [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md). The canonical specification is [`docs/FixFlow_Project_Documentation.docx`](docs/FixFlow_Project_Documentation.docx) (searchable copy: [`docs/FixFlow_Project_Documentation.md`](docs/FixFlow_Project_Documentation.md)); resolved decisions and open questions are in [`docs/DECISIONS_AND_OPEN_QUESTIONS.md`](docs/DECISIONS_AND_OPEN_QUESTIONS.md). Contributor and AI-assistant instructions are in [`CLAUDE.md`](CLAUDE.md).

@@ -1,1 +1,192 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * FixFlow design tokens (docs/DESIGN_SYSTEM.md is the reference; this file is the implementation).
+ *
+ * Every colour, text size, radius and shadow used by the application is declared here and nowhere
+ * else. The default Tailwind palette, type scale, radii and shadows are reset below, so a class
+ * such as `text-red-500` or `rounded-3xl` does not exist: components can only use these tokens.
+ * `src/lib/design/tokens.test.ts` parses this file and fails if a documented text/background pair
+ * drops below its WCAG contrast threshold.
+ */
+
+@theme {
+  /* ---- Reset: nothing outside the FixFlow tokens exists ---- */
+  --color-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --font-serif: initial;
+
+  /* ---- Surfaces and borders ---- */
+  --color-page: #f6f7f6;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eef1f0;
+  --color-border: #e3e7ea;
+  /* Borders of form controls and other UI boundaries: at least 3:1 against page and surface. */
+  --color-border-strong: #7a8993;
+
+  /* ---- Text ---- */
+  --color-ink: #0f1b22;
+  --color-ink-secondary: #4a5a64;
+  --color-ink-muted: #5e6d77;
+
+  /* ---- Brand: deep navy / blue-green ---- */
+  --color-brand: #14505e;
+  --color-brand-hover: #0f3e4a;
+  --color-brand-deep: #0b2e38;
+  --color-brand-soft: #e4eff1;
+
+  /* ---- Accent: restrained teal. `accent` for text and icons, `accent-fill` for fills with dark text ---- */
+  --color-accent: #0f766e;
+  --color-accent-fill: #14b8a6;
+  --color-accent-soft: #e2f3f0;
+
+  /* ---- Navigation on the deep brand colour ---- */
+  --color-nav-text: #c7dadf;
+  --color-nav-muted: #93afb7;
+  --color-nav-hover: #123b47;
+  --color-nav-active: #14505e;
+  --color-nav-border: #1d4652;
+
+  /* ---- Focus ring ---- */
+  --color-focus: #0f766e;
+  --color-focus-on-dark: #5eead4;
+
+  /* ---- Semantic tones: text colour, soft background and a decorative edge ---- */
+  --color-success: #1b7646;
+  --color-success-soft: #e8f5ee;
+  --color-success-edge: #a7d8be;
+  --color-attention: #9a5b00;
+  --color-attention-soft: #fff4e0;
+  --color-attention-edge: #ebcb8b;
+  --color-danger: #b42318;
+  --color-danger-hover: #912018;
+  --color-danger-soft: #fdecea;
+  --color-danger-edge: #f4b4ae;
+  --color-info: #1d5fa8;
+  --color-info-soft: #e8f0fb;
+  --color-info-edge: #afc9eb;
+  --color-neutral: #475467;
+  --color-neutral-soft: #f0f2f4;
+  --color-neutral-edge: #d0d5dd;
+
+  /* Names used by shadcn/ui, so components added with `shadcn add` pick up the FixFlow palette. */
+  --color-background: var(--color-page);
+  --color-foreground: var(--color-ink);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-ink);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-ink);
+  --color-primary: var(--color-brand);
+  --color-primary-foreground: var(--color-surface);
+  --color-secondary: var(--color-brand-soft);
+  --color-secondary-foreground: var(--color-brand);
+  --color-muted: var(--color-surface-muted);
+  --color-muted-foreground: var(--color-ink-muted);
+  --color-destructive: var(--color-danger);
+  --color-input: var(--color-border-strong);
+  --color-ring: var(--color-focus);
+
+  /* ---- Typography: Inter for the interface and numerals, Bricolage Grotesque for headings ---- */
+  --font-sans:
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-display:
+    var(--font-bricolage), var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 2.375rem;
+  --text-3xl--letter-spacing: -0.01em;
+  --text-4xl: 2.5rem;
+  --text-4xl--line-height: 3rem;
+  --text-4xl--letter-spacing: -0.02em;
+  --text-5xl: 3.25rem;
+  --text-5xl--line-height: 3.75rem;
+  --text-5xl--letter-spacing: -0.025em;
+
+  /* ---- Radii ---- */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+
+  /* ---- Elevation: navy-tinted shadows ---- */
+  --shadow-sm: 0 1px 2px 0 rgb(11 46 56 / 0.06), 0 1px 1px 0 rgb(11 46 56 / 0.04);
+  --shadow-md: 0 4px 12px -2px rgb(11 46 56 / 0.1), 0 2px 4px -2px rgb(11 46 56 / 0.06);
+  --shadow-lg: 0 12px 32px -8px rgb(11 46 56 / 0.18), 0 4px 8px -4px rgb(11 46 56 / 0.08);
+
+  /* ---- Motion: 150 ms for hover and focus, 200 ms for overlays ---- */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Tailwind v4 draws borders in currentColor; the default edge is the subtle border token. */
+  *,
+  ::after,
+  ::before,
+  ::backdrop {
+    border-color: var(--color-border);
+  }
+
+  /* One focus ring for every interactive element. Dark surfaces switch to a lighter ring. */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  [data-surface="dark"] :focus-visible,
+  [data-surface="dark"]:focus-visible {
+    outline-color: var(--color-focus-on-dark);
+  }
+
+  ::selection {
+    background-color: var(--color-brand-soft);
+    color: var(--color-ink);
+  }
+}
+
+/* Respect the reduced-motion preference everywhere, including third-party overlays. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

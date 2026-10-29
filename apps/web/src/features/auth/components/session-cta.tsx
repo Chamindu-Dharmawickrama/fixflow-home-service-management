@@ -4,6 +4,10 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { LOGIN_PATH, roleHomePath } from "@/lib/auth/paths";
 import { getSession } from "@/lib/auth/session";
+import { cn } from "@/lib/utils";
+
+/** On a phone the account link is a little smaller, to leave the business name room beside it. */
+const COMPACT_ON_PHONES = "max-sm:h-9 max-sm:px-3";
 
 /**
  * The session-aware call to action in the public header: "Sign in" for a visitor, "Dashboard" for
@@ -26,7 +30,10 @@ export async function SessionCta() {
   }
 
   return (
-    <Link href={href} className={buttonVariants({ variant: "outline", size: "md" })}>
+    <Link
+      href={href}
+      className={cn(buttonVariants({ variant: "outline", size: "md" }), COMPACT_ON_PHONES)}
+    >
       {label}
     </Link>
   );
@@ -37,7 +44,7 @@ export function SessionCtaFallback() {
   return (
     <span
       aria-hidden="true"
-      className="inline-block h-11 w-24 rounded-lg bg-surface-muted motion-safe:animate-pulse sm:h-10"
+      className="inline-block h-9 w-20 rounded-lg bg-surface-muted motion-safe:animate-pulse sm:h-10 sm:w-24"
     />
   );
 }

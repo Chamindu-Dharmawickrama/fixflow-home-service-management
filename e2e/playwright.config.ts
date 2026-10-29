@@ -1,7 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
 import {
+  API_DOWN_WEB_URL,
   API_URL,
+  apiDownWebEnvironment,
   apiEnvironment,
   ensureRunEnvironment,
   WEB_URL,
@@ -53,6 +55,15 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120_000,
       env: webEnvironment(),
+    },
+    // The web app again, with an API that is down: the public pages must still render (T08).
+    {
+      command: "npx next dev --port 3001",
+      cwd: "../apps/web",
+      url: API_DOWN_WEB_URL,
+      reuseExistingServer: false,
+      timeout: 120_000,
+      env: apiDownWebEnvironment(),
     },
   ],
 });

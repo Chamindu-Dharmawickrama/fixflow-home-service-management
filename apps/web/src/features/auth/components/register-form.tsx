@@ -2,6 +2,7 @@
 
 import type { AuthSessionDto } from "@fixflow/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
@@ -24,8 +25,25 @@ import { PasswordInput } from "./password-input";
 import { PasswordStrength } from "./password-strength";
 import { useGoogleSignIn } from "./use-google-sign-in";
 
-const TERMS_NOTICE =
-  "By creating an account you agree to the terms of use and privacy notice: we use your details only to handle your service requests, and we never sell them.";
+const PRIVACY_LINK_CLASS =
+  "rounded-sm font-medium text-brand underline underline-offset-4 hover:text-brand-hover";
+
+/** Links to the public privacy and demo notice (T08), which says what is stored and who can see it. */
+function PrivacyLink({ children }: { children: string }) {
+  return (
+    <Link href="/privacy" className={PRIVACY_LINK_CLASS}>
+      {children}
+    </Link>
+  );
+}
+
+const TERMS_NOTICE = (
+  <>
+    By creating an account you agree to the terms of use and{" "}
+    <PrivacyLink>privacy notice</PrivacyLink>: we use your details only to handle your service
+    requests, and we never sell them.
+  </>
+);
 
 export interface RegisterFormProps {
   googleClientId: string | undefined;
@@ -79,7 +97,11 @@ export function RegisterForm({ googleClientId, demoMode }: RegisterFormProps) {
 
   return (
     <div className="flex flex-col gap-5">
-      {demoMode ? <FormAlert tone="info">{DEMO_NOTICE}</FormAlert> : null}
+      {demoMode ? (
+        <FormAlert tone="info">
+          {DEMO_NOTICE} <PrivacyLink>Read the demo notice</PrivacyLink>
+        </FormAlert>
+      ) : null}
       {formError !== null || google.error !== null ? (
         <FormAlert tone="error">{formError ?? google.error}</FormAlert>
       ) : null}
@@ -165,8 +187,9 @@ export function RegisterForm({ googleClientId, demoMode }: RegisterFormProps) {
           }}
         />
         <p className="text-center text-sm text-ink-secondary">
-          By continuing with Google you agree to the same terms of use and privacy notice. We use
-          your name and verified email address to create your account.
+          By continuing with Google you agree to the same terms of use and{" "}
+          <PrivacyLink>privacy notice</PrivacyLink>. We use your name and verified email address to
+          create your account.
         </p>
       </div>
     </div>

@@ -12,6 +12,10 @@ import { resolve } from "node:path";
 
 export const WEB_URL = "http://localhost:3000";
 export const API_URL = "http://localhost:4000";
+/** A second web server whose API cannot be reached, for the public-site fallback checks (T08). */
+export const API_DOWN_WEB_URL = "http://localhost:3001";
+/** Nothing listens on the discard port, so a request to it is refused at once. */
+const UNREACHABLE_API_URL = "http://127.0.0.1:9";
 
 /** The dedicated database. Overridable with `E2E_DATABASE_URL`; the guard insists its name has "e2e". */
 const DEFAULT_E2E_DATABASE_URL =
@@ -94,9 +98,26 @@ export function apiEnvironment(): Record<string, string> {
 export function webEnvironment(): Record<string, string> {
   return {
     API_INTERNAL_URL: API_URL,
+    // The public pages refresh what they read from the API after this many seconds (60 by default),
+    // so the specs can see a change without a minute's wait.
+    PUBLIC_REVALIDATE_SECONDS: "2",
+    // Canonical links and the sitemap are built from this address.
+    SITE_URL: WEB_URL,
     NEXT_PUBLIC_DEMO_MODE: "true",
     NEXT_PUBLIC_DEMO_ADMIN_PASSWORD: credentials.demoAdminPassword,
     NEXT_PUBLIC_DEMO_CUSTOMER_PASSWORD: credentials.demoCustomerPassword,
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: FAKE_GOOGLE_CLIENT_ID,
+  };
+}
+
+/** The same web app pointed at an API that is down, in its own build folder so the two dev servers do not collide. */
+export function apiDownWebEnvironment(): Record<string, string> {
+  return {
+    ...webEnvironment(),
+    API_INTERNAL_URL: UNREACHABLE_API_URL,
+    NEXT_DIST_DIR: ".next-api-down",
+    SITE_URL: API_DOWN_WEB_URL,
+    // Not the portfolio demo: no banner, and the pages may be indexed (the other server is the demo).
+    NEXT_PUBLIC_DEMO_MODE: "false",
   };
 }

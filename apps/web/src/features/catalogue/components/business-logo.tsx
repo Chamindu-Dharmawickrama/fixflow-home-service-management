@@ -52,7 +52,7 @@ export function BusinessLogo({ businessName, logoKey, logoUrl, className }: Busi
           <Building2 className="size-5" />
         </span>
       )}
-      <span className="min-w-0 truncate font-display text-base font-semibold text-ink">
+      <span className="line-clamp-2 min-w-0 break-words font-display text-sm leading-tight font-semibold text-ink sm:line-clamp-1 sm:text-base sm:leading-normal">
         {businessName}
       </span>
     </span>

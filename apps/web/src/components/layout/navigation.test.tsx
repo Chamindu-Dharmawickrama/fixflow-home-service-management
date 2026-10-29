@@ -85,7 +85,7 @@ describe("SkipLink", () => {
 
 describe("PublicNav (mobile disclosure)", () => {
   it("opens and closes with the keyboard, and Escape returns focus to the button", async () => {
-    render(<PublicNav items={PUBLIC_ITEMS} cta={<a href="/services">Browse services</a>} />);
+    render(<PublicNav items={PUBLIC_ITEMS} cta={<a href="#browse">Browse services</a>} />);
     const button = screen.getByRole("button", { name: "Menu" });
     expect(button).toHaveAttribute("aria-expanded", "false");
 

@@ -8,6 +8,7 @@ import {
   Layers,
   LayoutDashboard,
   type LucideIcon,
+  Mail,
   Palette,
   Receipt,
   Settings,
@@ -34,4 +35,5 @@ export const NAV_ICONS: Record<NavIconName, LucideIcon> = {
   palette: Palette,
   layers: Layers,
   "clipboard-list": ClipboardList,
+  mail: Mail,
 };

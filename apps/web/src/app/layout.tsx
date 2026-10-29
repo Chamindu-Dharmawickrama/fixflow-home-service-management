@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { SkipLink } from "@/components/layout/skip-link";
 import { Toaster } from "@/components/ui/sonner";
+import { getSiteUrl } from "@/features/marketing/lib/site-url";
 
 // Self-hosted variable fonts (SIL Open Font License, see ./fonts): no request to a font CDN at
 // build time or in the browser. Inter carries the interface and every number; Bricolage Grotesque
@@ -27,6 +28,8 @@ const bricolage = localFont({
 });
 
 export const metadata: Metadata = {
+  // Relative canonical and social-preview URLs resolve against the site address (T08, D-89).
+  metadataBase: getSiteUrl(),
   // Product pages read "Requests · FixFlow"; public business pages set an absolute title (D-31).
   title: { default: "FixFlow", template: "%s · FixFlow" },
   description:

@@ -10,6 +10,9 @@ const apiInternalUrl = (process.env.API_INTERNAL_URL ?? "http://localhost:4000")
 );
 
 const nextConfig: NextConfig = {
+  // Only the E2E suite sets this: its second dev server (an API that cannot be reached, T08) must not
+  // share a build folder with the first.
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   // Defaults from create-next-app 16.4.3; the next Next.js major enables both everywhere (see D-55).
   cacheComponents: true,
   partialPrefetching: true,

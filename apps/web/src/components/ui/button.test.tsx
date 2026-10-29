@@ -104,11 +104,11 @@ describe("Button", () => {
   it("styles the child element when asChild is used", () => {
     render(
       <Button asChild variant="outline">
-        <a href="/services">Browse services</a>
+        <a href="#browse">Browse services</a>
       </Button>,
     );
     const link = screen.getByRole("link", { name: "Browse services" });
-    expect(link).toHaveAttribute("href", "/services");
+    expect(link).toHaveAttribute("href", "#browse");
     expect(link.className).toContain("border-border-strong");
   });
 });

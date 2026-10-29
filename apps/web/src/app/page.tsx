@@ -1,29 +1,62 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { PublicLayout } from "@/components/layout/public-layout";
-import { SessionCta, SessionCtaFallback } from "@/features/auth/components/session-cta";
+import { AreaAndContact } from "@/features/marketing/components/area-and-contact";
+import { CtaBand } from "@/features/marketing/components/cta-band";
+import { Faq } from "@/features/marketing/components/faq";
+import { Hero } from "@/features/marketing/components/hero";
+import { HowItWorks } from "@/features/marketing/components/how-it-works";
+import { PublicPage } from "@/features/marketing/components/public-page";
+import { Section, SectionHeading } from "@/features/marketing/components/section";
+import { ServiceGridSkeleton } from "@/features/marketing/components/service-grid";
+import {
+  AllServicesLink,
+  ServiceHighlights,
+} from "@/features/marketing/components/service-highlights";
+import { TrustPoints } from "@/features/marketing/components/trust-points";
+import { getSiteSettings } from "@/features/marketing/lib/public-data";
+import { buildPageMetadata, FALLBACK_BUSINESS_NAME } from "@/features/marketing/lib/seo";
+import { isDemoMode } from "@/lib/demo-mode";
 
-// Placeholder until the public website (T08) replaces it. It already carries the session-aware
-// header ("Sign in" / "Dashboard" / "My account") that the real public pages will reuse.
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  const businessName =
+    settings.status === "ok" ? settings.data.businessName : FALLBACK_BUSINESS_NAME;
+
+  return buildPageMetadata({
+    pageName: "Home repairs and maintenance",
+    businessName,
+    description: [
+      settings.status === "ok" ? settings.data.tagline : null,
+      "Request a service online, get a written quotation first, and follow the visit, the invoice and the payment from one account.",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    path: "/",
+    noIndex: isDemoMode(),
+  });
+}
+
 export default function HomePage() {
   return (
-    <PublicLayout
-      homeHref="/"
-      cta={
-        <Suspense fallback={<SessionCtaFallback />}>
-          <SessionCta />
+    <PublicPage>
+      <Hero />
+      <Section tone="page" headingId="services-heading">
+        <SectionHeading
+          id="services-heading"
+          title="What we can help with"
+          description="Pick a service to see what is included and what it costs, then send a request."
+          action={<AllServicesLink />}
+        />
+        <Suspense fallback={<ServiceGridSkeleton />}>
+          <ServiceHighlights />
         </Suspense>
-      }
-    >
-      <section className="mx-auto flex min-h-[60dvh] max-w-2xl flex-col justify-center gap-6 px-6 py-16">
-        <h1 className="font-display text-4xl font-semibold text-ink">
-          Home-service management for a small service business
-        </h1>
-        <p className="text-lg text-ink-secondary">
-          Requests, quotations, scheduling and invoices in one calm place. The application is under
-          construction.
-        </p>
-      </section>
-    </PublicLayout>
+      </Section>
+      <HowItWorks />
+      <TrustPoints />
+      <Faq />
+      <AreaAndContact />
+      <CtaBand />
+    </PublicPage>
   );
 }

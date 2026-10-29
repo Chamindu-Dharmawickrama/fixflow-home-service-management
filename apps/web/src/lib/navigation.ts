@@ -14,6 +14,7 @@ export const NAV_ICON_NAMES = [
   "palette",
   "layers",
   "clipboard-list",
+  "mail",
 ] as const;
 export type NavIconName = (typeof NAV_ICON_NAMES)[number];
 

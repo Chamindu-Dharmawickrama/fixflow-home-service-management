@@ -8,7 +8,7 @@ import type { NavGroup, NavItem } from "@/lib/navigation";
  * Only routes that exist are listed, so no link is ever dead (CLAUDE.md §10). Each later task adds
  * the entries for the screens it builds, in the order they should appear:
  *
- * - `public`: the public website header (T08 adds Services, How it works, Contact).
+ * - `public`: the public website header (Home, Services and the How it works and Contact anchors, T08).
  * - `admin`: the business dashboard sidebar, in groups (T05 has the dashboard; T12 adds Requests,
  *   T14 Quotations, …). The admin's "Account" page lives in the user menu, not here.
  * - `portal`: the customer portal top bar (T05 has the overview; T10 adds Profile, T11 My requests, …).
@@ -19,7 +19,13 @@ import type { NavGroup, NavItem } from "@/lib/navigation";
  * path or uses an unknown icon.
  */
 export const NAVIGATION = {
-  public: [] as readonly NavItem[],
+  public: [
+    { label: "Home", href: "/", icon: "house", match: "exact" },
+    { label: "Services", href: "/services", icon: "layers" },
+    // Anchors on the home page: they work from every public page.
+    { label: "How it works", href: "/#how-it-works", icon: "clipboard-list" },
+    { label: "Contact", href: "/#contact", icon: "mail" },
+  ] as readonly NavItem[],
   admin: [
     { items: [{ label: "Dashboard", href: "/app/dashboard", icon: "layout-dashboard" }] },
     {

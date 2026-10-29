@@ -9,13 +9,19 @@ function apiBaseUrl(): string {
   return (process.env.API_INTERNAL_URL ?? "http://localhost:4000").replace(/\/+$/, "");
 }
 
-async function getJson(route: `/${string}`, headers: Record<string, string>): Promise<unknown> {
+async function getJson(
+  route: `/${string}`,
+  headers: Record<string, string>,
+  timeoutMs?: number,
+): Promise<unknown> {
   let response: Response;
   try {
     response = await fetch(`${apiBaseUrl()}${apiPath(route)}`, {
       method: "GET",
       cache: "no-store",
       headers: { Accept: "application/json", ...headers },
+      // A request that gets no answer in time counts as unreachable, like a refused connection.
+      ...(timeoutMs === undefined ? {} : { signal: AbortSignal.timeout(timeoutMs) }),
     });
   } catch {
     throw new ApiError({
@@ -62,8 +68,13 @@ export async function serverApiGetEnvelope<Body extends object>(
 /**
  * Reads a public endpoint (no sign-in needed), sending no cookies, so the request says nothing
  * about the visitor. Still not cached by Next.js: callers that want the answer reused across
- * requests decide that themselves (T08).
+ * requests decide that themselves (the public website wraps it in `'use cache'`, D-87).
+ * `timeoutMs` bounds the wait, so a sleeping API (a cold start) cannot hold a page forever; the
+ * call then fails with `NETWORK_ERROR`.
  */
-export async function serverApiGetPublic<T>(route: `/${string}`): Promise<T> {
-  return ((await getJson(route, {})) as ApiResponse<T>).data;
+export async function serverApiGetPublic<T>(
+  route: `/${string}`,
+  options: { timeoutMs?: number } = {},
+): Promise<T> {
+  return ((await getJson(route, {}, options.timeoutMs)) as ApiResponse<T>).data;
 }

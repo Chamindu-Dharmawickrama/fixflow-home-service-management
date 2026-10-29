@@ -11,6 +11,8 @@ export default defineConfig([
     "**/node_modules/**",
     "**/dist/**",
     "**/.next/**",
+    // The second dev server of the E2E suite (the API-down check) builds into its own folder.
+    "**/.next-api-down/**",
     "**/coverage/**",
     "**/playwright-report/**",
     "**/test-results/**",

@@ -1,0 +1,785 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`template invoice-issued > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Invoice INV-2026-00007 from CoolBreeze Home Services</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">Your invoice is ready</h1>
+      <p style="margin:0 0 16px;">Hello Alex Morgan,</p><p style="margin:0 0 16px;">Invoice INV-2026-00007 is ready. You can see what it covers and how to pay in your account.</p>
+      <p style="margin:0 0 4px;"><strong>Invoice:</strong> INV-2026-00007</p><p style="margin:0 0 4px;"><strong>Total:</strong> $1,284.50</p><p style="margin:0 0 4px;"><strong>Due:</strong> Nov 24, 2026</p>
+      <p style="margin:20px 0 24px;"><a href="https://fixflow.example.com/portal/invoices/3e9f4b31-9c4d-4e31-8c40-5a2a6d0f2d44" style="display:inline-block;padding:12px 20px;background:#0f4c75;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">View invoice</a></p>
+      <p style="margin:0 0 24px;color:#4a5963;">If the button does not work, copy this address into your browser:<br><a href="https://fixflow.example.com/portal/invoices/3e9f4b31-9c4d-4e31-8c40-5a2a6d0f2d44" style="color:#0f4c75;word-break:break-all;">https://fixflow.example.com/portal/invoices/3e9f4b31-9c4d-4e31-8c40-5a2a6d0f2d44</a></p>
+      <p style="margin:0 0 16px;">Payment is made directly to CoolBreeze Home Services, following the instructions on the invoice.</p>
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template invoice-issued > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "Invoice INV-2026-00007 from CoolBreeze Home Services",
+  "text": "Your invoice is ready
+
+Hello Alex Morgan,
+
+Invoice INV-2026-00007 is ready. You can see what it covers and how to pay in your account.
+
+Invoice: INV-2026-00007
+Total: $1,284.50
+Due: Nov 24, 2026
+
+View invoice:
+https://fixflow.example.com/portal/invoices/3e9f4b31-9c4d-4e31-8c40-5a2a6d0f2d44
+
+Payment is made directly to CoolBreeze Home Services, following the instructions on the invoice.
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;
+
+exports[`template invoice-voided > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Invoice INV-2026-00007 was voided</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">An invoice was voided</h1>
+      <p style="margin:0 0 16px;">Hello Alex Morgan,</p><p style="margin:0 0 16px;">We have voided invoice INV-2026-00007, so you do not need to pay it. If a corrected invoice is needed, you will be notified.</p>
+      <p style="margin:0 0 4px;"><strong>Invoice:</strong> INV-2026-00007</p>
+      <p style="margin:20px 0 24px;"><a href="https://fixflow.example.com/portal/invoices/3e9f4b31-9c4d-4e31-8c40-5a2a6d0f2d44" style="display:inline-block;padding:12px 20px;background:#0f4c75;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">View invoice</a></p>
+      <p style="margin:0 0 24px;color:#4a5963;">If the button does not work, copy this address into your browser:<br><a href="https://fixflow.example.com/portal/invoices/3e9f4b31-9c4d-4e31-8c40-5a2a6d0f2d44" style="color:#0f4c75;word-break:break-all;">https://fixflow.example.com/portal/invoices/3e9f4b31-9c4d-4e31-8c40-5a2a6d0f2d44</a></p>
+      
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template invoice-voided > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "Invoice INV-2026-00007 was voided",
+  "text": "An invoice was voided
+
+Hello Alex Morgan,
+
+We have voided invoice INV-2026-00007, so you do not need to pay it. If a corrected invoice is needed, you will be notified.
+
+Invoice: INV-2026-00007
+
+View invoice:
+https://fixflow.example.com/portal/invoices/3e9f4b31-9c4d-4e31-8c40-5a2a6d0f2d44
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;
+
+exports[`template job-cancelled > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Your AC Repair job was cancelled</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">Your job was cancelled</h1>
+      <p style="margin:0 0 16px;">Hello Alex Morgan,</p><p style="margin:0 0 16px;">Your AC Repair job has been cancelled, so no visit will take place.</p>
+      <p style="margin:0 0 4px;"><strong>Job:</strong> JOB-2026-00003</p><p style="margin:0 0 4px;"><strong>Service:</strong> AC Repair</p>
+      <p style="margin:20px 0 24px;"><a href="https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33" style="display:inline-block;padding:12px 20px;background:#0f4c75;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">View job details</a></p>
+      <p style="margin:0 0 24px;color:#4a5963;">If the button does not work, copy this address into your browser:<br><a href="https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33" style="color:#0f4c75;word-break:break-all;">https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33</a></p>
+      <p style="margin:0 0 16px;">If this is not what you expected, please contact us.</p>
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template job-cancelled > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "Your AC Repair job was cancelled",
+  "text": "Your job was cancelled
+
+Hello Alex Morgan,
+
+Your AC Repair job has been cancelled, so no visit will take place.
+
+Job: JOB-2026-00003
+Service: AC Repair
+
+View job details:
+https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33
+
+If this is not what you expected, please contact us.
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;
+
+exports[`template job-completed > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Your AC Repair job is complete</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">Your job is complete</h1>
+      <p style="margin:0 0 16px;">Hello Alex Morgan,</p><p style="margin:0 0 16px;">Your AC Repair job has been marked as complete. Thank you for choosing us.</p>
+      <p style="margin:0 0 4px;"><strong>Job:</strong> JOB-2026-00003</p><p style="margin:0 0 4px;"><strong>Service:</strong> AC Repair</p>
+      <p style="margin:20px 0 24px;"><a href="https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33" style="display:inline-block;padding:12px 20px;background:#0f4c75;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">View job details</a></p>
+      <p style="margin:0 0 24px;color:#4a5963;">If the button does not work, copy this address into your browser:<br><a href="https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33" style="color:#0f4c75;word-break:break-all;">https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33</a></p>
+      <p style="margin:0 0 16px;">If there is anything to pay, an invoice will follow.</p>
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template job-completed > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "Your AC Repair job is complete",
+  "text": "Your job is complete
+
+Hello Alex Morgan,
+
+Your AC Repair job has been marked as complete. Thank you for choosing us.
+
+Job: JOB-2026-00003
+Service: AC Repair
+
+View job details:
+https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33
+
+If there is anything to pay, an invoice will follow.
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;
+
+exports[`template job-needs-rescheduling > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>We need to find a new time for your AC Repair visit</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">We need to reschedule your visit</h1>
+      <p style="margin:0 0 16px;">Hello Alex Morgan,</p><p style="margin:0 0 16px;">We can no longer keep the time we had for your AC Repair visit, and we are arranging a new one. You will be notified as soon as it is scheduled.</p>
+      <p style="margin:0 0 4px;"><strong>Job:</strong> JOB-2026-00003</p><p style="margin:0 0 4px;"><strong>Service:</strong> AC Repair</p>
+      <p style="margin:20px 0 24px;"><a href="https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33" style="display:inline-block;padding:12px 20px;background:#0f4c75;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">View job details</a></p>
+      <p style="margin:0 0 24px;color:#4a5963;">If the button does not work, copy this address into your browser:<br><a href="https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33" style="color:#0f4c75;word-break:break-all;">https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33</a></p>
+      <p style="margin:0 0 16px;">We are sorry for the inconvenience.</p>
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template job-needs-rescheduling > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "We need to find a new time for your AC Repair visit",
+  "text": "We need to reschedule your visit
+
+Hello Alex Morgan,
+
+We can no longer keep the time we had for your AC Repair visit, and we are arranging a new one. You will be notified as soon as it is scheduled.
+
+Job: JOB-2026-00003
+Service: AC Repair
+
+View job details:
+https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33
+
+We are sorry for the inconvenience.
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;
+
+exports[`template job-rescheduled > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Your AC Repair visit has moved</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">Your visit has been rescheduled</h1>
+      <p style="margin:0 0 16px;">Hello Alex Morgan,</p><p style="margin:0 0 16px;">We have moved your AC Repair visit to a new time.</p>
+      <p style="margin:0 0 4px;"><strong>Job:</strong> JOB-2026-00003</p><p style="margin:0 0 4px;"><strong>Service:</strong> AC Repair</p><p style="margin:0 0 4px;"><strong>New time:</strong> Thu, Nov 12, 2026, 10:00 AM – 12:00 PM EST</p><p style="margin:0 0 4px;"><strong>Previous time:</strong> Tue, Nov 10, 2026, 9:00 – 11:00 AM EST</p>
+      <p style="margin:20px 0 24px;"><a href="https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33" style="display:inline-block;padding:12px 20px;background:#0f4c75;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">View job details</a></p>
+      <p style="margin:0 0 24px;color:#4a5963;">If the button does not work, copy this address into your browser:<br><a href="https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33" style="color:#0f4c75;word-break:break-all;">https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33</a></p>
+      <p style="margin:0 0 16px;">If the new time does not work for you, please contact us as soon as you can.</p>
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template job-rescheduled > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "Your AC Repair visit has moved",
+  "text": "Your visit has been rescheduled
+
+Hello Alex Morgan,
+
+We have moved your AC Repair visit to a new time.
+
+Job: JOB-2026-00003
+Service: AC Repair
+New time: Thu, Nov 12, 2026, 10:00 AM – 12:00 PM EST
+Previous time: Tue, Nov 10, 2026, 9:00 – 11:00 AM EST
+
+View job details:
+https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33
+
+If the new time does not work for you, please contact us as soon as you can.
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;
+
+exports[`template job-scheduled > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Your AC Repair visit is scheduled</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">Your visit is scheduled</h1>
+      <p style="margin:0 0 16px;">Hello Alex Morgan,</p><p style="margin:0 0 16px;">We have scheduled your AC Repair visit.</p>
+      <p style="margin:0 0 4px;"><strong>Job:</strong> JOB-2026-00003</p><p style="margin:0 0 4px;"><strong>Service:</strong> AC Repair</p><p style="margin:0 0 4px;"><strong>When:</strong> Tue, Nov 10, 2026, 9:00 – 11:00 AM EST</p>
+      <p style="margin:20px 0 24px;"><a href="https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33" style="display:inline-block;padding:12px 20px;background:#0f4c75;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">View job details</a></p>
+      <p style="margin:0 0 24px;color:#4a5963;">If the button does not work, copy this address into your browser:<br><a href="https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33" style="color:#0f4c75;word-break:break-all;">https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33</a></p>
+      <p style="margin:0 0 16px;">If this time does not work for you, please contact us as soon as you can.</p>
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template job-scheduled > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "Your AC Repair visit is scheduled",
+  "text": "Your visit is scheduled
+
+Hello Alex Morgan,
+
+We have scheduled your AC Repair visit.
+
+Job: JOB-2026-00003
+Service: AC Repair
+When: Tue, Nov 10, 2026, 9:00 – 11:00 AM EST
+
+View job details:
+https://fixflow.example.com/portal/jobs/2d8e3a20-8b3c-4d20-9b3f-4f1f5c9e1c33
+
+If this time does not work for you, please contact us as soon as you can.
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;
+
+exports[`template password-reset > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Reset your CoolBreeze Home Services password</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">Reset your CoolBreeze Home Services password</h1>
+      <p style="margin:0 0 16px;">Someone asked to reset the password for your CoolBreeze Home Services account. If that was you, choose a new password with the button below.</p>
+      
+      <p style="margin:8px 0 24px;"><a href="https://fixflow.example.com/reset-password?token=abc_DEF-123" style="display:inline-block;padding:12px 20px;background:#0f4c75;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">Choose a new password</a></p>
+      <p style="margin:0 0 24px;color:#4a5963;">If the button does not work, copy this address into your browser:<br><a href="https://fixflow.example.com/reset-password?token=abc_DEF-123" style="color:#0f4c75;word-break:break-all;">https://fixflow.example.com/reset-password?token=abc_DEF-123</a></p>
+      <p style="margin:0 0 16px;">The link works once and expires in 60 minutes.</p><p style="margin:0 0 16px;">If you did not ask for this, you can ignore this email. Your password stays the same.</p>
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template password-reset > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "Reset your CoolBreeze Home Services password",
+  "text": "Reset your CoolBreeze Home Services password
+
+Someone asked to reset the password for your CoolBreeze Home Services account. If that was you, choose a new password with the button below.
+
+Choose a new password:
+https://fixflow.example.com/reset-password?token=abc_DEF-123
+
+The link works once and expires in 60 minutes.
+
+If you did not ask for this, you can ignore this email. Your password stays the same.
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;
+
+exports[`template payment-recorded > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Payment recorded for invoice INV-2026-00007</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">We recorded your payment</h1>
+      <p style="margin:0 0 16px;">Hello Alex Morgan,</p><p style="margin:0 0 16px;">We have recorded your payment for invoice INV-2026-00007. A balance remains on the invoice.</p>
+      <p style="margin:0 0 4px;"><strong>Invoice:</strong> INV-2026-00007</p><p style="margin:0 0 4px;"><strong>Payment:</strong> $500.00</p><p style="margin:0 0 4px;"><strong>Payment date:</strong> Nov 2, 2026</p><p style="margin:0 0 4px;"><strong>Balance:</strong> $784.50</p>
+      <p style="margin:20px 0 24px;"><a href="https://fixflow.example.com/portal/invoices/3e9f4b31-9c4d-4e31-8c40-5a2a6d0f2d44" style="display:inline-block;padding:12px 20px;background:#0f4c75;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">View invoice</a></p>
+      <p style="margin:0 0 24px;color:#4a5963;">If the button does not work, copy this address into your browser:<br><a href="https://fixflow.example.com/portal/invoices/3e9f4b31-9c4d-4e31-8c40-5a2a6d0f2d44" style="color:#0f4c75;word-break:break-all;">https://fixflow.example.com/portal/invoices/3e9f4b31-9c4d-4e31-8c40-5a2a6d0f2d44</a></p>
+      
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template payment-recorded > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "Payment recorded for invoice INV-2026-00007",
+  "text": "We recorded your payment
+
+Hello Alex Morgan,
+
+We have recorded your payment for invoice INV-2026-00007. A balance remains on the invoice.
+
+Invoice: INV-2026-00007
+Payment: $500.00
+Payment date: Nov 2, 2026
+Balance: $784.50
+
+View invoice:
+https://fixflow.example.com/portal/invoices/3e9f4b31-9c4d-4e31-8c40-5a2a6d0f2d44
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;
+
+exports[`template quotation-decision-admin > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Alex Morgan accepted quotation QT-2026-00004</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">Quotation accepted</h1>
+      <p style="margin:0 0 16px;">Alex Morgan accepted the quotation for AC Repair. A job can now be created and scheduled.</p>
+      <p style="margin:0 0 4px;"><strong>Quotation:</strong> QT-2026-00004</p><p style="margin:0 0 4px;"><strong>Customer:</strong> Alex Morgan</p><p style="margin:0 0 4px;"><strong>Service:</strong> AC Repair</p><p style="margin:0 0 4px;"><strong>Total:</strong> $108.00</p>
+      <p style="margin:20px 0 24px;"><a href="https://fixflow.example.com/app/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11" style="display:inline-block;padding:12px 20px;background:#0f4c75;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">Open the request</a></p>
+      <p style="margin:0 0 24px;color:#4a5963;">If the button does not work, copy this address into your browser:<br><a href="https://fixflow.example.com/app/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11" style="color:#0f4c75;word-break:break-all;">https://fixflow.example.com/app/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11</a></p>
+      
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template quotation-decision-admin > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "Alex Morgan accepted quotation QT-2026-00004",
+  "text": "Quotation accepted
+
+Alex Morgan accepted the quotation for AC Repair. A job can now be created and scheduled.
+
+Quotation: QT-2026-00004
+Customer: Alex Morgan
+Service: AC Repair
+Total: $108.00
+
+Open the request:
+https://fixflow.example.com/app/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;
+
+exports[`template quotation-sent > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Your quotation QT-2026-00004 from CoolBreeze Home Services</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">Your quotation is ready</h1>
+      <p style="margin:0 0 16px;">Hello Alex Morgan,</p><p style="margin:0 0 16px;">We have prepared a quotation for AC Repair. Please review it and let us know whether you would like to go ahead.</p>
+      <p style="margin:0 0 4px;"><strong>Quotation:</strong> QT-2026-00004</p><p style="margin:0 0 4px;"><strong>Service:</strong> AC Repair</p><p style="margin:0 0 4px;"><strong>Total:</strong> $108.00</p><p style="margin:0 0 4px;"><strong>Valid until:</strong> Nov 24, 2026</p>
+      <p style="margin:20px 0 24px;"><a href="https://fixflow.example.com/portal/quotations/1c7d2f1f-7a2b-4c1f-8a2e-3e0e4b8d0b22" style="display:inline-block;padding:12px 20px;background:#0f4c75;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">Review your quotation</a></p>
+      <p style="margin:0 0 24px;color:#4a5963;">If the button does not work, copy this address into your browser:<br><a href="https://fixflow.example.com/portal/quotations/1c7d2f1f-7a2b-4c1f-8a2e-3e0e4b8d0b22" style="color:#0f4c75;word-break:break-all;">https://fixflow.example.com/portal/quotations/1c7d2f1f-7a2b-4c1f-8a2e-3e0e4b8d0b22</a></p>
+      <p style="margin:0 0 16px;">You can accept or decline it online. Please answer before it expires.</p>
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template quotation-sent > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "Your quotation QT-2026-00004 from CoolBreeze Home Services",
+  "text": "Your quotation is ready
+
+Hello Alex Morgan,
+
+We have prepared a quotation for AC Repair. Please review it and let us know whether you would like to go ahead.
+
+Quotation: QT-2026-00004
+Service: AC Repair
+Total: $108.00
+Valid until: Nov 24, 2026
+
+Review your quotation:
+https://fixflow.example.com/portal/quotations/1c7d2f1f-7a2b-4c1f-8a2e-3e0e4b8d0b22
+
+You can accept or decline it online. Please answer before it expires.
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;
+
+exports[`template quotation-withdrawn > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quotation QT-2026-00004 was withdrawn</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">A quotation was withdrawn</h1>
+      <p style="margin:0 0 16px;">Hello Alex Morgan,</p><p style="margin:0 0 16px;">We have withdrawn quotation QT-2026-00004 for AC Repair. It can no longer be accepted. If we send a replacement, you will be notified.</p>
+      <p style="margin:0 0 4px;"><strong>Quotation:</strong> QT-2026-00004</p><p style="margin:0 0 4px;"><strong>Service:</strong> AC Repair</p>
+      <p style="margin:20px 0 24px;"><a href="https://fixflow.example.com/portal/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11" style="display:inline-block;padding:12px 20px;background:#0f4c75;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">View your request</a></p>
+      <p style="margin:0 0 24px;color:#4a5963;">If the button does not work, copy this address into your browser:<br><a href="https://fixflow.example.com/portal/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11" style="color:#0f4c75;word-break:break-all;">https://fixflow.example.com/portal/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11</a></p>
+      
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template quotation-withdrawn > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "Quotation QT-2026-00004 was withdrawn",
+  "text": "A quotation was withdrawn
+
+Hello Alex Morgan,
+
+We have withdrawn quotation QT-2026-00004 for AC Repair. It can no longer be accepted. If we send a replacement, you will be notified.
+
+Quotation: QT-2026-00004
+Service: AC Repair
+
+View your request:
+https://fixflow.example.com/portal/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;
+
+exports[`template request-cancelled > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Request FF-2026-00012 was cancelled</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">Your request was cancelled</h1>
+      <p style="margin:0 0 16px;">Hello Alex Morgan,</p><p style="margin:0 0 16px;">Your request for AC Repair has been cancelled, so no work will be scheduled for it.</p>
+      <p style="margin:0 0 4px;"><strong>Reference:</strong> FF-2026-00012</p><p style="margin:0 0 4px;"><strong>Service:</strong> AC Repair</p>
+      <p style="margin:20px 0 24px;"><a href="https://fixflow.example.com/portal/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11" style="display:inline-block;padding:12px 20px;background:#0f4c75;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">View the request</a></p>
+      <p style="margin:0 0 24px;color:#4a5963;">If the button does not work, copy this address into your browser:<br><a href="https://fixflow.example.com/portal/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11" style="color:#0f4c75;word-break:break-all;">https://fixflow.example.com/portal/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11</a></p>
+      <p style="margin:0 0 16px;">If this is not what you expected, please contact us.</p>
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template request-cancelled > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "Request FF-2026-00012 was cancelled",
+  "text": "Your request was cancelled
+
+Hello Alex Morgan,
+
+Your request for AC Repair has been cancelled, so no work will be scheduled for it.
+
+Reference: FF-2026-00012
+Service: AC Repair
+
+View the request:
+https://fixflow.example.com/portal/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11
+
+If this is not what you expected, please contact us.
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;
+
+exports[`template request-received-admin > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>New request FF-2026-00012: AC Repair</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">A new service request has arrived</h1>
+      <p style="margin:0 0 16px;">Alex Morgan has asked for AC Repair. The request is waiting for review.</p>
+      <p style="margin:0 0 4px;"><strong>Reference:</strong> FF-2026-00012</p><p style="margin:0 0 4px;"><strong>Service:</strong> AC Repair</p><p style="margin:0 0 4px;"><strong>Customer:</strong> Alex Morgan</p>
+      <p style="margin:20px 0 24px;"><a href="https://fixflow.example.com/app/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11" style="display:inline-block;padding:12px 20px;background:#0f4c75;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">Review the request</a></p>
+      <p style="margin:0 0 24px;color:#4a5963;">If the button does not work, copy this address into your browser:<br><a href="https://fixflow.example.com/app/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11" style="color:#0f4c75;word-break:break-all;">https://fixflow.example.com/app/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11</a></p>
+      
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template request-received-admin > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "New request FF-2026-00012: AC Repair",
+  "text": "A new service request has arrived
+
+Alex Morgan has asked for AC Repair. The request is waiting for review.
+
+Reference: FF-2026-00012
+Service: AC Repair
+Customer: Alex Morgan
+
+Review the request:
+https://fixflow.example.com/app/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;
+
+exports[`template request-received-customer > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>We received your request FF-2026-00012</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">We received your request</h1>
+      <p style="margin:0 0 16px;">Hello Alex Morgan,</p><p style="margin:0 0 16px;">Thanks for contacting CoolBreeze Home Services. We have your request for AC Repair. A member of our team will review it and come back to you with a quotation or any questions.</p>
+      <p style="margin:0 0 4px;"><strong>Reference:</strong> FF-2026-00012</p><p style="margin:0 0 4px;"><strong>Service:</strong> AC Repair</p>
+      <p style="margin:20px 0 24px;"><a href="https://fixflow.example.com/portal/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11" style="display:inline-block;padding:12px 20px;background:#0f4c75;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">View your request</a></p>
+      <p style="margin:0 0 24px;color:#4a5963;">If the button does not work, copy this address into your browser:<br><a href="https://fixflow.example.com/portal/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11" style="color:#0f4c75;word-break:break-all;">https://fixflow.example.com/portal/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11</a></p>
+      <p style="margin:0 0 16px;">You can follow its progress in your account at any time.</p>
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template request-received-customer > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "We received your request FF-2026-00012",
+  "text": "We received your request
+
+Hello Alex Morgan,
+
+Thanks for contacting CoolBreeze Home Services. We have your request for AC Repair. A member of our team will review it and come back to you with a quotation or any questions.
+
+Reference: FF-2026-00012
+Service: AC Repair
+
+View your request:
+https://fixflow.example.com/portal/requests/0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11
+
+You can follow its progress in your account at any time.
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;
+
+exports[`template smtp-test > matches its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FixFlow email test</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f7;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a2730;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;border:1px solid #d5dce0;border-radius:8px;">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">FixFlow email test</h1>
+      <p style="margin:0 0 16px;">This message was sent by the FixFlow email test script. If you can read it, the SMTP settings work and the server can deliver email.</p><p style="margin:0 0 16px;">Sent Thu, Oct 29, 2026, 11:30 AM EDT.</p>
+      
+      
+      
+      <p style="margin:0 0 16px;color:#4a5963;">Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140</p>
+      <p style="margin:24px 0 0;">CoolBreeze Home Services</p>
+      <p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #d5dce0;font-size:13px;color:#4a5963;">Powered by FixFlow</p>
+    </div>
+  </body>
+</html>
+"
+`;
+
+exports[`template smtp-test > matches its snapshot > subject and text 1`] = `
+{
+  "subject": "FixFlow email test",
+  "text": "FixFlow email test
+
+This message was sent by the FixFlow email test script. If you can read it, the SMTP settings work and the server can deliver email.
+
+Sent Thu, Oct 29, 2026, 11:30 AM EDT.
+
+Questions? Contact CoolBreeze Home Services: hello@coolbreeze.test · (212) 555-0140
+
+— CoolBreeze Home Services
+
+Powered by FixFlow",
+}
+`;

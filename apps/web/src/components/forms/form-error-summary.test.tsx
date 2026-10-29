@@ -75,11 +75,18 @@ const schema = z.object({
   email: z.email("Enter a valid email address."),
 });
 
-function SummaryForm({ focusFirstField = false }: { focusFirstField?: boolean }) {
+function SummaryForm({
+  focusFirstField = false,
+  validateOnBlur = false,
+}: {
+  focusFirstField?: boolean;
+  validateOnBlur?: boolean;
+}) {
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: { fullName: "", email: "" },
     shouldFocusError: focusFirstField,
+    ...(validateOnBlur && { mode: "onTouched" as const }),
   });
   return (
     <form noValidate onSubmit={(event) => void form.handleSubmit(() => undefined)(event)}>
@@ -103,6 +110,48 @@ describe("FormErrorSummary", () => {
   it("renders nothing while the form is valid", () => {
     render(<SummaryForm />);
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("stays hidden until the first submit, even while a field already shows its own error", async () => {
+    // Regression: validating on blur used to show the summary at once. It pushed the page down while
+    // the pointer was pressing "Submit", so the click missed the button and nothing was submitted.
+    render(<SummaryForm validateOnBlur />);
+
+    await userEvent.type(screen.getByLabelText("Full name"), "R");
+    await userEvent.tab();
+
+    expect(await screen.findByText("Enter your full name.")).toBeInTheDocument(); // the inline error
+    expect(screen.queryByRole("alert")).toBeNull(); // but no summary yet
+
+    await userEvent.click(screen.getByRole("button", { name: "Submit" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("There are 2 problems to fix");
+  });
+
+  it("shows errors that came from the server even before a submit was counted", () => {
+    const errors = {
+      email: { type: "server", message: "That email is already registered." },
+      root: { server: { type: "server", message: "We couldn't save this." } },
+    };
+
+    render(<FormErrorSummary errors={errors as never} submitCount={0} />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("There are 2 problems to fix");
+  });
+
+  it("hides client-side errors while submitCount is zero", () => {
+    const errors = { fullName: { type: "too_small", message: "Enter your full name." } };
+
+    render(<FormErrorSummary errors={errors as never} submitCount={0} />);
+
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("shows whenever there are errors if the caller does not track submits", () => {
+    const errors = { fullName: { type: "too_small", message: "Enter your full name." } };
+
+    render(<FormErrorSummary errors={errors as never} />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("There is 1 problem to fix");
   });
 
   it("lists every problem, takes focus when a submit fails, and links to the fields", async () => {

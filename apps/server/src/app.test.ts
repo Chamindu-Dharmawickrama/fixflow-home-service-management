@@ -2,7 +2,7 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 
 import type { PrismaClient } from "./lib/db.js";
-import { buildTestApp } from "./test/build-test-app.js";
+import { buildTestApp, TEST_WEB_ORIGIN } from "./test/build-test-app.js";
 import { expectApiError } from "./test/http.js";
 
 describe("GET /api/v1/health", () => {
@@ -60,7 +60,8 @@ describe("unmatched routes", () => {
   it.each(["post", "put", "patch", "delete"] as const)("also cover %s requests", async (method) => {
     const { app } = buildTestApp();
 
-    const response = await request(app)[method]("/api/v1/does-not-exist");
+    const pending = request(app)[method]("/api/v1/does-not-exist");
+    const response = await pending.set("Origin", TEST_WEB_ORIGIN);
 
     expectApiError(response, { status: 404, code: "NOT_FOUND" });
   });

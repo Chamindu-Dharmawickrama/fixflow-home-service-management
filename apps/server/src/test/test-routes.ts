@@ -16,6 +16,11 @@ import {
 import { createPaginationSchema, paginated, toPrismaPage } from "../lib/pagination.js";
 import { clientIp, rateLimit } from "../middleware/rate-limit.js";
 import { validate } from "../middleware/validate.js";
+import {
+  assertCustomerOwns,
+  authOf,
+  createAuthMiddleware,
+} from "../modules/auth/auth.middleware.js";
 
 /** A secret that must never appear in a response body or a log line. */
 export const LEAKY_ERROR_MESSAGE =
@@ -152,6 +157,36 @@ export function createTestRouter(deps: AppDeps): Router {
       res.json({ data: { ok: true } });
     },
   );
+
+  return router;
+}
+
+/**
+ * Routes that exist only to exercise the auth guards in tests (T05): one per guard, an ownership
+ * check, and a write behind a session. Production code never mounts them.
+ */
+export function createAuthProbeRouter(deps: AppDeps): Router {
+  const router = Router();
+  const { requireAuth, requireCustomer, requireAdmin } = createAuthMiddleware(deps);
+
+  router.get("/__probe__/auth", requireAuth, (req, res) => {
+    res.json({ data: authOf(req) });
+  });
+  router.get("/__probe__/customer", requireCustomer, (req, res) => {
+    res.json({ data: authOf(req) });
+  });
+  router.get("/__probe__/admin", requireAdmin, (req, res) => {
+    res.json({ data: authOf(req) });
+  });
+  // `:ownerCustomerId` stands in for the customer id stored on some record.
+  router.get("/__probe__/records/:ownerCustomerId", requireCustomer, (req, res) => {
+    const owner = req.params.ownerCustomerId;
+    assertCustomerOwns(typeof owner === "string" ? owner : undefined, authOf(req));
+    res.json({ data: { ok: true } });
+  });
+  router.post("/__probe__/write", requireAuth, (req, res) => {
+    res.json({ data: { by: authOf(req).userId } });
+  });
 
   return router;
 }

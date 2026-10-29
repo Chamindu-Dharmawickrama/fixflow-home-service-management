@@ -2,7 +2,7 @@ import { type ApiErrorBody, ErrorCode } from "@fixflow/shared";
 import request from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { buildTestApp, type TestApp } from "../test/build-test-app.js";
+import { buildTestApp, TEST_WEB_ORIGIN, type TestApp } from "../test/build-test-app.js";
 import { bodyOf, expectApiError } from "../test/http.js";
 import { LEAKY_ERROR_MESSAGE } from "../test/test-routes.js";
 
@@ -78,6 +78,7 @@ describe("error contract (D-33)", () => {
     it("is rejected as BAD_REQUEST", async () => {
       const response = await request(testApp.app)
         .post(`${BASE}/log-secret`)
+        .set("Origin", TEST_WEB_ORIGIN)
         .set("Content-Type", "application/json")
         .send('{"broken": ');
 
@@ -88,6 +89,7 @@ describe("error contract (D-33)", () => {
     it("does not echo the offending body or a parser message", async () => {
       const response = await request(testApp.app)
         .post(`${BASE}/log-secret`)
+        .set("Origin", TEST_WEB_ORIGIN)
         .set("Content-Type", "application/json")
         .send('{"password": "hunter2-body-secret", ');
 
@@ -98,6 +100,7 @@ describe("error contract (D-33)", () => {
     it("rejects a top-level JSON primitive (strict mode)", async () => {
       const response = await request(testApp.app)
         .post(`${BASE}/log-secret`)
+        .set("Origin", TEST_WEB_ORIGIN)
         .set("Content-Type", "application/json")
         .send('"just a string"');
 
@@ -117,6 +120,7 @@ describe("error contract (D-33)", () => {
     it("is returned when the body exceeds 100 kb", async () => {
       const response = await request(testApp.app)
         .post(`${BASE}/log-secret`)
+        .set("Origin", TEST_WEB_ORIGIN)
         .send({ blob: "x".repeat(150_000) });
 
       const error = expectApiError(response, { status: 413, code: "PAYLOAD_TOO_LARGE" });

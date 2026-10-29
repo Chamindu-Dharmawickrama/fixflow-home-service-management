@@ -1,7 +1,7 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 
-import { buildTestApp } from "../test/build-test-app.js";
+import { buildTestApp, TEST_WEB_ORIGIN } from "../test/build-test-app.js";
 import { createLogCapture } from "../test/log-capture.js";
 import { createLogger, pathOf, REDACT_PATHS, REDACTED, REDACTED_FIELD_NAMES } from "./logger.js";
 
@@ -87,6 +87,22 @@ describe("createLogger", () => {
     expect(logs.entries()[0]).toMatchObject({ user: { id: "u-1", role: "CUSTOMER" } });
   });
 
+  it("covers every credential field the auth endpoints accept (T05)", () => {
+    const authFields = [
+      "password",
+      "passwordConfirmation",
+      "currentPassword",
+      "newPassword",
+      "newPasswordConfirmation",
+      "token",
+      "credential",
+    ];
+
+    for (const field of authFields) {
+      expect(REDACTED_FIELD_NAMES).toContain(field);
+    }
+  });
+
   it("registers a path for every name at every depth", () => {
     for (const name of REDACTED_FIELD_NAMES) {
       expect(REDACT_PATHS).toContain(name);
@@ -144,6 +160,7 @@ describe("request logging", () => {
 
     await request(app)
       .post(`${BASE}/orders/7b0f9a52-52c2-4d4e-9d46-0d2d8f3f0a11`)
+      .set("Origin", TEST_WEB_ORIGIN)
       .send({
         customerName: "Private Person",
         lines: [{ description: "Sensitive description text", quantity: 1 }],
@@ -185,7 +202,7 @@ describe("log redaction through the app", () => {
   it("redacts sensitive fields in anything a handler logs", async () => {
     const { app, logs } = buildTestApp({ testRoutes: true, logLevel: "info" });
 
-    await request(app).post(`${BASE}/log-secret`).send({
+    await request(app).post(`${BASE}/log-secret`).set("Origin", TEST_WEB_ORIGIN).send({
       password: "pw-secret-value",
       credential: "google-credential-secret",
       token: "reset-token-secret",

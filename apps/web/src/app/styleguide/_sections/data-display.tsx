@@ -1,3 +1,4 @@
+import type { AdminTimelineEventDto, CustomerTimelineEventDto } from "@fixflow/shared";
 import { CalendarCheck, FileText, Inbox, TriangleAlert } from "lucide-react";
 
 import { Avatar } from "@/components/ui/avatar";
@@ -16,6 +17,7 @@ import { ReferenceText } from "@/components/ui/reference-text";
 import { StatCard } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Timeline, type TimelineEvent } from "@/components/ui/timeline";
+import { ActivityTimeline } from "@/features/activity/components/activity-timeline";
 import { formatRelative } from "@/lib/formatting/datetime";
 
 import { BUSINESS_TIME_ZONE, CURRENCY_CODE, SAMPLE_NOW, TIMELINE_EVENTS } from "../_lib/fixtures";
@@ -25,6 +27,91 @@ const EVENTS: TimelineEvent[] = TIMELINE_EVENTS.map((event, index) => ({
   ...event,
   icon: [FileText, Inbox, Inbox, CalendarCheck][index],
 }));
+
+/** What the API returns to staff for one request: one internal entry among the customer-visible ones. */
+const ADMIN_ACTIVITY: AdminTimelineEventDto[] = [
+  {
+    id: "a1000000-0000-4000-8000-000000000001",
+    action: "request.submitted",
+    entityType: "SERVICE_REQUEST",
+    entityId: "b1000000-0000-4000-8000-000000000001",
+    fromStatus: null,
+    toStatus: "SUBMITTED",
+    summary: "Alex Morgan submitted request FF-2026-00125.",
+    publicSummary: "You sent your request FF-2026-00125.",
+    customerVisible: true,
+    metadata: { requestReference: "FF-2026-00125" },
+    actor: { name: "Alex Morgan", role: "CUSTOMER" },
+    createdAt: "2026-10-26T14:05:00.000Z",
+  },
+  {
+    id: "a1000000-0000-4000-8000-000000000002",
+    action: "request.note_added",
+    entityType: "SERVICE_REQUEST",
+    entityId: "b1000000-0000-4000-8000-000000000001",
+    fromStatus: null,
+    toStatus: null,
+    summary: "Morgan Reyes added an internal note about parts availability.",
+    publicSummary: null,
+    customerVisible: false,
+    metadata: { visibility: "INTERNAL" },
+    actor: { name: "Morgan Reyes", role: "BUSINESS_ADMIN" },
+    createdAt: "2026-10-26T15:20:00.000Z",
+  },
+  {
+    id: "a1000000-0000-4000-8000-000000000003",
+    action: "quotation.sent",
+    entityType: "QUOTATION",
+    entityId: "c1000000-0000-4000-8000-000000000001",
+    fromStatus: "DRAFT",
+    toStatus: "SENT",
+    summary: "Morgan Reyes sent quotation QT-2026-00054 to Alex Morgan.",
+    publicSummary: "We sent you quotation QT-2026-00054.",
+    customerVisible: true,
+    metadata: { quotationReference: "QT-2026-00054", totalAmount: "284.40", currencyCode: "USD" },
+    actor: { name: "Morgan Reyes", role: "BUSINESS_ADMIN" },
+    createdAt: "2026-10-27T13:10:00.000Z",
+  },
+  {
+    id: "a1000000-0000-4000-8000-000000000004",
+    action: "quotation.expired",
+    entityType: "QUOTATION",
+    entityId: "c1000000-0000-4000-8000-000000000001",
+    fromStatus: "SENT",
+    toStatus: "EXPIRED",
+    summary: "The system expired quotation QT-2026-00054 because its valid-until date passed.",
+    publicSummary: "We marked quotation QT-2026-00054 as expired.",
+    customerVisible: true,
+    metadata: { quotationReference: "QT-2026-00054" },
+    actor: null,
+    createdAt: "2026-10-28T05:00:00.000Z",
+  },
+];
+
+/** The same request as its customer sees it: no internal entry, no staff names, no metadata. */
+const CUSTOMER_ACTIVITY: CustomerTimelineEventDto[] = [
+  {
+    id: "a1000000-0000-4000-8000-000000000001",
+    publicSummary: "You sent your request FF-2026-00125.",
+    toStatus: "SUBMITTED",
+    actor: "You",
+    createdAt: "2026-10-26T14:05:00.000Z",
+  },
+  {
+    id: "a1000000-0000-4000-8000-000000000003",
+    publicSummary: "We sent you quotation QT-2026-00054.",
+    toStatus: "SENT",
+    actor: "CoolBreeze Home Services",
+    createdAt: "2026-10-27T13:10:00.000Z",
+  },
+  {
+    id: "a1000000-0000-4000-8000-000000000004",
+    publicSummary: "We marked quotation QT-2026-00054 as expired.",
+    toStatus: "EXPIRED",
+    actor: "CoolBreeze Home Services",
+    createdAt: "2026-10-28T05:00:00.000Z",
+  },
+];
 
 export function DataDisplaySection() {
   return (
@@ -149,6 +236,26 @@ export function DataDisplaySection() {
             <Avatar name="Alex Morgan" size="lg" />
             <Avatar name="Priya" size="md" />
           </div>
+        </Specimen>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Specimen title="Activity timeline: staff view (internal entries are marked)">
+          <ActivityTimeline
+            variant="admin"
+            events={ADMIN_ACTIVITY}
+            timeZone={BUSINESS_TIME_ZONE}
+            label="Staff activity history"
+          />
+        </Specimen>
+
+        <Specimen title="Activity timeline: customer view (only what the customer may see)">
+          <ActivityTimeline
+            variant="customer"
+            events={CUSTOMER_ACTIVITY}
+            timeZone={BUSINESS_TIME_ZONE}
+            label="Customer request history"
+          />
         </Specimen>
       </div>
     </Section>

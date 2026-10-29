@@ -8,6 +8,8 @@ export interface PermissionDeniedProps {
   message?: ReactNode;
   /** Where the person can go instead, for example a link back to their own dashboard. */
   action?: ReactNode;
+  /** The title's heading level. Use `h1` when this state is the whole page. Defaults to `h2`. */
+  headingLevel?: "h1" | "h2" | undefined;
   className?: string | undefined;
 }
 
@@ -20,6 +22,7 @@ export function PermissionDenied({
   title = "You don't have access to this page",
   message = "This page is for a different kind of account. If you think that's a mistake, contact the business.",
   action,
+  headingLevel: Heading = "h2",
   className,
 }: PermissionDeniedProps) {
   return (
@@ -32,7 +35,7 @@ export function PermissionDenied({
       <span className="flex size-12 items-center justify-center rounded-full bg-neutral-soft text-neutral">
         <Lock aria-hidden="true" className="size-6" />
       </span>
-      <h2 className="text-lg font-semibold text-ink">{title}</h2>
+      <Heading className="text-lg font-semibold text-ink">{title}</Heading>
       <p className="max-w-md text-sm text-ink-secondary">{message}</p>
       {action ? <div className="mt-2">{action}</div> : null}
     </div>

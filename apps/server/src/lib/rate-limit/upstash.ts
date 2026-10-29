@@ -17,6 +17,8 @@ export interface SlidingWindowLimiter {
     /** Set to `"timeout"` when Redis did not answer in time (the library then reports success). */
     reason?: string;
   }>;
+  /** Reads the remaining allowance without counting a request. */
+  getRemaining(identifier: string): Promise<{ remaining: number; reset: number }>;
 }
 
 export type SlidingWindowLimiterFactory = (rule: RateLimitRule) => SlidingWindowLimiter;
@@ -39,6 +41,11 @@ export class UpstashRateLimiter implements RateLimiter {
       throw new Error("Upstash Redis did not answer within the rate limiter timeout");
     }
     return { success, remaining: Math.max(0, remaining), resetAt: new Date(reset) };
+  }
+
+  async peek(key: string, rule: RateLimitRule): Promise<RateLimitResult> {
+    const { remaining, reset } = await this.limiterFor(rule).getRemaining(key);
+    return { success: remaining > 0, remaining: Math.max(0, remaining), resetAt: new Date(reset) };
   }
 
   private limiterFor(rule: RateLimitRule): SlidingWindowLimiter {

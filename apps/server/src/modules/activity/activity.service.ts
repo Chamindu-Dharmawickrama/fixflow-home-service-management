@@ -1,7 +1,16 @@
-import type { ActivityEntityType } from "@fixflow/shared";
+import type {
+  ActivityEntityType,
+  AdminTimelineEventDto,
+  CustomerTimelineEventDto,
+} from "@fixflow/shared";
 
-import type { ActivityEvent } from "../../generated/prisma/client.js";
-import type { DbClient } from "../../lib/db.js";
+import type { ActivityEvent, Prisma } from "../../generated/prisma/client.js";
+import { BUSINESS_SETTINGS_ID, type DbClient } from "../../lib/db.js";
+import {
+  type AdminTimelineRow,
+  toAdminTimelineEvent,
+  toCustomerTimelineEvent,
+} from "./activity.dto.js";
 import {
   type ActivityMetadata,
   ActivityValidationError,
@@ -29,8 +38,8 @@ export interface RecordActivityInput {
   customerId?: string | null;
 }
 
-const MAX_SUMMARY_LENGTH = 500;
-const MAX_PUBLIC_SUMMARY_LENGTH = 300;
+export const MAX_SUMMARY_LENGTH = 500;
+export const MAX_PUBLIC_SUMMARY_LENGTH = 300;
 const MAX_ACTION_LENGTH = 60;
 const ACTION_FORMAT = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
 const STATUS_FORMAT = /^[A-Z][A-Z0-9_]{0,39}$/;
@@ -95,4 +104,96 @@ export async function recordActivity(
       customerId: input.customerId ?? null,
     },
   });
+}
+
+/** What a timeline is about: everything on one request, or one record of any kind. */
+export type TimelineScope =
+  { requestId: string } | { entityType: ActivityEntityType; entityId: string };
+
+export type TimelineQuery = TimelineScope & {
+  /** `asc` (default) tells the story oldest first; `desc` suits a feed. */
+  order?: "asc" | "desc";
+};
+
+/** A single request or record never gets near this; it only bounds a runaway query. */
+const MAX_TIMELINE_EVENTS = 200;
+const FALLBACK_BUSINESS_NAME = "Our team";
+
+function scopeFilter(query: TimelineQuery): Prisma.ActivityEventWhereInput {
+  return "requestId" in query
+    ? { requestId: query.requestId }
+    : { entityType: query.entityType, entityId: query.entityId };
+}
+
+/**
+ * The history of a request or a record, for one audience (D-29, D-41, FR-093, FR-094).
+ *
+ * - `"admin"` returns every event, internal ones included, with internal summaries, metadata and
+ *   the names of the people who acted.
+ * - `"customer"` returns only events that carry a `publicSummary` **and** belong to that customer
+ *   (`customerId` is required, and comes from the session, never from the request). The result has
+ *   the fields of {@link CustomerTimelineEventDto} and nothing else.
+ */
+export function getTimeline(
+  db: DbClient,
+  query: TimelineQuery,
+  audience: "admin",
+): Promise<AdminTimelineEventDto[]>;
+export function getTimeline(
+  db: DbClient,
+  query: TimelineQuery,
+  audience: "customer",
+  customerId: string,
+): Promise<CustomerTimelineEventDto[]>;
+export async function getTimeline(
+  db: DbClient,
+  query: TimelineQuery,
+  audience: "admin" | "customer",
+  customerId?: string,
+): Promise<AdminTimelineEventDto[] | CustomerTimelineEventDto[]> {
+  const order = query.order ?? "asc";
+  const orderBy = [{ createdAt: order }, { id: order }] as const;
+
+  if (audience === "admin") {
+    const rows: AdminTimelineRow[] = await db.activityEvent.findMany({
+      where: scopeFilter(query),
+      include: { actor: { select: { name: true, role: true } } },
+      orderBy: [...orderBy],
+      take: MAX_TIMELINE_EVENTS,
+    });
+    return rows.map(toAdminTimelineEvent);
+  }
+
+  // Fail closed: a customer timeline without a customer would otherwise match every customer.
+  if (customerId === undefined || customerId === "") {
+    throw new ActivityValidationError("A customer timeline needs the customer's id.");
+  }
+
+  const [profile, settings] = await Promise.all([
+    db.customerProfile.findUnique({ where: { id: customerId }, select: { userId: true } }),
+    db.businessSettings.findUnique({
+      where: { id: BUSINESS_SETTINGS_ID },
+      select: { businessName: true },
+    }),
+  ]);
+  if (profile === null) {
+    return [];
+  }
+
+  const rows = await db.activityEvent.findMany({
+    where: { ...scopeFilter(query), customerId, publicSummary: { not: null } },
+    // An explicit allowlist of columns: nothing else is even read from the database.
+    select: { id: true, actorUserId: true, publicSummary: true, toStatus: true, createdAt: true },
+    orderBy: [...orderBy],
+    take: MAX_TIMELINE_EVENTS,
+  });
+  const viewer = {
+    userId: profile.userId,
+    businessName: settings?.businessName ?? FALLBACK_BUSINESS_NAME,
+  };
+  return rows.flatMap((row) =>
+    row.publicSummary === null
+      ? []
+      : [toCustomerTimelineEvent({ ...row, publicSummary: row.publicSummary }, viewer)],
+  );
 }

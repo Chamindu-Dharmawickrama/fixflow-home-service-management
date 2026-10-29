@@ -5,7 +5,7 @@ import { type MouseEvent, useEffect, useRef } from "react";
 import type { FieldErrors, FieldValues } from "react-hook-form";
 
 import { getFieldId } from "@/components/forms/field-id";
-import { collectFormErrors } from "@/components/forms/form-errors";
+import { collectFormErrors, hasServerErrors } from "@/components/forms/form-errors";
 import { cn } from "@/lib/utils";
 
 export interface FormErrorSummaryProps {
@@ -14,8 +14,13 @@ export interface FormErrorSummaryProps {
   labels?: Record<string, string>;
   idPrefix?: string | undefined;
   /**
-   * Pass `formState.submitCount`. Each failed submit moves focus back to the summary, so a
-   * screen-reader user hears the list again even when it already showed.
+   * Pass `formState.submitCount`. The summary stays hidden until the first submit: a summary that
+   * appears when a field is left (blur validation) pushes the page down while the pointer is
+   * pressing the submit button, so the click lands on empty space and nothing is submitted. Each
+   * failed submit also moves focus back to the summary, so a screen-reader user hears the list
+   * again even when it already showed. Errors from the server (`applyApiFieldErrors`) always show:
+   * they only exist because a request was made. Without this prop the summary shows whenever there
+   * are errors.
    */
   submitCount?: number | undefined;
   className?: string | undefined;
@@ -37,15 +42,17 @@ export function FormErrorSummary({
   errors,
   labels = {},
   idPrefix,
-  submitCount = 0,
+  submitCount,
   className,
 }: FormErrorSummaryProps) {
   const ref = useRef<HTMLDivElement>(null);
   const items = collectFormErrors(errors);
   const count = items.length;
+  // Client-side errors wait for the first submit; errors from the server never do (see `submitCount`).
+  const hidden = submitCount === 0 && !hasServerErrors(errors);
 
   useEffect(() => {
-    if (count === 0 || submitCount === 0) {
+    if (count === 0 || hidden || submitCount === undefined || submitCount === 0) {
       return undefined;
     }
     // React Hook Form focuses the first invalid field from its own effect, which runs after this
@@ -53,9 +60,9 @@ export function FormErrorSummary({
     // have the last word. Pass `shouldFocusError: false` to `useForm` to stop the field flashing focus first.
     const timer = window.setTimeout(() => ref.current?.focus(), 0);
     return () => window.clearTimeout(timer);
-  }, [count, submitCount]);
+  }, [count, hidden, submitCount]);
 
-  if (count === 0) {
+  if (count === 0 || hidden) {
     return null;
   }
 

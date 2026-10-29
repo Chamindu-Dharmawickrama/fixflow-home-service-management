@@ -7,6 +7,17 @@ describe("RATE_LIMITS", () => {
     expect(RATE_LIMITS.global).toEqual({ limit: 300, windowSeconds: 60 });
   });
 
+  it("defines the authentication limits of T05", () => {
+    expect(RATE_LIMITS.login).toEqual({ limit: 20, windowSeconds: 60 });
+    expect(RATE_LIMITS.loginFailures).toEqual({ limit: 5, windowSeconds: 900 });
+    expect(RATE_LIMITS.register).toEqual({ limit: 5, windowSeconds: 3600 });
+    expect(RATE_LIMITS.google).toEqual({ limit: 10, windowSeconds: 60 });
+    expect(RATE_LIMITS.forgotEmail).toEqual({ limit: 3, windowSeconds: 3600 });
+    expect(RATE_LIMITS.forgotIp).toEqual({ limit: 10, windowSeconds: 3600 });
+    expect(RATE_LIMITS.reset).toEqual({ limit: 10, windowSeconds: 3600 });
+    expect(RATE_LIMITS.logout).toEqual({ limit: 30, windowSeconds: 60 });
+  });
+
   it("uses positive integers for every limit", () => {
     for (const rule of Object.values(RATE_LIMITS)) {
       expect(Number.isInteger(rule.limit) && rule.limit > 0).toBe(true);

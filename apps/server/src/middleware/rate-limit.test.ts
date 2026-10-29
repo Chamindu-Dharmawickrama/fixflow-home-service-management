@@ -93,7 +93,7 @@ describe("named route limit", () => {
 
   it("keys the counter by limit name so different limits never share a counter", async () => {
     const consume = vi.fn().mockResolvedValue({ success: true, remaining: 1, resetAt: new Date() });
-    const { app } = buildTestApp({ testRoutes: true, rateLimiter: { consume } });
+    const { app } = buildTestApp({ testRoutes: true, rateLimiter: { consume, peek: vi.fn() } });
 
     await request(app).get(`${BASE}/limited`);
 
@@ -108,6 +108,7 @@ describe("named route limit", () => {
 describe("limiter failure", () => {
   const failingLimiter: RateLimiter = {
     consume: () => Promise.reject(new Error("Redis unreachable")),
+    peek: () => Promise.reject(new Error("Redis unreachable")),
   };
 
   it("lets the request through instead of taking the API down", async () => {

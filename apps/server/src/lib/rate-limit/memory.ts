@@ -23,6 +23,14 @@ export class MemoryRateLimiter implements RateLimiter {
   }
 
   consume(key: string, rule: RateLimitRule): Promise<RateLimitResult> {
+    return Promise.resolve(this.evaluate(key, rule, true));
+  }
+
+  peek(key: string, rule: RateLimitRule): Promise<RateLimitResult> {
+    return Promise.resolve(this.evaluate(key, rule, false));
+  }
+
+  private evaluate(key: string, rule: RateLimitRule, count: boolean): RateLimitResult {
     const nowMs = this.clock.now().getTime();
     const windowMs = rule.windowSeconds * 1000;
     this.sweep(nowMs);
@@ -32,17 +40,19 @@ export class MemoryRateLimiter implements RateLimiter {
     entry.hits = entry.hits.filter((hit) => hit > nowMs - windowMs);
 
     const allowed = entry.hits.length < rule.limit;
-    if (allowed) {
+    if (allowed && count) {
       entry.hits.push(nowMs);
     }
-    this.entries.set(key, entry);
+    if (count || entry.hits.length > 0) {
+      this.entries.set(key, entry);
+    }
 
     const oldest = entry.hits[0] ?? nowMs;
-    return Promise.resolve({
+    return {
       success: allowed,
       remaining: Math.max(0, rule.limit - entry.hits.length),
       resetAt: new Date(oldest + windowMs),
-    });
+    };
   }
 
   /** Number of keys currently tracked; exposed for tests. */

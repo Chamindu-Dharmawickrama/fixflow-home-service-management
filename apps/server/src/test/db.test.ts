@@ -155,3 +155,76 @@ describe("databaseName", () => {
     );
   });
 });
+
+describe("assertTestDatabase for the Playwright database (E2E_DATABASE_URL)", () => {
+  const E2E_URL = "postgresql://fixflow_test:test-pw-secret@localhost:5433/fixflow_e2e";
+  const E2E_ENV = { E2E_DATABASE_URL: E2E_URL, DATABASE_URL: DEV_URL, TEST_DATABASE_URL: TEST_URL };
+  const check = (env: NodeJS.ProcessEnv) => refusal({ env, variable: "E2E_DATABASE_URL" });
+
+  it("returns the E2E URL, with or without NODE_ENV (Playwright does not set it)", () => {
+    expect(assertTestDatabase({ env: E2E_ENV, variable: "E2E_DATABASE_URL" })).toBe(E2E_URL);
+    expect(
+      assertTestDatabase({ env: { ...E2E_ENV, NODE_ENV: "test" }, variable: "E2E_DATABASE_URL" }),
+    ).toBe(E2E_URL);
+    expect(
+      assertTestDatabase({
+        env: { ...E2E_ENV, NODE_ENV: "development" },
+        variable: "E2E_DATABASE_URL",
+      }),
+    ).toBe(E2E_URL);
+  });
+
+  it("refuses in production", () => {
+    expect(check({ ...E2E_ENV, NODE_ENV: "production" }).message).toContain("production");
+  });
+
+  it.each([[undefined], [""], ["  "]])("refuses when E2E_DATABASE_URL is %j", (value) => {
+    const { E2E_DATABASE_URL: _unset, ...rest } = E2E_ENV;
+    const env = value === undefined ? rest : { ...rest, E2E_DATABASE_URL: value };
+
+    expect(check(env).message).toContain("E2E_DATABASE_URL is not set");
+  });
+
+  it("does not fall back to TEST_DATABASE_URL, and the integration guard ignores E2E_DATABASE_URL", () => {
+    const { E2E_DATABASE_URL: _unset, ...withoutE2e } = E2E_ENV;
+
+    expect(check(withoutE2e).message).toContain("E2E_DATABASE_URL is not set");
+    expect(() =>
+      assertTestDatabase({ env: { NODE_ENV: "test", E2E_DATABASE_URL: E2E_URL } }),
+    ).toThrow(/TEST_DATABASE_URL is not set/);
+  });
+
+  it("refuses a database whose name does not say e2e, so a development database cannot be named", () => {
+    expect(
+      check({ ...E2E_ENV, E2E_DATABASE_URL: DEV_URL, DATABASE_URL: undefined }).message,
+    ).toContain('must have "e2e" in its name');
+    expect(check({ ...E2E_ENV, E2E_DATABASE_URL: TEST_URL }).message).toContain('"e2e"');
+  });
+
+  it("refuses the databases DATABASE_URL, DIRECT_DATABASE_URL and TEST_DATABASE_URL point at", () => {
+    expect(check({ ...E2E_ENV, DATABASE_URL: E2E_URL }).message).toContain(
+      "same database as DATABASE_URL",
+    );
+    expect(check({ ...E2E_ENV, DIRECT_DATABASE_URL: E2E_URL }).message).toContain(
+      "same database as DIRECT_DATABASE_URL",
+    );
+    expect(check({ ...E2E_ENV, TEST_DATABASE_URL: E2E_URL }).message).toContain(
+      "same database as TEST_DATABASE_URL",
+    );
+  });
+
+  it("refuses when the URL about to be used is another database", () => {
+    const error = refusal({ env: E2E_ENV, variable: "E2E_DATABASE_URL", activeUrl: DEV_URL });
+
+    expect(error.message).toContain("the active database is not the one in E2E_DATABASE_URL");
+  });
+
+  it("never puts a URL or a credential in its message", () => {
+    for (const env of [
+      { ...E2E_ENV, DATABASE_URL: E2E_URL },
+      { ...E2E_ENV, E2E_DATABASE_URL: DEV_URL },
+    ]) {
+      expect(check(env).message).not.toMatch(/test-pw-secret|postgresql:|localhost:5433/);
+    }
+  });
+});

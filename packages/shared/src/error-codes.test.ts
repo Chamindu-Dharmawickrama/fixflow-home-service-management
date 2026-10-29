@@ -8,7 +8,7 @@ describe("ErrorCode", () => {
     expect(shared.ErrorCode).toBe(ErrorCode);
   });
 
-  it("seeds the platform codes", () => {
+  it("seeds the platform codes and the authentication codes", () => {
     expect(Object.keys(ErrorCode).sort()).toEqual(
       [
         "BAD_REQUEST",
@@ -23,6 +23,20 @@ describe("ErrorCode", () => {
         "STALE_STATE",
         "UNAUTHENTICATED",
         "VALIDATION_ERROR",
+        // T05 — authentication and access
+        "ACCOUNT_DISABLED",
+        "CSRF_ORIGIN_MISMATCH",
+        "DEMO_ACCOUNT_LOCKED",
+        "EMAIL_TAKEN",
+        "GOOGLE_EMAIL_NOT_VERIFIED",
+        "GOOGLE_SIGN_IN_UNAVAILABLE",
+        "INVALID_CREDENTIALS",
+        "INVALID_CURRENT_PASSWORD",
+        "INVALID_GOOGLE_CREDENTIAL",
+        "INVALID_RESET_TOKEN",
+        "PASSWORD_NOT_SET",
+        "PASSWORD_RESET_UNAVAILABLE",
+        "SIGNUP_DISABLED",
       ].sort(),
     );
   });

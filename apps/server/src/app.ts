@@ -5,11 +5,14 @@ import helmet from "helmet";
 
 import type { AppDeps } from "./deps.js";
 import { createHttpLogger } from "./lib/logger.js";
+import { csrfProtection } from "./middleware/csrf.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { notFoundHandler } from "./middleware/not-found.js";
 import { clientIp, rateLimitByName } from "./middleware/rate-limit.js";
 import { requestId } from "./middleware/request-id.js";
+import { createAuthRouter } from "./modules/auth/auth.routes.js";
 import { createHealthRouter } from "./modules/health/health.routes.js";
+import { createNotificationsRouter } from "./modules/notifications/notifications.routes.js";
 
 /** Largest JSON body accepted; larger requests get `413 PAYLOAD_TOO_LARGE`. */
 const JSON_BODY_LIMIT = "100kb";
@@ -23,7 +26,7 @@ export interface CreateAppOptions {
 
 /**
  * Builds the Express app from its dependencies. The middleware order is deliberate:
- * request ID → request logger → helmet → CORS → body parsing → global rate limit → routes →
+ * request ID → request logger → helmet → CORS → CSRF → body parsing → global rate limit → routes →
  * 404 → error handler. See `docs/ARCHITECTURE.md` for why.
  */
 export function createApp(deps: AppDeps, options: CreateAppOptions = {}): Express {
@@ -31,11 +34,18 @@ export function createApp(deps: AppDeps, options: CreateAppOptions = {}): Expres
   const app = express();
 
   app.disable("x-powered-by");
+  // No ETag: a validator would let a cache or proxy reuse one session's response for another.
+  app.set("etag", false);
   app.set("trust proxy", config.trustProxy);
 
   app.use(requestId);
   app.use(createHttpLogger(deps.logger));
   app.use(helmet());
+  // API responses are dynamic and often private (the signed-in user, their records): never cached.
+  app.use((_req, res, next) => {
+    res.setHeader("Cache-Control", "no-store");
+    next();
+  });
   app.use(
     cors({
       // A function (not a string) so that other origins get no CORS headers at all.
@@ -46,10 +56,14 @@ export function createApp(deps: AppDeps, options: CreateAppOptions = {}): Expres
       maxAge: CORS_MAX_AGE_SECONDS,
     }),
   );
+  // Before the body is read: a forged cross-site request costs nothing but the 403.
+  app.use(csrfProtection(config));
   app.use(express.json({ limit: JSON_BODY_LIMIT, strict: true }));
   app.use(rateLimitByName(deps, "global", clientIp));
 
   app.use(`${API_PREFIX}/health`, createHealthRouter(deps));
+  app.use(`${API_PREFIX}/auth`, createAuthRouter(deps));
+  app.use(`${API_PREFIX}/notifications`, createNotificationsRouter(deps));
   for (const router of options.extraRouters ?? []) {
     app.use(API_PREFIX, router);
   }

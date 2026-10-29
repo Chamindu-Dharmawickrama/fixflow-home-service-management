@@ -27,4 +27,10 @@ export const LIMITS = {
   /** Cancellation, decline, void and correction reasons. */
   reason: { minLength: 5, maxLength: 500 },
   appointment: { maxDurationMinutes: 12 * 60 },
+  /** Local passwords (D-51): length only, no composition rules (NIST SP 800-63B style). */
+  password: { minLength: 10, maxLength: 128 },
+  /** A person's display name. */
+  personName: { minLength: 2, maxLength: 100 },
+  /** The longest valid email address (RFC 5321). */
+  email: { maxLength: 254 },
 } as const;

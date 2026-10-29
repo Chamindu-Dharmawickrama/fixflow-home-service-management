@@ -1,5 +1,6 @@
+import { DEMO_SETTINGS } from "../db/seed-data.js";
 import type { Prisma } from "../generated/prisma/client.js";
-import type { PrismaClient } from "../lib/db.js";
+import { BUSINESS_SETTINGS_ID, type PrismaClient } from "../lib/db.js";
 
 /**
  * Minimal valid rows for integration tests. Each builder fills every required column with
@@ -17,6 +18,16 @@ function next(): number {
 const pad = (value: number): string => String(value).padStart(5, "0");
 
 export const FIXTURE_TIME_ZONE = "America/New_York";
+
+/** The one business-settings row, filled with the demo business unless a test overrides a field. */
+export function createBusinessSettings(
+  prisma: PrismaClient,
+  overrides: Partial<Omit<Prisma.BusinessSettingsUncheckedCreateInput, "id">> = {},
+) {
+  return prisma.businessSettings.create({
+    data: { id: BUSINESS_SETTINGS_ID, ...DEMO_SETTINGS, ...overrides },
+  });
+}
 
 export function createUser(
   prisma: PrismaClient,

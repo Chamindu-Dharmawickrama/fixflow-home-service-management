@@ -16,7 +16,9 @@ export const REDACTED = "[Redacted]";
  */
 export const REDACTED_FIELD_NAMES = [
   "password",
+  "passwordConfirmation",
   "newPassword",
+  "newPasswordConfirmation",
   "currentPassword",
   "credential",
   "token",

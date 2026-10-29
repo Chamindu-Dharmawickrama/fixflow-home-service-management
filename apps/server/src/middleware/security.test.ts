@@ -135,6 +135,7 @@ describe("request body limits", () => {
 
     const response = await request(app)
       .post(`${BASE}/log-secret`)
+      .set("Origin", TEST_WEB_ORIGIN)
       .send({ blob: "x".repeat(90_000) });
 
     expect(response.status).toBe(200);
@@ -145,6 +146,7 @@ describe("request body limits", () => {
 
     const response = await request(app)
       .post(`${BASE}/log-secret`)
+      .set("Origin", TEST_WEB_ORIGIN)
       .send({ blob: "x".repeat(110_000) });
 
     expect(response.status).toBe(413);

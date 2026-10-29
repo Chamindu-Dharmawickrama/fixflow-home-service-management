@@ -19,4 +19,9 @@ export interface RateLimiter {
    * `key` must already include the limit's name so different limits never share a counter.
    */
   consume(key: string, rule: RateLimitRule): Promise<RateLimitResult>;
+  /**
+   * Reports what {@link consume} would answer right now, without counting a request. Used to
+   * count only failures (a failed sign-in is `consume`d; the check before it is a `peek`).
+   */
+  peek(key: string, rule: RateLimitRule): Promise<RateLimitResult>;
 }

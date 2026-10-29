@@ -1,4 +1,9 @@
+import { randomBytes } from "node:crypto";
+
 import { z } from "zod";
+
+import { isCommonPassword } from "../lib/common-passwords.js";
+import { looksLikeEmail, parseEmailList } from "../lib/email-address.js";
 
 export const NODE_ENVS = ["development", "test", "production"] as const;
 export type NodeEnv = (typeof NODE_ENVS)[number];
@@ -9,10 +14,29 @@ export type LogLevel = (typeof LOG_LEVELS)[number];
 export const RATE_LIMIT_DRIVERS = ["memory", "upstash"] as const;
 export type RateLimitDriver = (typeof RATE_LIMIT_DRIVERS)[number];
 
+export const EMAIL_TRANSPORTS = ["log", "smtp"] as const;
+export type EmailTransport = (typeof EMAIL_TRANSPORTS)[number];
+
 export interface UpstashCredentials {
   readonly url: string;
   readonly token: string;
 }
+
+export interface SmtpSettings {
+  readonly host: string;
+  readonly port: number;
+  /** `true` = TLS from the first byte (usually port 465); `false` = STARTTLS when offered. */
+  readonly secure: boolean;
+  readonly user: string | undefined;
+  readonly password: string | undefined;
+}
+
+/** The session cookie's name outside production; production uses the `__Host-` prefixed one. */
+export const SESSION_COOKIE_NAME_DEVELOPMENT = "fixflow_session";
+export const SESSION_COOKIE_NAME_PRODUCTION = "__Host-fixflow_session";
+
+const SESSION_SECRET_MIN_LENGTH = 32;
+const DEFAULT_EMAIL_FROM = "FixFlow <no-reply@fixflow.test>";
 
 /** Typed, frozen API configuration. Parsed once at startup by {@link loadConfig}. */
 export interface Config {
@@ -39,11 +63,40 @@ export interface Config {
      */
     readonly url: string | undefined;
   };
+  readonly auth: {
+    /** HMAC key for session and password-reset token hashes. At least 32 characters. */
+    readonly sessionSecret: string;
+    /**
+     * True when `SESSION_SECRET` was not set and a random per-process secret was generated, which
+     * is allowed outside production only: every restart then signs everyone out.
+     */
+    readonly sessionSecretIsEphemeral: boolean;
+    /** `__Host-fixflow_session` in production, `fixflow_session` elsewhere (D-10). */
+    readonly cookieName: string;
+    /** `ADMIN_EMAILS`, normalized and de-duplicated (D-08). */
+    readonly adminEmails: readonly string[];
+    /** The OAuth Web client ID that Google ID tokens must be issued for. Unset = Google sign-in is off. */
+    readonly googleClientId: string | undefined;
+    /** Public demo: demo accounts cannot change or reset their passwords (D-09). */
+    readonly demoMode: boolean;
+    /** `false` closes registration (local and Google) without a code change (D-09). */
+    readonly publicSignupEnabled: boolean;
+  };
+  readonly email: {
+    readonly transport: EmailTransport;
+    /** The `From` header, for example `CoolBreeze <hello@coolbreeze.example>`. */
+    readonly from: string;
+    readonly smtp: SmtpSettings | undefined;
+    /** The web app's public origin, used to build links in emails. Defaults to `webOrigin`. */
+    readonly publicWebUrl: string;
+    /** Where the log transport writes emails (development and test only). */
+    readonly outboxDir: string | undefined;
+  };
 }
 
 const DEMO_PASSWORD_MIN_LENGTH = 10;
 const DEMO_PASSWORD_MAX_LENGTH = 128;
-const DEMO_PASSWORD_EXPECTED = `${DEMO_PASSWORD_MIN_LENGTH}-${DEMO_PASSWORD_MAX_LENGTH} characters`;
+const DEMO_PASSWORD_EXPECTED = `${DEMO_PASSWORD_MIN_LENGTH}-${DEMO_PASSWORD_MAX_LENGTH} characters that are not a common password`;
 
 /**
  * The fixed text shown for an invalid variable. Messages never include the offending value
@@ -64,6 +117,20 @@ const EXPECTED: Readonly<Record<string, string>> = {
   TEST_DATABASE_URL: "a postgresql:// connection URL with a host and a database name",
   DEMO_ADMIN_PASSWORD: DEMO_PASSWORD_EXPECTED,
   DEMO_CUSTOMER_PASSWORD: DEMO_PASSWORD_EXPECTED,
+  SESSION_SECRET: `a random string of at least ${SESSION_SECRET_MIN_LENGTH} characters`,
+  ADMIN_EMAILS: "a comma-separated list of email addresses",
+  GOOGLE_CLIENT_ID: "a Google OAuth client ID ending in .apps.googleusercontent.com",
+  DEMO_MODE: "true or false",
+  PUBLIC_SIGNUP_ENABLED: "true or false",
+  EMAIL_TRANSPORT: EMAIL_TRANSPORTS.join(", "),
+  EMAIL_FROM: "an address such as hello@example.com or Name <hello@example.com>",
+  EMAIL_OUTBOX_DIR: "a directory path",
+  SMTP_HOST: "a host name",
+  SMTP_PORT: "an integer between 1 and 65535",
+  SMTP_SECURE: "true or false",
+  SMTP_USER: "a non-empty string",
+  SMTP_PASSWORD: "a non-empty string",
+  PUBLIC_WEB_URL: "an origin such as https://app.example.com (scheme and host, no path)",
 };
 
 const DEFAULT_PORT = 4000;
@@ -102,9 +169,26 @@ function isPostgresUrl(value: string): boolean {
   }
 }
 
+/** The password policy (D-51) as far as it can apply to a seeded account: length and not a common password. */
 function isDemoPassword(value: string): boolean {
-  return value.length >= DEMO_PASSWORD_MIN_LENGTH && value.length <= DEMO_PASSWORD_MAX_LENGTH;
+  return (
+    value.length >= DEMO_PASSWORD_MIN_LENGTH &&
+    value.length <= DEMO_PASSWORD_MAX_LENGTH &&
+    !isCommonPassword(value)
+  );
 }
+
+function isEmailList(value: string): boolean {
+  return parseEmailList(value).invalid === 0;
+}
+
+/** Accepts `Name <a@b.c>` or a bare address. */
+function isFromAddress(value: string): boolean {
+  const angle = /<([^<>]+)>\s*$/.exec(value);
+  return looksLikeEmail(angle?.[1] ?? value) && !/[\r\n]/.test(value);
+}
+
+const booleanString = z.enum(["true", "false"]).transform((value) => value === "true");
 
 const envSchema = z.object({
   NODE_ENV: z.enum(NODE_ENVS).default("development"),
@@ -142,6 +226,29 @@ const envSchema = z.object({
   // Seed only (prisma/seed.ts); read through loadDemoPasswords, never placed in Config.
   DEMO_ADMIN_PASSWORD: z.string().refine(isDemoPassword).optional(),
   DEMO_CUSTOMER_PASSWORD: z.string().refine(isDemoPassword).optional(),
+
+  // Authentication (T05)
+  SESSION_SECRET: z.string().min(SESSION_SECRET_MIN_LENGTH).optional(),
+  ADMIN_EMAILS: z.string().refine(isEmailList).optional(),
+  GOOGLE_CLIENT_ID: z.string().min(10).optional(),
+  DEMO_MODE: booleanString.default(false),
+  PUBLIC_SIGNUP_ENABLED: booleanString.default(true),
+
+  // E-mail (T05 builds the minimal module, T06 extends it)
+  EMAIL_TRANSPORT: z.enum(EMAIL_TRANSPORTS).optional(),
+  EMAIL_FROM: z.string().max(200).refine(isFromAddress).optional(),
+  EMAIL_OUTBOX_DIR: z.string().min(1).optional(),
+  SMTP_HOST: z.string().min(1).max(253).optional(),
+  SMTP_PORT: z
+    .string()
+    .regex(/^\d{1,5}$/)
+    .transform(Number)
+    .refine((port) => port >= 1 && port <= 65535)
+    .optional(),
+  SMTP_SECURE: booleanString.optional(),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASSWORD: z.string().min(1).optional(),
+  PUBLIC_WEB_URL: z.string().refine(isOrigin).optional(),
 });
 
 type ParsedEnv = z.output<typeof envSchema>;
@@ -251,9 +358,64 @@ function crossFieldProblems(parsed: ParsedEnv): ConfigProblem[] {
     if (parsed.RATE_LIMIT_MULTIPLIER !== 1) {
       add("RATE_LIMIT_MULTIPLIER", "must be 1 in production");
     }
+    if (parsed.SESSION_SECRET === undefined) {
+      add("SESSION_SECRET", "is required in production");
+    }
+  }
+
+  if (resolveEmailTransport(parsed) === "smtp") {
+    if (parsed.SMTP_HOST === undefined) {
+      add("SMTP_HOST", "is required when the e-mail transport is smtp");
+    }
+    if (parsed.EMAIL_FROM === undefined) {
+      add("EMAIL_FROM", "is required when the e-mail transport is smtp");
+    }
+  }
+  if (parsed.SMTP_USER !== undefined && parsed.SMTP_PASSWORD === undefined) {
+    add("SMTP_PASSWORD", "is required when SMTP_USER is set");
+  }
+  if (parsed.SMTP_PASSWORD !== undefined && parsed.SMTP_USER === undefined) {
+    add("SMTP_USER", "is required when SMTP_PASSWORD is set");
+  }
+
+  if (parsed.NODE_ENV === "production" && resolveEmailTransport(parsed) === "smtp") {
+    // In production nothing is guessed: the port and TLS mode have defaults elsewhere, but a real
+    // mail server is configured explicitly, with credentials. (`log` is allowed; the server warns.)
+    const required: ReadonlyArray<[variable: string, value: unknown]> = [
+      ["SMTP_HOST", parsed.SMTP_HOST],
+      ["SMTP_PORT", parsed.SMTP_PORT],
+      ["SMTP_SECURE", parsed.SMTP_SECURE],
+      ["SMTP_USER", parsed.SMTP_USER],
+      ["SMTP_PASSWORD", parsed.SMTP_PASSWORD],
+      ["EMAIL_FROM", parsed.EMAIL_FROM],
+    ];
+    for (const [variable, value] of required) {
+      if (value === undefined && !problems.some((problem) => problem.variable === variable)) {
+        add(variable, "is required in production when the e-mail transport is smtp");
+      }
+    }
   }
 
   return problems;
+}
+
+/** Explicit `EMAIL_TRANSPORT`, else `smtp` when an SMTP host is configured, else `log`. */
+function resolveEmailTransport(parsed: ParsedEnv): EmailTransport {
+  return parsed.EMAIL_TRANSPORT ?? (parsed.SMTP_HOST === undefined ? "log" : "smtp");
+}
+
+function buildSmtp(parsed: ParsedEnv): SmtpSettings | undefined {
+  if (parsed.SMTP_HOST === undefined) {
+    return undefined;
+  }
+  const secure = parsed.SMTP_SECURE ?? false;
+  return {
+    host: parsed.SMTP_HOST,
+    port: parsed.SMTP_PORT ?? (secure ? 465 : 587),
+    secure,
+    user: parsed.SMTP_USER,
+    password: parsed.SMTP_PASSWORD,
+  };
 }
 
 function deepFreeze<T extends object>(value: T): T {
@@ -284,6 +446,24 @@ function buildConfig(parsed: ParsedEnv): Config {
       upstash: url !== undefined && token !== undefined ? { url, token } : undefined,
     },
     database: { url: parsed.DATABASE_URL },
+    auth: {
+      // Outside production a missing secret gets a random one, so the API still starts with no
+      // `.env`; production refuses to start without one (see crossFieldProblems).
+      sessionSecret: parsed.SESSION_SECRET ?? randomBytes(32).toString("hex"),
+      sessionSecretIsEphemeral: parsed.SESSION_SECRET === undefined,
+      cookieName: isProduction ? SESSION_COOKIE_NAME_PRODUCTION : SESSION_COOKIE_NAME_DEVELOPMENT,
+      adminEmails: parseEmailList(parsed.ADMIN_EMAILS).emails,
+      googleClientId: parsed.GOOGLE_CLIENT_ID,
+      demoMode: parsed.DEMO_MODE,
+      publicSignupEnabled: parsed.PUBLIC_SIGNUP_ENABLED,
+    },
+    email: {
+      transport: resolveEmailTransport(parsed),
+      from: parsed.EMAIL_FROM ?? DEFAULT_EMAIL_FROM,
+      smtp: buildSmtp(parsed),
+      publicWebUrl: parsed.PUBLIC_WEB_URL ?? parsed.WEB_ORIGIN ?? DEFAULT_DEV_WEB_ORIGIN,
+      outboxDir: parsed.EMAIL_OUTBOX_DIR,
+    },
   });
 }
 

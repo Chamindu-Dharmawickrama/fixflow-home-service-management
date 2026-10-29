@@ -38,6 +38,24 @@ export function collectFormErrors(errors: FieldErrors<FieldValues>): FormErrorIt
   return items;
 }
 
+/**
+ * True when any error was put there by `applyApiFieldErrors` (type `server`). Such an error exists
+ * only because a request was made and answered, so it is never a surprise that appears while a
+ * person is still moving between fields.
+ */
+export function hasServerErrors(errors: FieldErrors<FieldValues>): boolean {
+  const visit = (node: unknown): boolean => {
+    if (!isRecord(node)) {
+      return false;
+    }
+    if (node.type === "server" && typeof node.message === "string") {
+      return true;
+    }
+    return Object.entries(node).some(([key, child]) => key !== "ref" && visit(child));
+  };
+  return visit(errors);
+}
+
 /** The key the API uses for an issue that is not tied to one field (`FieldErrors["_"]`). */
 const API_FORM_LEVEL_KEY = "_";
 

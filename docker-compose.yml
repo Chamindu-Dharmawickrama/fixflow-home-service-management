@@ -1,4 +1,5 @@
-# Local PostgreSQL for the API integration tests (and, optionally, development).
+# Local PostgreSQL for the API integration tests (fixflow_test), the Playwright suite (fixflow_e2e)
+# and, optionally, development.
 #
 #   npm run db:test:up      start it (waits until it accepts connections)
 #   npm run db:test:down    stop it (the data survives in the named volume)
@@ -22,6 +23,9 @@ services:
     volumes:
       # PostgreSQL 18+ images keep the cluster in a versioned directory below this path.
       - fixflow_test_data:/var/lib/postgresql
+      # Runs once, when the volume is first created: adds the Playwright database (fixflow_e2e).
+      # An existing volume skips it; the E2E global setup creates the database when it is missing.
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U fixflow_test -d fixflow_test"]
       interval: 2s

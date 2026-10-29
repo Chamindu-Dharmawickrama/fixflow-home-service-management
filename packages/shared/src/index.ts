@@ -1,4 +1,9 @@
 export type {
+  ActivityMetadataDto,
+  AdminTimelineEventDto,
+  CustomerTimelineEventDto,
+} from "./activity.js";
+export type {
   ApiErrorBody,
   ApiResponse,
   ErrorDetails,
@@ -7,6 +12,15 @@ export type {
   PaginationMeta,
   SortOrder,
 } from "./api.js";
+export { isSafeAppPath } from "./app-paths.js";
+export {
+  type AuthCustomerDto,
+  type AuthMeDto,
+  type AuthSessionDto,
+  type AuthUserDto,
+  type GoogleAuthDto,
+  ROLE_HOME_PATH,
+} from "./auth.js";
 export { API_PREFIX } from "./constants.js";
 export {
   NotificationReadState,
@@ -31,3 +45,9 @@ export {
 } from "./enums.js";
 export { ErrorCode } from "./error-codes.js";
 export { LIMITS } from "./limits.js";
+export type {
+  NotificationDto,
+  NotificationListMeta,
+  NotificationListResponse,
+  NotificationsReadAllDto,
+} from "./notifications.js";

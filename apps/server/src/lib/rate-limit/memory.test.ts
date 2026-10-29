@@ -108,3 +108,44 @@ describe("MemoryRateLimiter", () => {
     expect(limiter.size).toBe(2);
   });
 });
+
+describe("MemoryRateLimiter.peek", () => {
+  let clock: FakeClock;
+  let limiter: MemoryRateLimiter;
+
+  beforeEach(() => {
+    clock = new FakeClock("2026-03-02T09:00:00.000Z");
+    limiter = new MemoryRateLimiter(clock);
+  });
+
+  it("reports the allowance without using any of it", async () => {
+    for (let i = 0; i < 10; i += 1) {
+      const result = await limiter.peek("failures", RULE);
+      expect(result).toMatchObject({ success: true, remaining: RULE.limit });
+    }
+    expect(limiter.size).toBe(0);
+  });
+
+  it("sees requests that were counted and turns to a rejection at the limit", async () => {
+    await limiter.consume("failures", RULE);
+    await limiter.consume("failures", RULE);
+    expect(await limiter.peek("failures", RULE)).toMatchObject({ success: true, remaining: 1 });
+
+    await limiter.consume("failures", RULE);
+    const blocked = await limiter.peek("failures", RULE);
+
+    expect(blocked.success).toBe(false);
+    expect(blocked.remaining).toBe(0);
+    expect(blocked.resetAt.toISOString()).toBe("2026-03-02T09:01:00.000Z");
+  });
+
+  it("does not change what a later consume decides", async () => {
+    for (let i = 0; i < RULE.limit; i += 1) await limiter.consume("failures", RULE);
+    await limiter.peek("failures", RULE);
+    await limiter.peek("failures", RULE);
+
+    clock.advanceSeconds(RULE.windowSeconds);
+
+    expect((await limiter.consume("failures", RULE)).success).toBe(true);
+  });
+});

@@ -9,8 +9,9 @@ import type { NavGroup, NavItem } from "@/lib/navigation";
  * the entries for the screens it builds, in the order they should appear:
  *
  * - `public`: the public website header (T08 adds Services, How it works, Contact).
- * - `admin`: the business dashboard sidebar, in groups (T12 adds Requests, T14 Quotations, …).
- * - `portal`: the customer portal top bar (T10 adds Profile, T11 My requests, …).
+ * - `admin`: the business dashboard sidebar, in groups (T05 has the dashboard; T12 adds Requests,
+ *   T14 Quotations, …). The admin's "Account" page lives in the user menu, not here.
+ * - `portal`: the customer portal top bar (T05 has the overview; T10 adds Profile, T11 My requests, …).
  *
  * The shells take their items from here by default. The dev-only `/styleguide` passes its own
  * example items to the shells so they can be shown with realistic content.
@@ -19,8 +20,12 @@ import type { NavGroup, NavItem } from "@/lib/navigation";
  */
 export const NAVIGATION = {
   public: [] as readonly NavItem[],
-  admin: [] as readonly NavGroup[],
-  portal: [] as readonly NavItem[],
+  admin: [
+    { items: [{ label: "Dashboard", href: "/app/dashboard", icon: "layout-dashboard" }] },
+  ] as readonly NavGroup[],
+  portal: [
+    { label: "Overview", href: "/portal", icon: "house", match: "exact" },
+  ] as readonly NavItem[],
 } as const;
 
 /** The navigation a signed-in role may be shown. The server still enforces access to every route. */

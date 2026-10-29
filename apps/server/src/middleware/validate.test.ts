@@ -1,9 +1,13 @@
-import type { ApiResponse, PaginatedResponse } from "@fixflow/shared";
+import type { ApiErrorBody, ApiResponse, PaginatedResponse } from "@fixflow/shared";
+import express from "express";
 import request from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
+import { z } from "zod";
 
-import { buildTestApp, type TestApp } from "../test/build-test-app.js";
+import { buildTestApp, TEST_WEB_ORIGIN, type TestApp } from "../test/build-test-app.js";
 import { bodyOf, expectApiError } from "../test/http.js";
+import { errorHandler } from "./error-handler.js";
+import { validate } from "./validate.js";
 
 const BASE = "/api/v1/__test__";
 const ORDER_ID = "7b0f9a52-52c2-4d4e-9d46-0d2d8f3f0a11";
@@ -24,7 +28,10 @@ beforeAll(() => {
 
 describe("validate()", () => {
   it("passes parsed params, query and body to the handler", async () => {
-    const response = await request(testApp.app).post(`${BASE}/orders/${ORDER_ID}`).send(validBody);
+    const response = await request(testApp.app)
+      .post(`${BASE}/orders/${ORDER_ID}`)
+      .set("Origin", TEST_WEB_ORIGIN)
+      .send(validBody);
 
     expect(response.status).toBe(200);
     expect(bodyOf<ApiResponse<unknown>>(response).data).toEqual({
@@ -37,6 +44,7 @@ describe("validate()", () => {
   it("replaces the raw input with the parsed values (defaults and coercion applied)", async () => {
     const response = await request(testApp.app)
       .post(`${BASE}/orders/${ORDER_ID}?dryRun=true&ignored=1`)
+      .set("Origin", TEST_WEB_ORIGIN)
       .send(validBody);
 
     expect(bodyOf<ApiResponse<{ query: unknown }>>(response).data.query).toEqual({
@@ -47,6 +55,7 @@ describe("validate()", () => {
   it("reports params, query and body errors together, keyed by dotted path", async () => {
     const response = await request(testApp.app)
       .post(`${BASE}/orders/not-a-uuid?dryRun=maybe`)
+      .set("Origin", TEST_WEB_ORIGIN)
       .send({
         customerName: "A",
         lines: [
@@ -68,6 +77,7 @@ describe("validate()", () => {
   it("rejects unknown body keys", async () => {
     const response = await request(testApp.app)
       .post(`${BASE}/orders/${ORDER_ID}`)
+      .set("Origin", TEST_WEB_ORIGIN)
       .send({
         ...validBody,
         role: "BUSINESS_ADMIN",
@@ -82,25 +92,54 @@ describe("validate()", () => {
   });
 
   it("reports each required field when the body is missing, rather than one vague error", async () => {
-    const response = await request(testApp.app).post(`${BASE}/orders/${ORDER_ID}`);
+    const response = await request(testApp.app)
+      .post(`${BASE}/orders/${ORDER_ID}`)
+      .set("Origin", TEST_WEB_ORIGIN);
 
     const error = expectApiError(response, { status: 422, code: "VALIDATION_ERROR" });
     expect(Object.keys(error.fieldErrors ?? {}).sort()).toEqual(["customerName", "lines"]);
   });
 
   it("ignores a body that was not sent as JSON", async () => {
-    const response = await request(testApp.app)
-      .post(`${BASE}/orders/${ORDER_ID}`)
+    // A bare app, without the CSRF layer: that layer (D-11) rejects non-JSON bodies with 400
+    // before validation ever runs, which csrf.test.ts covers. This is about validate() itself.
+    const bare = express();
+    bare.use(express.json());
+    bare.post(
+      "/orders",
+      validate({ body: z.strictObject({ customerName: z.string().min(2) }) }),
+      (_req, res) => {
+        res.json({ data: { ok: true } });
+      },
+    );
+    bare.use(errorHandler);
+
+    const response = await request(bare)
+      .post("/orders")
       .set("Content-Type", "text/plain")
       .send(JSON.stringify(validBody));
 
-    expectApiError(response, { status: 422, code: "VALIDATION_ERROR" });
+    expect(response.status).toBe(422);
+    expect(bodyOf<ApiErrorBody>(response).error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("rejects a body that was not sent as JSON before it reaches validation (D-11)", async () => {
+    const response = await request(testApp.app)
+      .post(`${BASE}/orders/${ORDER_ID}`)
+      .set("Origin", TEST_WEB_ORIGIN)
+      .set("Content-Type", "text/plain")
+      .send(JSON.stringify(validBody));
+
+    expectApiError(response, { status: 400, code: "BAD_REQUEST" });
   });
 
   it("does not run the handler when validation fails", async () => {
     const { app, logs } = buildTestApp({ testRoutes: true, logLevel: "info" });
 
-    const response = await request(app).post(`${BASE}/orders/${ORDER_ID}`).send({});
+    const response = await request(app)
+      .post(`${BASE}/orders/${ORDER_ID}`)
+      .set("Origin", TEST_WEB_ORIGIN)
+      .send({});
 
     expect(response.status).toBe(422);
     expect(bodyOf<Partial<ApiResponse<unknown>>>(response).data).toBeUndefined();

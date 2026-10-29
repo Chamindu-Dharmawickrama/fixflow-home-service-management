@@ -38,7 +38,7 @@ describe("UpstashRateLimiter", () => {
     const limit = vi
       .fn()
       .mockResolvedValue({ success: true, remaining: 4, reset: 1_772_442_000_000 });
-    const limiter = new UpstashRateLimiter(() => ({ limit }));
+    const limiter = new UpstashRateLimiter(() => ({ limit, getRemaining: vi.fn() }));
 
     const result = await limiter.consume("login:ip:203.0.113.7", RULE);
 
@@ -48,6 +48,7 @@ describe("UpstashRateLimiter", () => {
 
   it("passes a rejection through", async () => {
     const limiter = new UpstashRateLimiter(() => ({
+      getRemaining: vi.fn(),
       limit: vi.fn().mockResolvedValue({ success: false, remaining: 0, reset: 1_772_442_030_000 }),
     }));
 
@@ -60,6 +61,7 @@ describe("UpstashRateLimiter", () => {
 
   it("never reports a negative remaining count", async () => {
     const limiter = new UpstashRateLimiter(() => ({
+      getRemaining: vi.fn(),
       limit: vi.fn().mockResolvedValue({ success: false, remaining: -2, reset: 1 }),
     }));
 
@@ -68,6 +70,7 @@ describe("UpstashRateLimiter", () => {
 
   it("creates one client per distinct rule and reuses it", async () => {
     const factory = vi.fn(() => ({
+      getRemaining: vi.fn(),
       limit: vi.fn().mockResolvedValue({ success: true, remaining: 1, reset: 1 }),
     }));
     const limiter = new UpstashRateLimiter(factory);
@@ -84,6 +87,7 @@ describe("UpstashRateLimiter", () => {
 
   it("lets a Redis failure propagate so the middleware can decide how to degrade", async () => {
     const limiter = new UpstashRateLimiter(() => ({
+      getRemaining: vi.fn(),
       limit: vi.fn().mockRejectedValue(new Error("Redis unreachable")),
     }));
 
@@ -92,6 +96,7 @@ describe("UpstashRateLimiter", () => {
 
   it("treats a Redis timeout as a failure rather than the library's silent success", async () => {
     const limiter = new UpstashRateLimiter(() => ({
+      getRemaining: vi.fn(),
       limit: vi
         .fn()
         .mockResolvedValue({ success: true, remaining: 0, reset: 0, reason: "timeout" }),
@@ -102,6 +107,7 @@ describe("UpstashRateLimiter", () => {
 
   it("accepts the library's other response reasons as normal answers", async () => {
     const limiter = new UpstashRateLimiter(() => ({
+      getRemaining: vi.fn(),
       limit: vi.fn().mockResolvedValue({
         success: false,
         remaining: 0,
@@ -111,6 +117,41 @@ describe("UpstashRateLimiter", () => {
     }));
 
     expect((await limiter.consume("k", RULE)).success).toBe(false);
+  });
+});
+
+describe("UpstashRateLimiter.peek", () => {
+  it("reports the remaining allowance without counting a request", async () => {
+    const limit = vi.fn();
+    const getRemaining = vi.fn().mockResolvedValue({ remaining: 3, reset: 1_772_442_000_000 });
+    const limiter = new UpstashRateLimiter(() => ({ limit, getRemaining }));
+
+    const result = await limiter.peek("login:failures:abc", RULE);
+
+    expect(getRemaining).toHaveBeenCalledWith("login:failures:abc");
+    expect(limit).not.toHaveBeenCalled();
+    expect(result).toEqual({ success: true, remaining: 3, resetAt: new Date(1_772_442_000_000) });
+  });
+
+  it("is a rejection once nothing remains", async () => {
+    const limiter = new UpstashRateLimiter(() => ({
+      limit: vi.fn(),
+      getRemaining: vi.fn().mockResolvedValue({ remaining: 0, reset: 1_772_442_030_000 }),
+    }));
+
+    const result = await limiter.peek("k", RULE);
+
+    expect(result.success).toBe(false);
+    expect(result.remaining).toBe(0);
+  });
+
+  it("lets a Redis failure propagate", async () => {
+    const limiter = new UpstashRateLimiter(() => ({
+      limit: vi.fn(),
+      getRemaining: vi.fn().mockRejectedValue(new Error("Redis unreachable")),
+    }));
+
+    await expect(limiter.peek("k", RULE)).rejects.toThrow("Redis unreachable");
   });
 });
 

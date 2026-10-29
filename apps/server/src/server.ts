@@ -3,6 +3,7 @@ import { loadLocalEnvFile } from "./config/dotenv.js";
 import { type Config, ConfigError, loadConfig } from "./config/env.js";
 import { createProductionDeps } from "./deps.js";
 import { createShutdownHandler } from "./lib/shutdown.js";
+import { emailStartupWarnings } from "./modules/email/email-sender.js";
 
 function readConfigOrReport(): Config | undefined {
   try {
@@ -33,6 +34,20 @@ function main(): void {
       "DATABASE_URL is not set: the API starts without a database and /api/v1/health/ready reports 503",
     );
   }
+  if (config.auth.sessionSecretIsEphemeral) {
+    logger.warn(
+      "SESSION_SECRET is not set: a random secret was generated, so every sign-in ends when the API restarts",
+    );
+  }
+  if (config.auth.adminEmails.length === 0) {
+    logger.warn("ADMIN_EMAILS is empty: nobody can use the admin area");
+  }
+  if (config.auth.googleClientId === undefined) {
+    logger.info("GOOGLE_CLIENT_ID is not set: Google sign-in is switched off");
+  }
+  for (const warning of emailStartupWarnings(config)) {
+    logger.warn(warning);
+  }
   const server = createApp(deps).listen(config.port, () => {
     logger.info({ port: config.port, env: config.nodeEnv }, "FixFlow API listening");
   });
@@ -46,8 +61,12 @@ function main(): void {
   const shutdown = createShutdownHandler({
     server,
     logger,
-    // Close the connection pool once in-flight requests have finished.
-    cleanup: () => deps.prisma.$disconnect(),
+    // Let emails already being sent finish, then close the connection pool.
+    cleanup: async () => {
+      await deps.background.idle();
+      deps.emailSender.close?.();
+      await deps.prisma.$disconnect();
+    },
   });
   for (const signal of ["SIGINT", "SIGTERM"] as const) {
     process.once(signal, () => {

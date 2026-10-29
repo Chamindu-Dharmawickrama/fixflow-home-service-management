@@ -60,4 +60,14 @@ describe("resetDatabase", () => {
       await elsewhere.$disconnect();
     }
   });
+
+  it("will not empty the integration-test database on behalf of the Playwright variable", async () => {
+    // E2E_DATABASE_URL is not set here, and even if it were, it would have to name this database.
+    await createFullScenario(prisma);
+
+    await expect(resetDatabase(prisma, "E2E_DATABASE_URL")).rejects.toThrow(TestDatabaseGuardError);
+
+    expect(await prisma.user.count()).toBeGreaterThan(0);
+    await resetDatabase(prisma);
+  });
 });

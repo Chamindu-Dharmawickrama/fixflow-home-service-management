@@ -77,3 +77,11 @@ export function createUnavailablePrisma(reason: string): PrismaClient {
     },
   });
 }
+
+/**
+ * True for Prisma's unique-constraint error (`P2002`). Used to turn a lost race on a unique column
+ * (two sign-ups with one email) into the same answer as the pre-check gives.
+ */
+export function isUniqueViolation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
+}

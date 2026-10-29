@@ -60,7 +60,10 @@ export function PublicLayout({
             )}
           </div>
           <PublicNav items={navItems} cta={cta} />
-          {cta ? <div className="hidden sm:block">{cta}</div> : null}
+          {/* The mobile menu holds the call to action; with no menu to put it in, the header keeps it. */}
+          {cta ? (
+            <div className={navItems.length > 0 ? "hidden sm:block" : undefined}>{cta}</div>
+          ) : null}
         </div>
       </header>
 

@@ -45,47 +45,78 @@ export function databaseIdentity(variable: string, url: string): string {
   return `${normalizedHost}:${port}/${databaseName(variable, url)}`;
 }
 
+/**
+ * The two environment variables that may name a database this code is allowed to empty:
+ * `TEST_DATABASE_URL` for the API integration tests, `E2E_DATABASE_URL` for the Playwright suite.
+ * Nothing else is ever a valid target.
+ */
+export type TestDatabaseVariable = "TEST_DATABASE_URL" | "E2E_DATABASE_URL";
+
+const OTHER_TEST_VARIABLE = {
+  TEST_DATABASE_URL: "E2E_DATABASE_URL",
+  E2E_DATABASE_URL: "TEST_DATABASE_URL",
+} as const satisfies Record<TestDatabaseVariable, TestDatabaseVariable>;
+
 export interface TestDatabaseGuardOptions {
   /** The environment to inspect. Defaults to `process.env`. */
   env?: NodeJS.ProcessEnv;
-  /** The URL the caller is about to use. Defaults to `TEST_DATABASE_URL`. */
+  /** The URL the caller is about to use. Defaults to the variable's own URL. */
   activeUrl?: string;
+  /** Which database is being protected. Defaults to the integration-test database. */
+  variable?: TestDatabaseVariable;
 }
 
 /**
  * Throws unless it is safe to run destructive test operations:
- *  1. `NODE_ENV` is `test`;
- *  2. `TEST_DATABASE_URL` is set;
- *  3. the URL about to be used is that test database;
- *  4. the test database is not the one `DATABASE_URL` or `DIRECT_DATABASE_URL` points at.
- * Returns the validated `TEST_DATABASE_URL`. Messages name variables, never URLs.
+ *  1. integration tests: `NODE_ENV` is `test`; Playwright: `NODE_ENV` is not `production`;
+ *  2. the variable (`TEST_DATABASE_URL` or `E2E_DATABASE_URL`) is set;
+ *  3. for `E2E_DATABASE_URL`, the database name contains `e2e`, so a development database cannot be named by mistake;
+ *  4. the URL about to be used is that database;
+ *  5. it is not the database `DATABASE_URL`, `DIRECT_DATABASE_URL` or the other test variable points at.
+ * Returns the validated URL. Messages name variables, never URLs.
  */
 export function assertTestDatabase(options: TestDatabaseGuardOptions = {}): string {
   const env = options.env ?? process.env;
+  const variable = options.variable ?? "TEST_DATABASE_URL";
 
-  if (env.NODE_ENV !== "test") {
-    throw new TestDatabaseGuardError(`NODE_ENV is ${env.NODE_ENV ?? "not set"}, not "test"`);
+  if (variable === "TEST_DATABASE_URL") {
+    if (env.NODE_ENV !== "test") {
+      throw new TestDatabaseGuardError(`NODE_ENV is ${env.NODE_ENV ?? "not set"}, not "test"`);
+    }
+  } else if (env.NODE_ENV === "production") {
+    throw new TestDatabaseGuardError('NODE_ENV is "production"');
   }
 
-  const testUrl = env.TEST_DATABASE_URL?.trim();
+  const testUrl = env[variable]?.trim();
   if (testUrl === undefined || testUrl === "") {
-    throw new TestDatabaseGuardError("TEST_DATABASE_URL is not set");
+    throw new TestDatabaseGuardError(`${variable} is not set`);
   }
-  const testIdentity = databaseIdentity("TEST_DATABASE_URL", testUrl);
+  const testIdentity = databaseIdentity(variable, testUrl);
+  if (variable === "E2E_DATABASE_URL" && !/e2e/i.test(databaseName(variable, testUrl))) {
+    throw new TestDatabaseGuardError(
+      `the database named by ${variable} must have "e2e" in its name`,
+    );
+  }
 
   if (
     options.activeUrl !== undefined &&
     databaseIdentity("the active database URL", options.activeUrl) !== testIdentity
   ) {
-    throw new TestDatabaseGuardError("the active database is not the one in TEST_DATABASE_URL");
+    throw new TestDatabaseGuardError(`the active database is not the one in ${variable}`);
   }
 
-  for (const variable of ["DATABASE_URL", "DIRECT_DATABASE_URL"] as const) {
-    const other = env[variable]?.trim();
-    if (other !== undefined && other !== "" && databaseIdentity(variable, other) === testIdentity) {
-      throw new TestDatabaseGuardError(
-        `TEST_DATABASE_URL points at the same database as ${variable}`,
-      );
+  for (const other of [
+    "DATABASE_URL",
+    "DIRECT_DATABASE_URL",
+    OTHER_TEST_VARIABLE[variable],
+  ] as const) {
+    const otherUrl = env[other]?.trim();
+    if (
+      otherUrl !== undefined &&
+      otherUrl !== "" &&
+      databaseIdentity(other, otherUrl) === testIdentity
+    ) {
+      throw new TestDatabaseGuardError(`${variable} points at the same database as ${other}`);
     }
   }
 
@@ -111,13 +142,16 @@ export async function disconnectTestPrisma(): Promise<void> {
 /**
  * Empties every table (all but Prisma's migration history) so each test starts from nothing.
  * Besides the environment guard, it checks the live connection: the database the client is really
- * connected to must be the one named in `TEST_DATABASE_URL`.
+ * connected to must be the one named by `variable` (`TEST_DATABASE_URL` unless told otherwise).
  */
-export async function resetDatabase(prisma: PrismaClient = getTestPrisma()): Promise<void> {
-  const testUrl = assertTestDatabase();
+export async function resetDatabase(
+  prisma: PrismaClient = getTestPrisma(),
+  variable: TestDatabaseVariable = "TEST_DATABASE_URL",
+): Promise<void> {
+  const testUrl = assertTestDatabase({ variable });
 
   const [connected] = await prisma.$queryRaw<{ name: string }[]>`SELECT current_database() AS name`;
-  if (connected?.name !== databaseName("TEST_DATABASE_URL", testUrl)) {
+  if (connected?.name !== databaseName(variable, testUrl)) {
     throw new TestDatabaseGuardError("the client is connected to a different database");
   }
 

@@ -33,4 +33,36 @@ export const LIMITS = {
   personName: { minLength: 2, maxLength: 100 },
   /** The longest valid email address (RFC 5321). */
   email: { maxLength: 254 },
+  /** Business settings (FR-100). Day counts are whole days. */
+  businessSettings: {
+    businessName: { minLength: 2, maxLength: 100 },
+    tagline: { maxLength: 160 },
+    /** Counted in characters, punctuation included; the digits are checked separately. */
+    phone: { maxLength: 30, minDigits: 7, maxDigits: 15 },
+    addressLine: { maxLength: 120 },
+    city: { maxLength: 80 },
+    region: { maxLength: 80 },
+    postalCode: { maxLength: 20 },
+    serviceArea: { maxLength: 500 },
+    logoUrl: { maxLength: 500 },
+    quotationValidityDays: { min: 1, max: 90 },
+    invoiceDueDays: { min: 0, max: 90 },
+    quotationTerms: { maxLength: 2000 },
+    paymentInstructions: { maxLength: 1000 },
+    invoiceFooter: { maxLength: 500 },
+  },
+  /** The service catalogue (FR-101, D-50). */
+  service: {
+    name: { minLength: 3, maxLength: 80 },
+    category: { minLength: 2, maxLength: 50 },
+    shortDescription: { minLength: 10, maxLength: 200 },
+    fullDescription: { minLength: 20, maxLength: 2000 },
+    inclusions: { maxItems: 12, itemMaxLength: 120 },
+    durationMinutes: { min: 5, max: 720 },
+    sortOrder: { min: 0, max: 9999 },
+    imageUrl: { maxLength: 500 },
+    search: { maxLength: 100 },
+    /** "From" price; a service with a fixed price costs at least one cent. */
+    startingPrice: { min: "0.01", max: "999999.99" },
+  },
 } as const;

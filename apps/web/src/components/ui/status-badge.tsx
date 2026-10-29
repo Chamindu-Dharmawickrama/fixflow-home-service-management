@@ -1,4 +1,5 @@
 import {
+  Archive,
   Ban,
   Banknote,
   BellDot,
@@ -65,6 +66,7 @@ export const STATUS_ICONS: Record<StatusIconName, LucideIcon> = {
   "mail-x": MailX,
   "circle-minus": CircleMinus,
   "circle-help": CircleHelp,
+  archive: Archive,
 };
 
 type StatusBadgeSubject = {

@@ -4,6 +4,7 @@ export { apiFetch, apiFetchEnvelope, type ApiRequestOptions } from "./client";
 export {
   ApiError,
   type ApiErrorCode,
+  describeApiError,
   describeWait,
   isApiError,
   NETWORK_ERROR_MESSAGE,

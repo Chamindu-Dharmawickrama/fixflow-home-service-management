@@ -154,7 +154,8 @@ test.describe("styleguide content", () => {
     await open(page, EXAMPLES[0] as Example);
     const matrix = page.locator("section#status");
     // 7 request + 6 quotation + 6 work order + 6 invoice + 2 payment + 2 notification + 5 email
-    await expect(matrix.locator("tbody tr")).toHaveCount(34);
+    // + 3 service (T07)
+    await expect(matrix.locator("tbody tr")).toHaveCount(37);
     await expect(matrix.getByText("Needs rescheduling")).toBeVisible();
     await expect(matrix.getByText("Logged only")).toBeVisible();
   });

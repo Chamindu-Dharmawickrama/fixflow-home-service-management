@@ -1,3 +1,4 @@
+import { isBundledLogoKey, isBundledServiceImageKey } from "@fixflow/shared";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { FakeClock } from "../lib/clock.js";
@@ -5,7 +6,7 @@ import { BUSINESS_SETTINGS_ID } from "../lib/db.js";
 import { verifyPassword } from "../lib/password.js";
 import { disconnectTestPrisma, getTestPrisma, resetDatabase } from "../test/db.js";
 import { seedBaseData } from "./seed.js";
-import { DEMO_ACCOUNTS, DEMO_SERVICES, DEMO_TECHNICIANS } from "./seed-data.js";
+import { DEMO_ACCOUNTS, DEMO_LOGO_KEY, DEMO_SERVICES, DEMO_TECHNICIANS } from "./seed-data.js";
 
 const prisma = getTestPrisma();
 
@@ -287,6 +288,26 @@ describe("seedBaseData", () => {
 });
 
 describe("seed data definitions", () => {
+  it("gives the demo business a bundled logo and every service a bundled picture (D-30)", async () => {
+    for (const service of DEMO_SERVICES) {
+      expect(isBundledServiceImageKey(service.imageKey), service.slug).toBe(true);
+    }
+    expect(isBundledLogoKey(DEMO_LOGO_KEY)).toBe(true);
+
+    await seedBaseData(prisma, { passwords: PASSWORDS, clock });
+
+    const settings = await prisma.businessSettings.findUniqueOrThrow({
+      where: { id: BUSINESS_SETTINGS_ID },
+    });
+    expect(settings).toMatchObject({ logoKey: DEMO_LOGO_KEY, logoUrl: null });
+    const services = await prisma.service.findMany({ select: { imageKey: true, imageUrl: true } });
+    expect(services).toHaveLength(5);
+    for (const service of services) {
+      expect(isBundledServiceImageKey(service.imageKey)).toBe(true);
+      expect(service.imageUrl).toBeNull();
+    }
+  });
+
   it("lists distinct natural keys, so the lookups cannot collide", () => {
     expect(new Set(DEMO_SERVICES.map((service) => service.slug)).size).toBe(DEMO_SERVICES.length);
     expect(new Set(DEMO_ACCOUNTS.map((account) => account.email)).size).toBe(DEMO_ACCOUNTS.length);

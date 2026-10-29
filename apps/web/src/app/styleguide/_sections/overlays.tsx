@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { IconButton } from "@/components/ui/icon-button";
+import { LinkTabs } from "@/components/ui/link-tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Sheet,
@@ -307,6 +308,18 @@ export function OverlaysSection() {
             <p className="text-sm text-ink-secondary">No invoices yet.</p>
           </TabsContent>
         </Tabs>
+      </Specimen>
+
+      <Specimen title="Link tabs (filters that live in the URL; the current one has aria-current)">
+        <LinkTabs
+          label="Filter services by status"
+          items={[
+            { label: "All", href: "#link-tabs-all", count: 5, current: false },
+            { label: "Published", href: "#link-tabs-published", count: 4, current: true },
+            { label: "Unpublished", href: "#link-tabs-unpublished", count: 1, current: false },
+            { label: "Archived", href: "#link-tabs-archived", count: 0, current: false },
+          ]}
+        />
       </Specimen>
     </Section>
   );

@@ -4,6 +4,7 @@ import {
   NotificationReadState,
   PaymentRecordState,
   QuotationStatus,
+  ServiceCatalogueState,
   ServiceRequestStatus,
   WorkOrderStatus,
 } from "@fixflow/shared";
@@ -27,6 +28,7 @@ const ENUMS_BY_KIND: Record<StatusKind, Record<string, string>> = {
   payment: PaymentRecordState,
   notification: NotificationReadState,
   emailDelivery: EmailDeliveryStatus,
+  service: ServiceCatalogueState,
 };
 
 const CASES = (Object.entries(ENUMS_BY_KIND) as [StatusKind, Record<string, string>][]).flatMap(
@@ -35,8 +37,8 @@ const CASES = (Object.entries(ENUMS_BY_KIND) as [StatusKind, Record<string, stri
 
 describe("StatusBadge", () => {
   it("covers every value of every status enum in @fixflow/shared", () => {
-    // 7 + 6 + 6 + 6 + 2 + 2 + 5
-    expect(CASES).toHaveLength(34);
+    // 7 + 6 + 6 + 6 + 2 + 2 + 5 + 3
+    expect(CASES).toHaveLength(37);
   });
 
   it.each(CASES)("%s %s renders its label as text, a tone and an icon", (kind, status) => {

@@ -37,6 +37,8 @@ describe("ErrorCode", () => {
         "PASSWORD_NOT_SET",
         "PASSWORD_RESET_UNAVAILABLE",
         "SIGNUP_DISABLED",
+        // T07 — service catalogue
+        "SLUG_TAKEN",
       ].sort(),
     );
   });

@@ -32,7 +32,13 @@ export const DEMO_SETTINGS = {
     "Pay by bank transfer, cheque or in person at our office, quoting the invoice number as your payment reference. We never ask for card details by phone or email. Bank details are provided on request.",
 } as const satisfies Omit<Prisma.BusinessSettingsUncheckedCreateInput, "id">;
 
-/** The five services of spec §19.1, in display order. */
+/**
+ * The demo business's logo: one of the bundled marks (D-30, `BUNDLED_LOGOS`). Kept apart from
+ * {@link DEMO_SETTINGS} so the test fixtures, which spread that object, start without a logo.
+ */
+export const DEMO_LOGO_KEY = "breeze";
+
+/** The five services of spec §19.1, in display order. Each uses one of the bundled pictures (D-30). */
 export const DEMO_SERVICES: readonly Prisma.ServiceUncheckedCreateInput[] = [
   {
     name: "AC Diagnostic Visit",
@@ -52,6 +58,7 @@ export const DEMO_SERVICES: readonly Prisma.ServiceUncheckedCreateInput[] = [
     pricingMode: "QUOTE_REQUIRED",
     startingPrice: null,
     isPublished: true,
+    imageKey: "air-conditioning",
     sortOrder: 10,
   },
   {
@@ -72,6 +79,7 @@ export const DEMO_SERVICES: readonly Prisma.ServiceUncheckedCreateInput[] = [
     pricingMode: "FIXED",
     startingPrice: "129.00",
     isPublished: true,
+    imageKey: "air-conditioning",
     sortOrder: 20,
   },
   {
@@ -92,6 +100,7 @@ export const DEMO_SERVICES: readonly Prisma.ServiceUncheckedCreateInput[] = [
     pricingMode: "QUOTE_REQUIRED",
     startingPrice: null,
     isPublished: true,
+    imageKey: "appliance-repair",
     sortOrder: 30,
   },
   {
@@ -112,6 +121,7 @@ export const DEMO_SERVICES: readonly Prisma.ServiceUncheckedCreateInput[] = [
     pricingMode: "QUOTE_REQUIRED",
     startingPrice: null,
     isPublished: true,
+    imageKey: "electrical",
     sortOrder: 40,
   },
   {
@@ -132,6 +142,7 @@ export const DEMO_SERVICES: readonly Prisma.ServiceUncheckedCreateInput[] = [
     pricingMode: "FIXED",
     startingPrice: "189.00",
     isPublished: true,
+    imageKey: "cleaning",
     sortOrder: 50,
   },
 ];

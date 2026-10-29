@@ -4,6 +4,7 @@ import { BUSINESS_SETTINGS_ID, type PrismaClient } from "../lib/db.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
 import {
   DEMO_ACCOUNTS,
+  DEMO_LOGO_KEY,
   DEMO_SERVICES,
   DEMO_SETTINGS,
   DEMO_TECHNICIANS,
@@ -59,7 +60,9 @@ export async function seedBaseData(
     where: { id: BUSINESS_SETTINGS_ID },
   });
   if (settings === null) {
-    await prisma.businessSettings.create({ data: { id: BUSINESS_SETTINGS_ID, ...DEMO_SETTINGS } });
+    await prisma.businessSettings.create({
+      data: { id: BUSINESS_SETTINGS_ID, ...DEMO_SETTINGS, logoKey: DEMO_LOGO_KEY },
+    });
     summary.settings = "created";
   }
 

@@ -4,6 +4,7 @@ import {
   NotificationReadState,
   PaymentRecordState,
   QuotationStatus,
+  ServiceCatalogueState,
   ServiceRequestStatus,
   WorkOrderStatus,
 } from "@fixflow/shared";
@@ -27,6 +28,7 @@ const ENUMS_BY_KIND: Record<StatusKind, Record<string, string>> = {
   payment: PaymentRecordState,
   notification: NotificationReadState,
   emailDelivery: EmailDeliveryStatus,
+  service: ServiceCatalogueState,
 };
 
 const KINDS = Object.keys(ENUMS_BY_KIND) as StatusKind[];

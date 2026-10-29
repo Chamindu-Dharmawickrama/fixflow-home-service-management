@@ -13,6 +13,7 @@ const KIND_TITLES: Record<StatusKind, string> = {
   payment: "Payment record",
   notification: "Notification",
   emailDelivery: "Email delivery (staff only)",
+  service: "Service in the catalogue (staff only)",
 };
 
 const TONE_MEANING = {

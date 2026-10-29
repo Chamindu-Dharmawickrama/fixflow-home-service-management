@@ -27,6 +27,10 @@ export const RATE_LIMITS = {
   // open tab, so the read limit leaves room for several tabs and for opening the list.
   notificationsRead: { limit: 120, windowSeconds: 60 },
   notificationsWrite: { limit: 60, windowSeconds: 60 },
+
+  // Business configuration (T07). Counted per signed-in admin: a person editing a form never gets
+  // near it, a script or a stolen session does.
+  adminWrite: { limit: 60, windowSeconds: 60 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export type RateLimitName = keyof typeof RATE_LIMITS;

@@ -101,4 +101,19 @@ describe("central navigation config", () => {
     expect(navigationForRole(Role.BUSINESS_ADMIN)).toBe(NAVIGATION.admin);
     expect(navigationForRole(Role.CUSTOMER)).toBe(NAVIGATION.portal);
   });
+
+  it("lists the settings pages, for the admin only (T07)", () => {
+    const settings = NAVIGATION.admin.find((group) => group.label === "Settings");
+    expect(settings?.items.map((item) => [item.label, item.href])).toEqual([
+      ["Business", "/app/settings/business"],
+      ["Services", "/app/settings/services"],
+    ]);
+
+    // A customer is handed nothing that leads to the business's configuration.
+    const customerPaths = (navigationForRole(Role.CUSTOMER) as typeof NAVIGATION.portal).map(
+      (item) => item.href,
+    );
+    expect(customerPaths.some((href) => href.startsWith("/app"))).toBe(false);
+    expect(customerPaths.some((href) => href.includes("settings"))).toBe(false);
+  });
 });

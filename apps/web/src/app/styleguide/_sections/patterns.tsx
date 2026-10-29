@@ -13,6 +13,7 @@ import type { SearchParamsInput } from "@/lib/url";
 import { BUSINESS_TIME_ZONE } from "../_lib/fixtures";
 import { Section, Specimen } from "../_lib/section";
 import { RequestQueue } from "./request-queue";
+import { SaveBarDemo } from "./save-bar-demo";
 
 const SHELL_REQUEST_DETAIL = "/styleguide/shells/admin/requests/detail";
 
@@ -79,6 +80,10 @@ export function PatternsSection({ searchParams }: { searchParams: Promise<Search
             { label: "Quotation QT-2026-00042" },
           ]}
         />
+      </Specimen>
+
+      <Specimen title="Save bar for long settings forms: nothing to save, unsaved changes, saving">
+        <SaveBarDemo />
       </Specimen>
 
       <Specimen title="List pattern: filter bar, data table (cards below 768 px), pagination">

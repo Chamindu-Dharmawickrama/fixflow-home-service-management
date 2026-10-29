@@ -13,6 +13,8 @@ import { requestId } from "./middleware/request-id.js";
 import { createAuthRouter } from "./modules/auth/auth.routes.js";
 import { createHealthRouter } from "./modules/health/health.routes.js";
 import { createNotificationsRouter } from "./modules/notifications/notifications.routes.js";
+import { createServicesRouter } from "./modules/services/services.routes.js";
+import { createSettingsRouter } from "./modules/settings/settings.routes.js";
 
 /** Largest JSON body accepted; larger requests get `413 PAYLOAD_TOO_LARGE`. */
 const JSON_BODY_LIMIT = "100kb";
@@ -64,6 +66,10 @@ export function createApp(deps: AppDeps, options: CreateAppOptions = {}): Expres
   app.use(`${API_PREFIX}/health`, createHealthRouter(deps));
   app.use(`${API_PREFIX}/auth`, createAuthRouter(deps));
   app.use(`${API_PREFIX}/notifications`, createNotificationsRouter(deps));
+  // These two serve both the public and the admin paths of their module (`/settings/public` and
+  // `/admin/settings`, `/services` and `/admin/services`), so they are mounted on the prefix itself.
+  app.use(API_PREFIX, createSettingsRouter(deps));
+  app.use(API_PREFIX, createServicesRouter(deps));
   for (const router of options.extraRouters ?? []) {
     app.use(API_PREFIX, router);
   }

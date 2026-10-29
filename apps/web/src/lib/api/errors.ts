@@ -95,6 +95,21 @@ export function networkError(): ApiError {
   return new ApiError({ status: 0, code: "NETWORK_ERROR", message: NETWORK_ERROR_MESSAGE });
 }
 
+/**
+ * The sentence to show when a request fails and nothing more specific applies. The API's own
+ * messages are written for people, so they are shown as they are; a rate limit says how long to
+ * wait; anything that is not an API error gets a generic line (never a raw exception message).
+ */
+export function describeApiError(error: unknown, fallback = GENERIC_MESSAGE): string {
+  if (!(error instanceof ApiError)) {
+    return fallback;
+  }
+  if (error.code === "RATE_LIMITED") {
+    return `Too many requests. Please wait ${describeWait(error.retryAfterSeconds ?? 60)} and try again.`;
+  }
+  return error.message || fallback;
+}
+
 /** "a minute", "5 minutes", "2 hours": a wait in words, for a rate-limit message. */
 export function describeWait(seconds: number): string {
   if (seconds <= 60) return "a minute";

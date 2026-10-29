@@ -55,6 +55,10 @@ export const ErrorCode = {
   PASSWORD_NOT_SET: "PASSWORD_NOT_SET",
   /** 403 — a demo account's password cannot be changed or reset while demo mode is on (D-09). */
   DEMO_ACCOUNT_LOCKED: "DEMO_ACCOUNT_LOCKED",
+
+  // Service catalogue (T07)
+  /** 409 — another service already uses this slug (its web address). */
+  SLUG_TAKEN: "SLUG_TAKEN",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

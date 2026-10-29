@@ -22,6 +22,14 @@ export const NAVIGATION = {
   public: [] as readonly NavItem[],
   admin: [
     { items: [{ label: "Dashboard", href: "/app/dashboard", icon: "layout-dashboard" }] },
+    {
+      // Admin only: this list is the admin sidebar, and a customer is never handed it.
+      label: "Settings",
+      items: [
+        { label: "Business", href: "/app/settings/business", icon: "settings" },
+        { label: "Services", href: "/app/settings/services", icon: "layers" },
+      ],
+    },
   ] as readonly NavGroup[],
   portal: [
     { label: "Overview", href: "/portal", icon: "house", match: "exact" },

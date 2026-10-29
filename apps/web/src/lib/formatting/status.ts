@@ -4,6 +4,7 @@ import type {
   NotificationReadState,
   PaymentRecordState,
   QuotationStatus,
+  ServiceCatalogueState,
   ServiceRequestStatus,
   WorkOrderStatus,
 } from "@fixflow/shared";
@@ -49,6 +50,7 @@ export const STATUS_ICON_NAMES = [
   "mail-x",
   "circle-minus",
   "circle-help",
+  "archive",
 ] as const;
 export type StatusIconName = (typeof STATUS_ICON_NAMES)[number];
 
@@ -67,7 +69,14 @@ export interface StatusMeta {
 
 /** Every record type that can carry a status badge. */
 export type StatusKind =
-  "request" | "quotation" | "workOrder" | "invoice" | "payment" | "notification" | "emailDelivery";
+  | "request"
+  | "quotation"
+  | "workOrder"
+  | "invoice"
+  | "payment"
+  | "notification"
+  | "emailDelivery"
+  | "service";
 
 export interface StatusValueByKind {
   request: ServiceRequestStatus;
@@ -77,6 +86,7 @@ export interface StatusValueByKind {
   payment: PaymentRecordState;
   notification: NotificationReadState;
   emailDelivery: EmailDeliveryStatus;
+  service: ServiceCatalogueState;
 }
 
 export type StatusMetaTable = { [K in StatusKind]: Record<StatusValueByKind[K], StatusMeta> };
@@ -303,6 +313,27 @@ export const STATUS_META: StatusMetaTable = {
       tone: "neutral",
       icon: "circle-minus",
       description: "Not sent, for example because the address is reserved for demo use.",
+    },
+  },
+  // Staff only: where a service stands in the catalogue (D-50).
+  service: {
+    PUBLISHED: {
+      label: "Published",
+      tone: "success",
+      icon: "circle-check",
+      description: "Shown on the website and open to new requests.",
+    },
+    UNPUBLISHED: {
+      label: "Unpublished",
+      tone: "neutral",
+      icon: "file-pen",
+      description: "Not on the website yet, so customers can't see or request it.",
+    },
+    ARCHIVED: {
+      label: "Archived",
+      tone: "neutral",
+      icon: "archive",
+      description: "Hidden from the website and closed to new requests. It can be restored.",
     },
   },
 };

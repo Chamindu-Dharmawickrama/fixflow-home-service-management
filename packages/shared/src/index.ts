@@ -21,12 +21,27 @@ export {
   type GoogleAuthDto,
   ROLE_HOME_PATH,
 } from "./auth.js";
+export {
+  BUNDLED_LOGOS,
+  BUNDLED_SERVICE_IMAGES,
+  type BundledLogoKey,
+  type BundledServiceImageKey,
+  isBundledLogoKey,
+  isBundledServiceImageKey,
+} from "./bundled-assets.js";
 export { API_PREFIX } from "./constants.js";
+export {
+  isSupportedCurrency,
+  SUPPORTED_CURRENCIES,
+  type SupportedCurrencyCode,
+} from "./currencies.js";
 export {
   NotificationReadState,
   notificationReadState,
   PaymentRecordState,
   paymentRecordState,
+  ServiceCatalogueState,
+  serviceCatalogueState,
 } from "./derived-status.js";
 export {
   ActivityEntityType,
@@ -51,3 +66,16 @@ export type {
   NotificationListResponse,
   NotificationsReadAllDto,
 } from "./notifications.js";
+export {
+  type AdminServiceDto,
+  type AdminServiceListMeta,
+  type AdminServiceListResponse,
+  type PublicServiceDto,
+  SERVICE_STATUS_FILTERS,
+  ServiceAction,
+  type ServiceStatusFilter,
+} from "./services.js";
+export type { AdminSettingsDto, AdminSettingsField, PublicSettingsDto } from "./settings.js";
+export { isValidSlug, SLUG_MAX_LENGTH, SLUG_PATTERN, slugify } from "./slug.js";
+export { isSupportedTimeZone, listSupportedTimeZones } from "./time-zones.js";
+export { isHttpsUrl, isTaxRateInRange, isValidPhone, isValidPostalCode } from "./validators.js";

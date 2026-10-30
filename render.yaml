@@ -47,10 +47,11 @@ services:
         value: production
       - key: LOG_LEVEL
         value: info
-      # Render terminates TLS in front of the app, and Vercel's rewrite sits in front of Render. How many of
-      # the X-Forwarded-For hops to trust is verified on the hosted preview (docs/DEPLOYMENT.md, section 8).
+      # Four hops sit between the API and the visitor, measured on the hosted preview (docs/DEPLOYMENT.md, section 8):
+      # Render's local proxy (::1), Render's load balancer, Cloudflare and Vercel's egress, then the client.
+      # With 1, every visitor would look like Render's private load-balancer address (one shared rate-limit counter).
       - key: TRUST_PROXY
-        value: "1"
+        value: "4"
       # Neon. DATABASE_URL is the POOLED string (host contains "-pooler"), used by the running API.
       # DIRECT_DATABASE_URL is the non-pooled string, used only by `prisma migrate deploy` in the build.
       - key: DATABASE_URL

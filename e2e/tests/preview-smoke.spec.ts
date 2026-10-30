@@ -19,8 +19,20 @@ test.describe("hosted deployment", () => {
       tag: "@smoke",
     },
     async ({ page, context, baseURL }) => {
+      const loginResponse = page.waitForResponse(
+        (response) =>
+          response.url().endsWith("/api/v1/auth/login") && response.request().method() === "POST",
+      );
       const landedOn = await loginAs(page, "admin");
       expect(landedOn).toBe("/app/dashboard");
+
+      // SameSite is read from what the server sent: WebKit's cookie jar reports Lax as "None" on Windows.
+      const sent = (await (await loginResponse).headersArray())
+        .filter((header) => header.name.toLowerCase() === "set-cookie")
+        .map((header) => header.value);
+      expect(sent.find((value) => value.startsWith("__Host-fixflow_session="))).toMatch(
+        /;\s*SameSite=Lax(;|$)/i,
+      );
 
       const host = new URL(baseURL ?? "").host;
       const session = (await context.cookies()).find((cookie) =>
@@ -30,7 +42,6 @@ test.describe("hosted deployment", () => {
       expect(session?.name).toBe("__Host-fixflow_session");
       expect(session?.secure).toBe(true);
       expect(session?.httpOnly).toBe(true);
-      expect(session?.sameSite).toBe("Lax");
       expect(session?.path).toBe("/");
       // Host-only: set for the web origin itself, not for a parent domain and not for the API's host.
       expect(session?.domain).toBe(host);

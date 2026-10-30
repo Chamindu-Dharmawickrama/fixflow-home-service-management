@@ -12,8 +12,10 @@ services:
     # The free plan sleeps after about 15 minutes without traffic (a cold start takes about a minute;
     # the public website shows a retry message meanwhile, D-87). Use a paid plan for the public demo (Q-09).
     plan: free
-    # A Render region cannot be changed later. Pick the one nearest the Neon project, then keep it.
-    region: oregon
+    # A Render region cannot be changed later: it must be the one nearest the Neon project (this preview's
+    # Neon endpoint is ap-southeast-1, Singapore; the first Blueprint was created in Oregon and failed to
+    # reach it). Change it here before creating the service if the Neon region is different.
+    region: singapore
     branch: main
     autoDeployTrigger: commit
     # Only changes that can affect the API rebuild it (the web app has its own Vercel deployments).
@@ -27,11 +29,13 @@ services:
     # NODE_ENV=production is set below, and it applies to the build too: npm would then skip devDependencies,
     # but the build needs prisma and typescript (F-14), hence --include=dev.
     # Migrations run here, with DIRECT_DATABASE_URL, because pre-deploy commands are not on every plan (D-48).
-    # A failing migration fails the build, so the previous deploy keeps serving.
+    # A failing migration fails the build, so the previous deploy keeps serving. Neon suspends an idle compute
+    # and Prisma gives up connecting after 5 s by default (P1001), so the URL carries connect_timeout=30 and the
+    # migration is tried once more after 20 s.
     buildCommand: >-
       npm ci --include=dev
       && npm run build -w @fixflow/shared
-      && npm run db:deploy -w @fixflow/server
+      && (npm run db:deploy -w @fixflow/server || (sleep 20 && npm run db:deploy -w @fixflow/server))
       && npm run build -w @fixflow/server
     startCommand: npm run start -w @fixflow/server
     # Liveness only: it never queries the database, so Render's checks do not keep Neon awake (D-14).

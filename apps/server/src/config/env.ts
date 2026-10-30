@@ -108,7 +108,8 @@ const EXPECTED: Readonly<Record<string, string>> = {
   LOG_LEVEL: LOG_LEVELS.join(", "),
   WEB_ORIGIN: "an origin such as https://app.example.com (scheme and host, no path)",
   TRUST_PROXY: "true, false, or the number of proxy hops",
-  UPSTASH_REDIS_REST_URL: "an https URL",
+  UPSTASH_REDIS_REST_URL:
+    "an https URL such as https://<name>.upstash.io (the REST URL, without quotes; not the redis:// address)",
   UPSTASH_REDIS_REST_TOKEN: "a non-empty string",
   RATE_LIMIT_DRIVER: RATE_LIMIT_DRIVERS.join(", "),
   RATE_LIMIT_MULTIPLIER: "a number greater than 0",

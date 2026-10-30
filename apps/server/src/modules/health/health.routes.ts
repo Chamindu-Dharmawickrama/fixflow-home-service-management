@@ -27,26 +27,5 @@ export function createHealthRouter(deps: AppDeps): Router {
     res.json({ data: { status: "ready" } });
   });
 
-  // T09-DEBUG (temporary, removed after the client-IP check in docs/DEPLOYMENT.md): echoes what the
-  // API sees of the caller's address behind Vercel and Render.
-  router.get("/__debug-ip", (req, res) => {
-    const header = (name: string) => req.get(name) ?? null;
-    res.json({
-      data: {
-        trustProxy: deps.config.trustProxy,
-        ip: req.ip ?? null,
-        ips: req.ips,
-        socket: req.socket.remoteAddress ?? null,
-        xForwardedFor: header("x-forwarded-for"),
-        xRealIp: header("x-real-ip"),
-        xVercelForwardedFor: header("x-vercel-forwarded-for"),
-        forwarded: header("forwarded"),
-        cfConnectingIp: header("cf-connecting-ip"),
-        trueClientIp: header("true-client-ip"),
-        origin: header("origin"),
-      },
-    });
-  });
-
   return router;
 }

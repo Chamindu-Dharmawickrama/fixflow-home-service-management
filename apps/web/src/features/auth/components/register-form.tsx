@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
+import { FormAlert, OrDivider } from "@/components/forms/form-alert";
 import { FormErrorSummary } from "@/components/forms/form-error-summary";
 import { applyApiFieldErrors } from "@/components/forms/form-errors";
 import { FormField } from "@/components/forms/form-field";
@@ -19,7 +20,6 @@ import { destinationAfterSignIn } from "@/lib/auth/paths";
 import { DEMO_NOTICE } from "../demo-accounts";
 import { describeAuthError } from "../lib/errors";
 import { PASSWORD_HELP, registerSchema, type RegisterValues } from "../lib/schemas";
-import { FormAlert, OrDivider } from "./form-alert";
 import { GoogleSignInButton } from "./google-sign-in-button";
 import { PasswordInput } from "./password-input";
 import { PasswordStrength } from "./password-strength";

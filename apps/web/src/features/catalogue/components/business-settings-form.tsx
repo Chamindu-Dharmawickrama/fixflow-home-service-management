@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
+import { FormAlert } from "@/components/forms/form-alert";
 import { FormErrorSummary } from "@/components/forms/form-error-summary";
 import { applyApiFieldErrors } from "@/components/forms/form-errors";
 import { FormField, FormFieldGroup } from "@/components/forms/form-field";
@@ -22,7 +23,6 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { toast } from "@/components/ui/sonner";
 import { Textarea } from "@/components/ui/textarea";
-import { FormAlert } from "@/features/auth/components/form-alert";
 import { apiFetch, describeApiError, isApiError } from "@/lib/api";
 
 import { LOGO_ASSETS } from "../lib/bundled-assets";

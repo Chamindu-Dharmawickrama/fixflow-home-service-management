@@ -20,6 +20,29 @@ export function isValidPhone(value: string): boolean {
   return digits >= minDigits && digits <= maxDigits;
 }
 
+/**
+ * Tidies a customer's phone number for storage: leading and trailing spaces go and every run of
+ * whitespace becomes one space. The punctuation is kept, because the number is shown as it is stored.
+ */
+export function normalizeCustomerPhone(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+/**
+ * A customer's phone number as people write it: an optional leading `+`, then digits with spaces,
+ * hyphens and brackets, 7 to 20 characters in all with 7 to 15 digits. Call it with a value that
+ * went through {@link normalizeCustomerPhone}. Letters, dots and extensions are not accepted.
+ */
+export function isValidCustomerPhone(value: string): boolean {
+  const { minLength, maxLength, minDigits, maxDigits } = LIMITS.customerPhone;
+  // The pattern allows a `+` only as the first character.
+  if (value.length < minLength || value.length > maxLength || !/^\+?[\d\s()-]+$/.test(value)) {
+    return false;
+  }
+  const digits = value.replace(/\D/g, "").length;
+  return digits >= minDigits && digits <= maxDigits;
+}
+
 /** Letters, digits, spaces and hyphens, starting with a letter or digit (`10999`, `SW1A 1AA`, `K1A-0B1`). */
 export function isValidPostalCode(value: string): boolean {
   return /^[A-Za-z0-9][A-Za-z0-9 -]*$/.test(value);

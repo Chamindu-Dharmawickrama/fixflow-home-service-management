@@ -39,6 +39,8 @@ describe("ErrorCode", () => {
         "SIGNUP_DISABLED",
         // T07 — service catalogue
         "SLUG_TAKEN",
+        // T10 — customer profile and addresses
+        "ADDRESS_LIMIT_REACHED",
       ].sort(),
     );
   });

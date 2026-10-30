@@ -3,11 +3,10 @@
 import { LogOut } from "lucide-react";
 import { useState } from "react";
 
+import { FormAlert } from "@/components/forms/form-alert";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
 import { navigateWithFullReload } from "@/lib/auth/navigate";
-
-import { FormAlert } from "./form-alert";
 
 /** A plain "Sign out" button for pages that have no user menu. */
 export function SignOutButton({ variant = "outline" }: { variant?: "outline" | "primary" }) {

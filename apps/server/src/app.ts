@@ -11,6 +11,7 @@ import { notFoundHandler } from "./middleware/not-found.js";
 import { clientIp, rateLimitByName } from "./middleware/rate-limit.js";
 import { requestId } from "./middleware/request-id.js";
 import { createAuthRouter } from "./modules/auth/auth.routes.js";
+import { createCustomersRouter } from "./modules/customers/customers.routes.js";
 import { createHealthRouter } from "./modules/health/health.routes.js";
 import { createNotificationsRouter } from "./modules/notifications/notifications.routes.js";
 import { createServicesRouter } from "./modules/services/services.routes.js";
@@ -65,6 +66,7 @@ export function createApp(deps: AppDeps, options: CreateAppOptions = {}): Expres
 
   app.use(`${API_PREFIX}/health`, createHealthRouter(deps));
   app.use(`${API_PREFIX}/auth`, createAuthRouter(deps));
+  app.use(`${API_PREFIX}/customers`, createCustomersRouter(deps));
   app.use(`${API_PREFIX}/notifications`, createNotificationsRouter(deps));
   // These two serve both the public and the admin paths of their module (`/settings/public` and
   // `/admin/settings`, `/services` and `/admin/services`), so they are mounted on the prefix itself.

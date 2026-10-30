@@ -127,7 +127,7 @@ export function ConfirmDialog({
             }
           }}
           className={cn(
-            "fixed inset-4 z-50 m-auto flex h-fit max-h-full w-full max-w-md flex-col gap-4 overflow-y-auto rounded-2xl bg-surface p-5 shadow-lg sm:p-6",
+            "fixed inset-4 z-50 m-auto flex h-fit max-h-full w-auto max-w-md flex-col gap-4 overflow-y-auto rounded-2xl bg-surface p-5 shadow-lg sm:p-6",
             "duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
             "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
           )}

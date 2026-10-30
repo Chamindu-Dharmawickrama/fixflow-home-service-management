@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
+import { FormAlert } from "@/components/forms/form-alert";
 import { applyApiFieldErrors } from "@/components/forms/form-errors";
 import { FormField } from "@/components/forms/form-field";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,6 @@ import { cn } from "@/lib/utils";
 
 import { describeAuthError } from "../lib/errors";
 import { PASSWORD_HELP, resetPasswordSchema, type ResetPasswordValues } from "../lib/schemas";
-import { FormAlert } from "./form-alert";
 import { PasswordInput } from "./password-input";
 import { PasswordStrength } from "./password-strength";
 

@@ -59,6 +59,10 @@ export const ErrorCode = {
   // Service catalogue (T07)
   /** 409 — another service already uses this slug (its web address). */
   SLUG_TAKEN: "SLUG_TAKEN",
+
+  // Customer profile and addresses (T10)
+  /** 409 — the customer already has the maximum number of saved addresses. */
+  ADDRESS_LIMIT_REACHED: "ADDRESS_LIMIT_REACHED",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

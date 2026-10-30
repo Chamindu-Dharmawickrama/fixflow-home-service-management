@@ -5,6 +5,7 @@ import { Archive, ArchiveRestore } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 
+import { FormAlert } from "@/components/forms/form-alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -12,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
-import { FormAlert } from "@/features/auth/components/form-alert";
 import { apiFetch, describeApiError, isApiError } from "@/lib/api";
 import { getStatusMeta } from "@/lib/formatting/status";
 

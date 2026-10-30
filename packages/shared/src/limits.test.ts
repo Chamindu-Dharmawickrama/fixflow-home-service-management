@@ -56,6 +56,20 @@ describe("LIMITS", () => {
     expect(Number(LIMITS.discount.min)).toBe(0);
   });
 
+  it("holds the customer profile and address limits of T10", () => {
+    const { address, customerPhone } = LIMITS;
+
+    expect(address.maxPerCustomer).toBe(10);
+    expect(address.label).toEqual({ minLength: 2, maxLength: 40 });
+    expect(address.accessNotes.maxLength).toBe(500);
+    expect(customerPhone.minLength).toBe(7);
+    expect(customerPhone.maxLength).toBe(20);
+    // The digits must fit inside the characters allowed, or no number could ever be valid.
+    expect(customerPhone.minDigits).toBeLessThanOrEqual(customerPhone.maxDigits);
+    expect(customerPhone.minDigits).toBeGreaterThanOrEqual(customerPhone.minLength);
+    expect(customerPhone.maxDigits).toBeLessThanOrEqual(customerPhone.maxLength);
+  });
+
   it("has pagination defaults that are consistent with each other", () => {
     const { defaultPageSize, maxPageSize, maxPage } = LIMITS.pagination;
 

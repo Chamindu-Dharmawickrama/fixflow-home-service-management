@@ -49,7 +49,14 @@ async function PortalGate({ children }: { children: ReactNode }) {
     <PortalShell
       homeHref={roleHomePath(user.role)}
       notifications={<NotificationBell />}
-      userMenu={<UserMenu name={user.name} avatarUrl={user.avatarUrl} roleLabel="Customer" />}
+      userMenu={
+        <UserMenu
+          name={user.name}
+          avatarUrl={user.avatarUrl}
+          roleLabel="Customer"
+          accountHref="/portal/profile"
+        />
+      }
     >
       <SessionKeepAlive />
       {children}

@@ -33,6 +33,22 @@ export const LIMITS = {
   personName: { minLength: 2, maxLength: 100 },
   /** The longest valid email address (RFC 5321). */
   email: { maxLength: 254 },
+  /**
+   * A customer's own phone number (FR-013): digits, spaces and `+ - ( )`, 7 to 20 characters once
+   * the spaces are tidied. At least 7 and at most 15 of them must be digits (the E.164 maximum).
+   */
+  customerPhone: { minLength: 7, maxLength: 20, minDigits: 7, maxDigits: 15 },
+  /** A customer's saved service addresses (FR-013, T10). */
+  address: {
+    maxPerCustomer: 10,
+    label: { minLength: 2, maxLength: 40 },
+    line: { maxLength: 120 },
+    city: { maxLength: 80 },
+    region: { maxLength: 80 },
+    postalCode: { maxLength: 20 },
+    /** "Gate code, parking, pets…": private to the customer and the business. */
+    accessNotes: { maxLength: 500 },
+  },
   /** Business settings (FR-100). Day counts are whole days. */
   businessSettings: {
     businessName: { minLength: 2, maxLength: 100 },

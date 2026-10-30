@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import * as shared from "./index.js";
-import { isHttpsUrl, isTaxRateInRange, isValidPhone, isValidPostalCode } from "./validators.js";
+import {
+  isHttpsUrl,
+  isTaxRateInRange,
+  isValidCustomerPhone,
+  isValidPhone,
+  isValidPostalCode,
+  normalizeCustomerPhone,
+} from "./validators.js";
 
 describe("isHttpsUrl", () => {
   it.each(["https://example.test/logo.png", "https://cdn.example.test/a/b.svg?v=2"])(
@@ -49,6 +56,43 @@ describe("isValidPhone", () => {
   });
 });
 
+describe("normalizeCustomerPhone", () => {
+  it("trims the ends and collapses runs of whitespace, keeping the punctuation", () => {
+    expect(normalizeCustomerPhone("  (212)   555-0142 ")).toBe("(212) 555-0142");
+    expect(normalizeCustomerPhone("+44\t20  7946 0000")).toBe("+44 20 7946 0000");
+    expect(normalizeCustomerPhone("   ")).toBe("");
+  });
+});
+
+describe("isValidCustomerPhone", () => {
+  it.each([
+    "(212) 555-0142",
+    "+1 (212) 555-0142",
+    "+44 20 7946 0958",
+    "5550142",
+    "212-555-0142",
+    // 20 characters, the longest accepted
+    "+44 (0) 20 7946 0958",
+  ])("accepts %s", (value) => {
+    expect(isValidCustomerPhone(value)).toBe(true);
+  });
+
+  it.each([
+    ["too short", "555-01"],
+    ["a dot", "212.555.0142"],
+    ["letters", "212-CALL-NOW"],
+    ["an extension", "212 555 0142 x5"],
+    ["a plus inside the number", "212+555 0142"],
+    ["only punctuation", "(((-----)))"],
+    ["21 characters", "+44 (0) 20 7946 09580"],
+    ["16 digits", "1234 5678 9012 3456"],
+    ["markup", "<b>5550142</b>"],
+    ["empty", ""],
+  ])("rejects %s", (_reason, value) => {
+    expect(isValidCustomerPhone(value)).toBe(false);
+  });
+});
+
 describe("isValidPostalCode", () => {
   it("accepts letters, digits, spaces and hyphens, and nothing else", () => {
     for (const value of ["10999", "SW1A 1AA", "K1A-0B1"])
@@ -70,6 +114,8 @@ describe("package entry point", () => {
   it("re-exports the validators", () => {
     expect(shared.isHttpsUrl).toBe(isHttpsUrl);
     expect(shared.isValidPhone).toBe(isValidPhone);
+    expect(shared.isValidCustomerPhone).toBe(isValidCustomerPhone);
+    expect(shared.normalizeCustomerPhone).toBe(normalizeCustomerPhone);
     expect(shared.isValidPostalCode).toBe(isValidPostalCode);
     expect(shared.isTaxRateInRange).toBe(isTaxRateInRange);
   });

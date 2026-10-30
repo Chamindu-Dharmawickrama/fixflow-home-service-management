@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { FormAlert, OrDivider } from "@/components/forms/form-alert";
 import { applyApiFieldErrors } from "@/components/forms/form-errors";
 import { FormField } from "@/components/forms/form-field";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,6 @@ import type { DemoAccountOption } from "../demo-accounts";
 import { describeAuthError } from "../lib/errors";
 import { loginSchema, type LoginValues } from "../lib/schemas";
 import { DemoAccountsPanel } from "./demo-accounts-panel";
-import { FormAlert, OrDivider } from "./form-alert";
 import { GoogleSignInButton } from "./google-sign-in-button";
 import { PasswordInput } from "./password-input";
 import { useGoogleSignIn } from "./use-google-sign-in";

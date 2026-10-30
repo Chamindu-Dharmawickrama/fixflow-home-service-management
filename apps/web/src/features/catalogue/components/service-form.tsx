@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
+import { FormAlert } from "@/components/forms/form-alert";
 import { FormErrorSummary } from "@/components/forms/form-error-summary";
 import { applyApiFieldErrors } from "@/components/forms/form-errors";
 import { FormField, FormFieldGroup } from "@/components/forms/form-field";
@@ -22,7 +23,6 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
 import { Textarea } from "@/components/ui/textarea";
-import { FormAlert } from "@/features/auth/components/form-alert";
 import { apiFetch, describeApiError, isApiError } from "@/lib/api";
 
 import { SERVICE_IMAGE_ASSETS } from "../lib/bundled-assets";

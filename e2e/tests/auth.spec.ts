@@ -308,8 +308,11 @@ test.describe("session-aware navigation", () => {
     await expect(page.getByRole("navigation", { name: "Portal" })).toContainText("Overview");
     await page.getByRole("button", { name: /Account menu for/ }).click();
     await expect(page.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
-    // The customer menu has no Account item until the profile page exists (no dead links).
-    await expect(page.getByRole("menuitem", { name: "Account" })).toHaveCount(0);
+    // The profile page exists since T10, so the customer menu leads to it.
+    await expect(page.getByRole("menuitem", { name: "Account" })).toHaveAttribute(
+      "href",
+      "/portal/profile",
+    );
   });
 
   test("the admin menu names the person and links to their account page", async ({ page }) => {

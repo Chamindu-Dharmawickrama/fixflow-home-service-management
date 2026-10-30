@@ -1,10 +1,12 @@
+import type { CustomerProfileDto } from "@fixflow/shared";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/features/auth/components/area-skeleton";
-import { AccountSummary } from "@/features/auth/components/sign-in-methods";
+import { loadErrorState } from "@/features/catalogue/components/load-error";
+import { ProfileSummaryCard } from "@/features/portal/components/profile-summary-card";
+import { serverApiGet } from "@/lib/api/server";
 import { getCurrentUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Overview" };
@@ -17,8 +19,9 @@ export const metadata: Metadata = { title: "Overview" };
 export const instant = false;
 
 /**
- * The interim customer home (T05): a greeting and the account summary. Requests, quotations,
- * jobs and invoices are added as they are built; nothing here pretends otherwise.
+ * The interim customer home (T05, T10): a greeting and a summary of the customer's profile with
+ * the way to edit it. Requests, quotations, jobs and invoices are added as they are built; nothing
+ * here pretends otherwise.
  */
 export default function PortalHomePage() {
   return (
@@ -34,21 +37,29 @@ async function PortalHomeContent() {
     return null; // The layout has already redirected a visitor without a session.
   }
 
+  let profile: CustomerProfileDto;
+  try {
+    profile = await serverApiGet<CustomerProfileDto>("/customers/me");
+  } catch (error) {
+    return (
+      <>
+        <PageHeader title={`Hello, ${me.user.name}`} />
+        {loadErrorState({
+          error,
+          title: "We couldn't load your profile",
+          retryHref: "/portal",
+        })}
+      </>
+    );
+  }
+
   return (
     <>
       <PageHeader
         title={`Hello, ${me.user.name}`}
         description="This is your customer account. Your service requests, quotations and invoices will appear here as soon as those features are ready."
       />
-      <Card>
-        <CardHeader>
-          <CardTitle as="h2">Your account</CardTitle>
-          <CardDescription>The details we have for you.</CardDescription>
-        </CardHeader>
-        <div className="border-t border-border px-5 sm:px-6">
-          <AccountSummary user={me.user} />
-        </div>
-      </Card>
+      <ProfileSummaryCard profile={profile} />
     </>
   );
 }

@@ -31,6 +31,10 @@ export const RATE_LIMITS = {
   // Business configuration (T07). Counted per signed-in admin: a person editing a form never gets
   // near it, a script or a stolen session does.
   adminWrite: { limit: 60, windowSeconds: 60 },
+
+  // Customer profile and addresses (T10). Counted per signed-in customer; saving a form is one
+  // request, so only a script or a stolen session comes near it.
+  customerWrite: { limit: 30, windowSeconds: 60 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export type RateLimitName = keyof typeof RATE_LIMITS;

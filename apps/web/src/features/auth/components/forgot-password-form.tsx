@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { FormAlert } from "@/components/forms/form-alert";
 import { applyApiFieldErrors } from "@/components/forms/form-errors";
 import { FormField } from "@/components/forms/form-field";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,6 @@ import { apiFetch, isApiError } from "@/lib/api";
 
 import { describeAuthError } from "../lib/errors";
 import { forgotPasswordSchema, type ForgotPasswordValues } from "../lib/schemas";
-import { FormAlert } from "./form-alert";
 
 /**
  * Asks for a password-reset email. Whatever address is typed, the confirmation is the same

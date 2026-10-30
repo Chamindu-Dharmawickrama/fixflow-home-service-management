@@ -35,6 +35,7 @@ export {
   SUPPORTED_CURRENCIES,
   type SupportedCurrencyCode,
 } from "./currencies.js";
+export type { CustomerProfileDto, DeletedAddressDto, ServiceAddressDto } from "./customers.js";
 export {
   NotificationReadState,
   notificationReadState,
@@ -78,4 +79,11 @@ export {
 export type { AdminSettingsDto, AdminSettingsField, PublicSettingsDto } from "./settings.js";
 export { isValidSlug, SLUG_MAX_LENGTH, SLUG_PATTERN, slugify } from "./slug.js";
 export { isSupportedTimeZone, listSupportedTimeZones } from "./time-zones.js";
-export { isHttpsUrl, isTaxRateInRange, isValidPhone, isValidPostalCode } from "./validators.js";
+export {
+  isHttpsUrl,
+  isTaxRateInRange,
+  isValidCustomerPhone,
+  isValidPhone,
+  isValidPostalCode,
+  normalizeCustomerPhone,
+} from "./validators.js";

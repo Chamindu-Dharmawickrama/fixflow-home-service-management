@@ -39,6 +39,7 @@ export const NAVIGATION = {
   ] as readonly NavGroup[],
   portal: [
     { label: "Overview", href: "/portal", icon: "house", match: "exact" },
+    { label: "Profile", href: "/portal/profile", icon: "user" },
   ] as readonly NavItem[],
 } as const;
 

@@ -160,6 +160,16 @@ export interface CustomerRequestListItemDto {
 }
 
 /**
+ * What the customer is told about a cancelled request. The message is the one the business chose to
+ * send (FR-026); the internal reason is never part of this shape (BR-19).
+ */
+export interface CustomerRequestCancellationDto {
+  cancelledAt: string;
+  /** The business's message to the customer, or `null` when it gave none. */
+  message: string | null;
+}
+
+/**
  * `GET /api/v1/requests/:id` and the answer to `POST /api/v1/requests`: a request in full, as its
  * owner sees it. An admin who opens the same URL gets this same shape (D-41).
  */
@@ -169,6 +179,8 @@ export interface CustomerRequestDto extends CustomerRequestListItemDto {
   /** The preferred window as UTC instants, worked out in the business time zone (D-35). */
   preferredStart: string;
   preferredEnd: string;
+  /** Only for a cancelled request; `null` otherwise. */
+  cancellation: CustomerRequestCancellationDto | null;
   notes: CustomerRequestNoteDto[];
   timeline: CustomerTimelineEventDto[];
 }

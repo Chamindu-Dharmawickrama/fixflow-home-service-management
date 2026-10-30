@@ -202,6 +202,47 @@ export async function activityOf(requestId: string) {
   );
 }
 
+/**
+ * Puts a request in a status behind the application's back, as another admin's change would. For
+ * scenarios that start from a state the screens cannot reach yet (T12 specs): the product's own
+ * transition rules are tested through the API.
+ */
+export async function setRequestStatus(
+  requestId: string,
+  status: ServiceRequestStatus,
+): Promise<void> {
+  await withDatabase(async (prisma) => {
+    await prisma.serviceRequest.update({ where: { id: requestId }, data: { status } });
+  });
+}
+
+/** A request's status and cancellation fields as stored. */
+export async function readRequestState(requestId: string) {
+  return withDatabase((prisma) =>
+    prisma.serviceRequest.findUniqueOrThrow({
+      where: { id: requestId },
+      select: {
+        status: true,
+        cancelReason: true,
+        cancelCustomerMessage: true,
+        cancelledAt: true,
+        cancelledByUserId: true,
+      },
+    }),
+  );
+}
+
+/** The notes on a request, oldest first. */
+export async function notesOf(requestId: string) {
+  return withDatabase((prisma) =>
+    prisma.requestNote.findMany({
+      where: { requestId },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select: { body: true, visibility: true, authorUserId: true },
+    }),
+  );
+}
+
 /** A customer's saved addresses (label and street), oldest first. */
 export async function savedAddressesOf(
   userId: string,

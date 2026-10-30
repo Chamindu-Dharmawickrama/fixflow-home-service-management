@@ -118,7 +118,7 @@ async function RequestContent({ params, searchParams }: RequestPageProps) {
 
       {showConfirmation ? <RequestConfirmation reference={request.reference} /> : null}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="flex flex-col gap-6">
           <NextStepCard request={request} />
           <RequestDetailsCard request={request} timeZone={timeZone} />

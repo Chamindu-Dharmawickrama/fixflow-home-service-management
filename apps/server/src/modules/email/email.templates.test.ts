@@ -367,6 +367,56 @@ describe("specific copy", () => {
     expect(email.html).toContain(">Review your quotation</a>");
   });
 
+  describe("the cancellation email (FR-026, BR-19)", () => {
+    it("gives only the neutral text when the business sent no message", () => {
+      const email = render("request-cancelled");
+
+      expect(email.text).toContain("has been cancelled, so no work will be scheduled for it");
+      expect(email.text).toContain("If this is not what you expected, please contact us.");
+      expect(email.text).not.toContain("A message from");
+    });
+
+    it("shows the message the business chose to send, under the business's name", () => {
+      const email = render("request-cancelled", {
+        customerMessage: "We no longer cover your street.\n\nSorry for the trouble.",
+      });
+
+      expect(email.text).toContain("A message from CoolBreeze Home Services:");
+      expect(email.text).toContain("We no longer cover your street.");
+      expect(email.text).toContain("Sorry for the trouble.");
+      expect(email.html).toContain("We no longer cover your street.");
+    });
+
+    it("treats a blank message as none", () => {
+      expect(render("request-cancelled", { customerMessage: "  \n " }).text).not.toContain(
+        "A message from",
+      );
+      expect(render("request-cancelled", { customerMessage: undefined }).text).not.toContain(
+        "A message from",
+      );
+    });
+
+    it("escapes a message that holds markup", () => {
+      const email = render("request-cancelled", {
+        customerMessage: '<img src=x onerror="alert(1)"> sorry',
+      });
+
+      expect(email.html).not.toContain("<img");
+      expect(email.html).toContain("&lt;img");
+    });
+
+    it("has no input for an internal reason, so none can reach the customer", () => {
+      const inputs = Object.keys(SAMPLE_INPUTS["request-cancelled"]);
+
+      expect(inputs.some((field) => /reason/i.test(field))).toBe(false);
+      // Whatever a careless caller passes, only the known fields are printed.
+      const email = render("request-cancelled", {
+        reason: "Customer is on the do-not-serve list.",
+      });
+      expect(email.html + email.text).not.toContain("do-not-serve");
+    });
+  });
+
   it("shows the appointment in the business time zone, and the old time when rescheduled", () => {
     expect(render("job-scheduled").text).toContain("When: Tue, Nov 10, 2026, 9:00 – 11:00 AM EST");
 

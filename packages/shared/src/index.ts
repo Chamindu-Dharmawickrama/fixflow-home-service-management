@@ -3,6 +3,44 @@ export type {
   AdminTimelineEventDto,
   CustomerTimelineEventDto,
 } from "./activity.js";
+export {
+  type AddCustomerNoteBody,
+  ADMIN_CUSTOMER_SORT_FIELDS,
+  type AdminCustomerDto,
+  type AdminCustomerListItemDto,
+  type AdminCustomerListResponse,
+  type AdminCustomerNoteDto,
+  type AdminCustomerRecentDto,
+  type AdminCustomerSortField,
+  type AdminCustomerSummaryDto,
+  CUSTOMER_HISTORY_TYPES,
+  CUSTOMER_NOTES_SHOWN,
+  CUSTOMER_RECENT_COUNT,
+  type CustomerHistoryInvoiceDto,
+  type CustomerHistoryItemByType,
+  type CustomerHistoryJobDto,
+  type CustomerHistoryQuotationDto,
+  type CustomerHistoryRequestDto,
+  type CustomerHistoryRequestRefDto,
+  type CustomerHistoryResponse,
+  type CustomerHistoryType,
+} from "./admin-customers.js";
+export {
+  type AddRequestNoteBody,
+  ADMIN_REQUEST_SORT_FIELDS,
+  type AdminPreviousRequestDto,
+  type AdminRequestCancellationDto,
+  type AdminRequestCustomerDto,
+  type AdminRequestDto,
+  type AdminRequestListItemDto,
+  type AdminRequestListMeta,
+  type AdminRequestListResponse,
+  type AdminRequestNoteDto,
+  type AdminRequestSortField,
+  type ChangeRequestStatusBody,
+  RequestAction,
+  type RequestStatusCounts,
+} from "./admin-requests.js";
 export type {
   ApiErrorBody,
   ApiResponse,
@@ -81,6 +119,7 @@ export type {
 } from "./notifications.js";
 export {
   type CreateServiceRequestBody,
+  type CustomerRequestCancellationDto,
   type CustomerRequestDto,
   type CustomerRequestListItemDto,
   type CustomerRequestListResponse,

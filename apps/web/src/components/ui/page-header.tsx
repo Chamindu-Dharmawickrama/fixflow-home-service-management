@@ -37,7 +37,10 @@ export function PageHeader({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{title}</h1>
+            {/* min-w-0 lets a flex item shrink below its longest word, so break-words can wrap it. */}
+            <h1 className="min-w-0 break-words font-display text-2xl font-semibold text-ink sm:text-3xl">
+              {title}
+            </h1>
             {status}
           </div>
           {meta ? (

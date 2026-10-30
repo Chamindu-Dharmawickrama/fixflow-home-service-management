@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button-variants";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { QUEUE_PATH } from "@/features/admin/lib/requests-queue";
 import { PageSkeleton } from "@/features/auth/components/area-skeleton";
 import { getCurrentUser } from "@/lib/auth/session";
 
@@ -16,14 +19,9 @@ export const metadata: Metadata = { title: "Dashboard" };
 export const instant = false;
 
 const COMING = [
-  ["Requests", "New service requests from customers, ready to review and quote."],
   ["Quotations", "Build, send and track quotations until the customer decides."],
   ["Jobs and schedule", "Turn accepted quotations into jobs and plan them on a calendar."],
   ["Invoices and payments", "Invoice completed jobs and record the payments you receive."],
-  [
-    "Customers, services and settings",
-    "Look after your customers, your service list and your business details.",
-  ],
 ] as const;
 
 /**
@@ -52,7 +50,20 @@ async function DashboardContent() {
       />
       <Card>
         <CardHeader>
-          <CardTitle as="h2">What you&apos;ll find here</CardTitle>
+          <CardTitle as="h2">Service requests</CardTitle>
+          <CardDescription>
+            Review what customers have sent, add notes and decide what happens next.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href={QUEUE_PATH} className={buttonVariants({ variant: "primary" })}>
+            Open the request queue
+          </Link>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">Still to come</CardTitle>
           <CardDescription>
             Nothing here is live yet. These are the areas that will join the sidebar.
           </CardDescription>

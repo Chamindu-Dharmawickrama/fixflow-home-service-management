@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { Inbox } from "lucide-react";
+import Link from "next/link";
 import { describe, expect, it, vi } from "vitest";
 
 import { Avatar, initialsOf } from "./avatar";
@@ -144,7 +145,7 @@ describe("state components", () => {
         icon={Inbox}
         title="You're all caught up"
         description="New requests appear here."
-        action={<a href="/app/requests">View all requests</a>}
+        action={<Link href="/app/requests">View all requests</Link>}
       />,
     );
     expect(screen.getByRole("heading", { name: "You're all caught up" })).toBeVisible();

@@ -1180,6 +1180,7 @@ describe("GET /requests/:id: ownership and the customer's view (D-41, BR-21, G.5
         "address",
         "preferredStart",
         "preferredEnd",
+        "cancellation",
         "notes",
         "timeline",
       ].sort(),

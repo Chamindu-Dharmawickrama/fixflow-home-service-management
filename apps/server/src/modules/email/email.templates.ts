@@ -143,18 +143,36 @@ export interface RequestCancelledEmailInput {
   requestReference: string;
   serviceName: string;
   requestUrl: string;
+  /**
+   * The message the business chose to send the customer when it cancelled (FR-026). When there is
+   * none the email says nothing more than the neutral text. There is deliberately **no field for the
+   * internal reason**: it cannot be passed in, so it cannot reach a customer (BR-19).
+   */
+  customerMessage?: string | undefined;
 }
 
 export function renderRequestCancelledEmail(
   input: Branded<RequestCancelledEmailInput>,
 ): RenderedEmail {
-  const { customerName, requestReference, serviceName, requestUrl } = input;
+  const { businessName, customerName, requestReference, serviceName, requestUrl, customerMessage } =
+    input;
+  const messageParagraphs =
+    customerMessage === undefined || customerMessage.trim() === ""
+      ? []
+      : [
+          `A message from ${businessName}:`,
+          ...customerMessage
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter((line) => line !== ""),
+        ];
   return renderEmail(input, {
     subject: `Request ${requestReference} was cancelled`,
     heading: "Your request was cancelled",
     intro: [
       greeting(customerName),
       `Your request for ${serviceName} has been cancelled, so no work will be scheduled for it.`,
+      ...messageParagraphs,
     ],
     details: [
       { label: "Reference", value: requestReference },

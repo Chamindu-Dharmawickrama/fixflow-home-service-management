@@ -11,9 +11,11 @@ import { notFoundHandler } from "./middleware/not-found.js";
 import { clientIp, rateLimitByName } from "./middleware/rate-limit.js";
 import { requestId } from "./middleware/request-id.js";
 import { createAuthRouter } from "./modules/auth/auth.routes.js";
+import { createAdminCustomersRouter } from "./modules/customers/customers.admin.routes.js";
 import { createCustomersRouter } from "./modules/customers/customers.routes.js";
 import { createHealthRouter } from "./modules/health/health.routes.js";
 import { createNotificationsRouter } from "./modules/notifications/notifications.routes.js";
+import { createAdminRequestsRouter } from "./modules/requests/requests.admin.routes.js";
 import { createRequestsRouter } from "./modules/requests/requests.routes.js";
 import { createServicesRouter } from "./modules/services/services.routes.js";
 import { createSettingsRouter } from "./modules/settings/settings.routes.js";
@@ -70,6 +72,8 @@ export function createApp(deps: AppDeps, options: CreateAppOptions = {}): Expres
   app.use(`${API_PREFIX}/customers`, createCustomersRouter(deps));
   app.use(`${API_PREFIX}/notifications`, createNotificationsRouter(deps));
   app.use(`${API_PREFIX}/requests`, createRequestsRouter(deps));
+  app.use(`${API_PREFIX}/admin/requests`, createAdminRequestsRouter(deps));
+  app.use(`${API_PREFIX}/admin/customers`, createAdminCustomersRouter(deps));
   // These two serve both the public and the admin paths of their module (`/settings/public` and
   // `/admin/settings`, `/services` and `/admin/services`), so they are mounted on the prefix itself.
   app.use(API_PREFIX, createSettingsRouter(deps));

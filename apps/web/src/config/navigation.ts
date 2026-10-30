@@ -10,7 +10,7 @@ import type { NavGroup, NavItem } from "@/lib/navigation";
  *
  * - `public`: the public website header (Home, Services and the How it works and Contact anchors, T08).
  * - `admin`: the business dashboard sidebar, in groups (T05 has the dashboard; T12 adds Requests,
- *   T14 Quotations, …). The admin's "Account" page lives in the user menu, not here.
+ *   T13 Customers, T14 Quotations, …). The admin's "Account" page lives in the user menu, not here.
  * - `portal`: the customer portal top bar (T05 has the overview; T10 adds Profile, T11 Requests, …).
  *
  * The shells take their items from here by default. The dev-only `/styleguide` passes its own
@@ -27,7 +27,13 @@ export const NAVIGATION = {
     { label: "Contact", href: "/#contact", icon: "mail" },
   ] as readonly NavItem[],
   admin: [
-    { items: [{ label: "Dashboard", href: "/app/dashboard", icon: "layout-dashboard" }] },
+    {
+      items: [
+        { label: "Dashboard", href: "/app/dashboard", icon: "layout-dashboard" },
+        { label: "Requests", href: "/app/requests", icon: "inbox" },
+        { label: "Customers", href: "/app/customers", icon: "users" },
+      ],
+    },
     {
       // Admin only: this list is the admin sidebar, and a customer is never handed it.
       label: "Settings",

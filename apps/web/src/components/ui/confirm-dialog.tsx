@@ -18,6 +18,15 @@ export interface ConfirmReasonOptions {
   description?: string | undefined;
 }
 
+export interface ConfirmSecondaryOptions {
+  label: string;
+  /** Not required: it may be left empty, and then `onConfirm` receives `undefined` for it. */
+  maxLength?: number | undefined;
+  placeholder?: string | undefined;
+  /** Say who will read it, for example "The customer receives this in an email." */
+  description?: string | undefined;
+}
+
 export interface ConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -31,11 +40,17 @@ export interface ConfirmDialogProps {
   /** Ask for a written reason (void, cancel, correct); the reason is passed to `onConfirm`. */
   reason?: ConfirmReasonOptions | undefined;
   /**
+   * An optional second piece of text beside the reason, for example a message to the customer that
+   * goes with an internal reason. It never blocks the confirm button. When this is set `onConfirm`
+   * receives it as its second argument (trimmed, or `undefined` when left empty).
+   */
+  secondary?: ConfirmSecondaryOptions | undefined;
+  /**
    * Runs when the user confirms. While the returned promise is pending the dialog stays open, both
    * buttons are blocked and Escape is ignored. If it resolves the dialog closes; if it rejects the
    * dialog stays open and shows the error so nothing looks done that is not.
    */
-  onConfirm: (reason: string | undefined) => void | Promise<void>;
+  onConfirm: (reason: string | undefined, secondary?: string) => void | Promise<void>;
 }
 
 const DEFAULT_REASON_MAX = 500;
@@ -55,14 +70,17 @@ export function ConfirmDialog({
   cancelLabel = "Cancel",
   destructive = false,
   reason,
+  secondary,
   onConfirm,
 }: ConfirmDialogProps) {
   const reasonId = useId();
+  const secondaryId = useId();
   const reasonRef = useRef<HTMLTextAreaElement>(null);
   // Radix returns focus only to a Trigger. This dialog is controlled and has none, so it remembers
   // the element that had focus when it opened and gives focus back there when it closes.
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const [reasonText, setReasonText] = useState("");
+  const [secondaryText, setSecondaryText] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,6 +91,7 @@ export function ConfirmDialog({
     setWasOpen(open);
     if (!open) {
       setReasonText("");
+      setSecondaryText("");
       setError(null);
       setPending(false);
     }
@@ -85,7 +104,13 @@ export function ConfirmDialog({
     setPending(true);
     setError(null);
     try {
-      await onConfirm(reason ? trimmed : undefined);
+      const reasonValue = reason ? trimmed : undefined;
+      if (secondary) {
+        const secondaryValue = secondaryText.trim();
+        await onConfirm(reasonValue, secondaryValue === "" ? undefined : secondaryValue);
+      } else {
+        await onConfirm(reasonValue);
+      }
       onOpenChange(false);
     } catch (caught) {
       setError(
@@ -161,6 +186,26 @@ export function ConfirmDialog({
                   maxLength={reason.maxLength ?? DEFAULT_REASON_MAX}
                   showCount
                   placeholder={reason.placeholder}
+                  disabled={pending}
+                />
+              )}
+            </Field>
+          ) : null}
+
+          {secondary ? (
+            <Field
+              id={secondaryId}
+              label={secondary.label}
+              description={secondary.description ?? "Optional."}
+            >
+              {(control) => (
+                <Textarea
+                  {...control}
+                  value={secondaryText}
+                  onChange={(event) => setSecondaryText(event.target.value)}
+                  maxLength={secondary.maxLength ?? DEFAULT_REASON_MAX}
+                  showCount
+                  placeholder={secondary.placeholder}
                   disabled={pending}
                 />
               )}

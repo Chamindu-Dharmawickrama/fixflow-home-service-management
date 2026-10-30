@@ -6,9 +6,11 @@ import {
   NoteVisibility,
   requestNextStep,
   requestStatusLabel,
+  ServiceRequestStatus,
 } from "@fixflow/shared";
 
 import type { Prisma } from "../../generated/prisma/client.js";
+import { toDateOnly } from "../../lib/date-only.js";
 import { CUSTOMER_ACTOR_YOU } from "../activity/activity.dto.js";
 import { toRequestAddress } from "./requests.domain.js";
 
@@ -49,6 +51,10 @@ export const REQUEST_DETAIL_SELECT = {
   accessNotesSnapshot: true,
   preferredStart: true,
   preferredEnd: true,
+  // The customer is told when a request was cancelled and the message the business chose to send.
+  // `cancelReason` (internal) is deliberately not selected.
+  cancelledAt: true,
+  cancelCustomerMessage: true,
   customer: { select: { userId: true } },
   notes: {
     where: { visibility: NoteVisibility.CUSTOMER_VISIBLE },
@@ -60,11 +66,6 @@ export const REQUEST_DETAIL_SELECT = {
 export type RequestDetailRow = Prisma.ServiceRequestGetPayload<{
   select: typeof REQUEST_DETAIL_SELECT;
 }>;
-
-/** `Date` columns come back as midnight UTC; the date-only wire format is `YYYY-MM-DD`. */
-function toDateOnly(value: Date): string {
-  return value.toISOString().slice(0, 10);
-}
 
 export function toCustomerRequestListItem(row: RequestListRow): CustomerRequestListItemDto {
   return {
@@ -117,6 +118,13 @@ export function toCustomerRequestDto(input: {
     address: toRequestAddress(row),
     preferredStart: row.preferredStart.toISOString(),
     preferredEnd: row.preferredEnd.toISOString(),
+    cancellation:
+      row.status === ServiceRequestStatus.CANCELLED
+        ? {
+            cancelledAt: (row.cancelledAt ?? row.submittedAt).toISOString(),
+            message: row.cancelCustomerMessage,
+          }
+        : null,
     notes: row.notes.map((note) => toCustomerNote(note, row.customer.userId, viewer)),
     timeline,
   };

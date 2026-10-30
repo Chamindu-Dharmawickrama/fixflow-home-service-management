@@ -44,12 +44,35 @@ export async function expectOrderedHeadings(page: Page): Promise<void> {
   });
 }
 
-/** Serious and critical axe violations on the current page, formatted for a failure message. */
-export async function seriousViolations(page: Page): Promise<string> {
+/**
+ * Serious and critical axe violations on the current page, formatted for a failure message.
+ *
+ * `scope` limits the scan to one part of the page (a CSS selector). Use it for an open modal dialog
+ * or menu: Radix hides the rest of the page with `aria-hidden` while keeping focus inside, which axe's
+ * `aria-hidden-focus` rule reports for the hidden page even though it cannot be reached. Scanning
+ * the dialog itself still checks everything a person can use while it is open.
+ */
+export async function seriousViolations(page: Page, scope?: string): Promise<string> {
   await page.evaluate(() => document.fonts.ready);
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
+  // A menu or dialog that is still fading in is measured half transparent, which blends its text
+  // with what is behind it and fails contrast checks it would pass. Wait for every animation that
+  // ends (a spinner never does) before measuring.
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  );
+  const builder = new AxeBuilder({ page }).withTags([
+    "wcag2a",
+    "wcag2aa",
+    "wcag21a",
+    "wcag21aa",
+    "wcag22aa",
+  ]);
+  const results = await (scope === undefined ? builder : builder.include(scope)).analyze();
   return results.violations
     .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
     .map(

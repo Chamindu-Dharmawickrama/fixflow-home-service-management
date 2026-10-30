@@ -51,6 +51,7 @@ function request(overrides: Partial<CustomerRequestDto> = {}): CustomerRequestDt
     },
     preferredStart: "2026-11-10T13:00:00.000Z",
     preferredEnd: "2026-11-10T17:00:00.000Z",
+    cancellation: null,
     notes: [],
     timeline: [],
     ...overrides,
@@ -175,6 +176,53 @@ describe("the request's cards", () => {
 
     expect(screen.getByText(REQUEST_NEXT_STEPS.CANCELLED)).toBeVisible();
     expect(screen.queryByText(/preference/)).not.toBeInTheDocument();
+  });
+
+  describe("What happens next, for a cancelled request", () => {
+    const cancelled = {
+      status: "CANCELLED" as const,
+      statusLabel: "Cancelled",
+      nextStep: REQUEST_NEXT_STEPS.CANCELLED,
+    };
+
+    it("shows the message the business chose to send", () => {
+      render(
+        <NextStepCard
+          request={request({
+            ...cancelled,
+            cancellation: {
+              cancelledAt: "2026-10-31T15:00:00.000Z",
+              message: "We can't reach your street this month.\nSorry about that.",
+            },
+          })}
+        />,
+      );
+
+      const message = screen.getByText(/We can't reach your street this month\./);
+      expect(message).toBeVisible();
+      expect(message).toHaveClass("whitespace-pre-line");
+      expect(screen.getByText("Message from us")).toBeVisible();
+    });
+
+    it("shows no message box when the business sent none", () => {
+      render(
+        <NextStepCard
+          request={request({
+            ...cancelled,
+            cancellation: { cancelledAt: "2026-10-31T15:00:00.000Z", message: null },
+          })}
+        />,
+      );
+
+      expect(screen.getByText(REQUEST_NEXT_STEPS.CANCELLED)).toBeVisible();
+      expect(screen.queryByText("Message from us")).not.toBeInTheDocument();
+    });
+
+    it("shows no message box for a request that was not cancelled", () => {
+      render(<NextStepCard request={request()} />);
+
+      expect(screen.queryByText("Message from us")).not.toBeInTheDocument();
+    });
   });
 
   it("Request details: service, problem as typed, address with access notes, time and sent date", () => {

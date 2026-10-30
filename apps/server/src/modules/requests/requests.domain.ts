@@ -1,17 +1,253 @@
 import { TZDate } from "@date-fns/tz";
 import {
+  addDaysToDateOnly,
+  ErrorCode,
   isDateOnly,
   PREFERRED_WINDOWS,
   preferredDateProblem,
   type PreferredWindow,
+  REQUEST_STATUS_LABELS,
+  RequestAction,
   type RequestAddressDto,
+  type RequestStatusCounts,
+  ServiceRequestStatus,
 } from "@fixflow/shared";
 
+import { type AppError, conflict } from "../../lib/errors.js";
+
 /**
- * Pure rules for service requests (spec §7.1, D-35, D-36): turning the customer's preferred day and
- * window into instants, copying an address, and the words of the history and the notification.
- * Nothing here reads a database, a clock or a request; the service passes everything in.
+ * Pure rules for service requests (spec §6.2, §7.1, D-21, D-35, D-36): which status changes are
+ * allowed and who may make them, turning the customer's preferred day and window into instants,
+ * copying an address, and the words of the history and the notification. Nothing here reads a
+ * database, a clock or a request; the services pass everything in.
  */
+
+// ---- Status transitions (D-21, spec §6.2) --------------------------------------------------------
+
+/** Who makes a status change: a business admin, or the system as a side effect of another workflow. */
+export const RequestTrigger = { ADMIN: "ADMIN", SYSTEM: "SYSTEM" } as const;
+export type RequestTrigger = (typeof RequestTrigger)[keyof typeof RequestTrigger];
+
+export interface RequestTransition {
+  from: ServiceRequestStatus;
+  to: ServiceRequestStatus;
+  trigger: RequestTrigger;
+  /** The admin action that makes it. Absent for system transitions. */
+  action?: RequestAction;
+}
+
+const S = ServiceRequestStatus;
+
+/** The statuses an admin may cancel from. `CONVERTED_TO_JOB` follows the work order instead. */
+const CANCELLABLE: readonly ServiceRequestStatus[] = [
+  S.SUBMITTED,
+  S.UNDER_REVIEW,
+  S.QUOTED,
+  S.ACCEPTED,
+  S.DECLINED,
+];
+
+/**
+ * Every allowed change of a request's status, as data (D-21). A pair that is not in this list is
+ * not allowed, whoever asks. `CANCELLED` and `CONVERTED_TO_JOB` have no way out. The admin actions
+ * and the system functions in `requests.transitions.ts` are both derived from it.
+ */
+export const REQUEST_TRANSITIONS: readonly RequestTransition[] = [
+  {
+    from: S.SUBMITTED,
+    to: S.UNDER_REVIEW,
+    trigger: RequestTrigger.ADMIN,
+    action: RequestAction.START_REVIEW,
+  },
+  ...CANCELLABLE.map((from) => ({
+    from,
+    to: S.CANCELLED,
+    trigger: RequestTrigger.ADMIN,
+    action: RequestAction.CANCEL,
+  })),
+  // A quotation being sent or answered moves the request: the system's doing, never by hand.
+  { from: S.UNDER_REVIEW, to: S.QUOTED, trigger: RequestTrigger.SYSTEM },
+  { from: S.QUOTED, to: S.ACCEPTED, trigger: RequestTrigger.SYSTEM },
+  { from: S.QUOTED, to: S.DECLINED, trigger: RequestTrigger.SYSTEM },
+  { from: S.QUOTED, to: S.UNDER_REVIEW, trigger: RequestTrigger.SYSTEM },
+  {
+    from: S.DECLINED,
+    to: S.UNDER_REVIEW,
+    trigger: RequestTrigger.ADMIN,
+    action: RequestAction.REOPEN,
+  },
+  { from: S.ACCEPTED, to: S.CONVERTED_TO_JOB, trigger: RequestTrigger.SYSTEM },
+];
+
+export function canTransition(
+  from: ServiceRequestStatus,
+  to: ServiceRequestStatus,
+  trigger: RequestTrigger,
+): boolean {
+  return REQUEST_TRANSITIONS.some(
+    (transition) =>
+      transition.from === from && transition.to === to && transition.trigger === trigger,
+  );
+}
+
+function statusName(status: ServiceRequestStatus): string {
+  return REQUEST_STATUS_LABELS[status].toLowerCase();
+}
+
+/**
+ * `409 INVALID_STATE_TRANSITION` unless D-21 allows `from` → `to` for this trigger. The message says
+ * why in words an admin can act on; `details` carries the two statuses for the client.
+ */
+export function assertRequestTransition(
+  from: ServiceRequestStatus,
+  to: ServiceRequestStatus,
+  trigger: RequestTrigger,
+): void {
+  if (canTransition(from, to, trigger)) {
+    return;
+  }
+  throw invalidTransition(from, to, trigger);
+}
+
+function invalidTransition(
+  from: ServiceRequestStatus,
+  to: ServiceRequestStatus,
+  trigger: RequestTrigger,
+): AppError {
+  const hasOutgoing = REQUEST_TRANSITIONS.some((transition) => transition.from === from);
+
+  let message: string;
+  if (!hasOutgoing) {
+    message = `This request is ${statusName(from)}, so it can no longer be changed.`;
+  } else if (trigger === RequestTrigger.ADMIN && canTransition(from, to, RequestTrigger.SYSTEM)) {
+    message =
+      "That change happens automatically, for example when a quotation is sent or answered, so it cannot be made by hand.";
+  } else {
+    message = `A request that is ${statusName(from)} cannot be moved to ${statusName(to)}.`;
+  }
+  return conflict(message, {
+    code: ErrorCode.INVALID_STATE_TRANSITION,
+    details: { currentStatus: from, requestedStatus: to },
+  });
+}
+
+export const STALE_REQUEST_MESSAGE =
+  "This request was updated by someone else. Refresh to see the latest status.";
+
+/** `409 STALE_STATE`: the caller acted on a status the request is no longer in (D-46). */
+export function staleRequestError(currentStatus: ServiceRequestStatus): AppError {
+  return conflict(STALE_REQUEST_MESSAGE, {
+    code: ErrorCode.STALE_STATE,
+    details: { currentStatus },
+  });
+}
+
+/** The status each admin action leads to. */
+export const ADMIN_ACTION_TARGET: Readonly<Record<RequestAction, ServiceRequestStatus>> = {
+  [RequestAction.START_REVIEW]: S.UNDER_REVIEW,
+  [RequestAction.CANCEL]: S.CANCELLED,
+  [RequestAction.REOPEN]: S.UNDER_REVIEW,
+};
+
+/** Cancelling and reopening need a written reason (5 to 500 characters, BR-16); starting a review does not. */
+export const ACTIONS_REQUIRING_REASON: readonly RequestAction[] = [
+  RequestAction.CANCEL,
+  RequestAction.REOPEN,
+];
+
+/** The most likely next step first, the destructive one last. */
+const ACTION_ORDER: readonly RequestAction[] = [
+  RequestAction.START_REVIEW,
+  RequestAction.REOPEN,
+  RequestAction.CANCEL,
+];
+
+/**
+ * Whether the admin action is allowed in this status. It looks at the action, not only at the
+ * status it leads to: starting a review and reopening both lead to `UNDER_REVIEW`, but the first is
+ * for a `SUBMITTED` request and the second for a `DECLINED` one.
+ */
+export function canPerformAdminAction(
+  status: ServiceRequestStatus,
+  action: RequestAction,
+): boolean {
+  return REQUEST_TRANSITIONS.some(
+    (transition) =>
+      transition.from === status &&
+      transition.trigger === RequestTrigger.ADMIN &&
+      transition.action === action,
+  );
+}
+
+/** `409 INVALID_STATE_TRANSITION` unless the admin action is allowed in this status. */
+export function assertAdminAction(status: ServiceRequestStatus, action: RequestAction): void {
+  if (!canPerformAdminAction(status, action)) {
+    throw invalidTransition(status, ADMIN_ACTION_TARGET[action], RequestTrigger.ADMIN);
+  }
+}
+
+/**
+ * What an admin may do to a request in this status (D-43), computed from the transition map so the
+ * screen and the endpoint cannot disagree. T14 and T17 add `CREATE_QUOTATION` and `CREATE_WORK_ORDER`.
+ */
+export function availableAdminActions(status: ServiceRequestStatus): RequestAction[] {
+  return ACTION_ORDER.filter((action) => canPerformAdminAction(status, action));
+}
+
+/** A request nobody has looked at yet. */
+export function isNewRequest(status: ServiceRequestStatus): boolean {
+  return status === S.SUBMITTED;
+}
+
+/** Every status present, `0` for the ones with no requests. */
+export function toStatusCounts(
+  groups: ReadonlyArray<{ status: ServiceRequestStatus; count: number }>,
+): RequestStatusCounts {
+  const counts = Object.fromEntries(Object.values(S).map((status) => [status, 0])) as Record<
+    ServiceRequestStatus,
+    number
+  >;
+  for (const { status, count } of groups) {
+    counts[status] += count;
+  }
+  return counts;
+}
+
+// ---- The queue's date filter -----------------------------------------------------------------
+
+export interface SubmittedRange {
+  /** From this instant, inclusive. */
+  from?: Date;
+  /** Before this instant. */
+  before?: Date;
+}
+
+function startOfDay(date: string, timeZone: string): Date {
+  const instant = new TZDate(
+    Number(date.slice(0, 4)),
+    Number(date.slice(5, 7)) - 1,
+    Number(date.slice(8, 10)),
+    timeZone,
+  );
+  return new Date(instant.getTime());
+}
+
+/**
+ * The instants a "submitted from / to" filter means. Both dates are days on the business's calendar
+ * and both are inclusive: someone who picks 1 to 3 March gets everything submitted from midnight at
+ * the start of the 1st until midnight at the end of the 3rd, in the business time zone, whatever
+ * the zone of the browser or the server.
+ */
+export function submittedRange(
+  from: string | undefined,
+  to: string | undefined,
+  timeZone: string,
+): SubmittedRange {
+  return {
+    ...(from !== undefined && { from: startOfDay(from, timeZone) }),
+    ...(to !== undefined && { before: startOfDay(addDaysToDateOnly(to, 1), timeZone) }),
+  };
+}
 
 export interface PreferredInstants {
   start: Date;

@@ -28,6 +28,8 @@ function row(overrides: Partial<RequestDetailRow> = {}): RequestDetailRow {
     accessNotesSnapshot: "Gate code 4821",
     preferredStart: new Date("2026-11-10T13:00:00.000Z"),
     preferredEnd: new Date("2026-11-10T17:00:00.000Z"),
+    cancelledAt: null,
+    cancelCustomerMessage: null,
     customer: { userId: OWNER_USER_ID },
     notes: [],
     ...overrides,
@@ -94,6 +96,7 @@ describe("toCustomerRequestDto", () => {
         "address",
         "preferredStart",
         "preferredEnd",
+        "cancellation",
         "notes",
         "timeline",
       ].sort(),
@@ -176,6 +179,59 @@ describe("toCustomerRequestDto", () => {
           viewer: VIEWER,
         }),
       ).toThrow(/internal request note/i);
+    });
+  });
+
+  describe("cancellation", () => {
+    const cancelled = (overrides: Partial<RequestDetailRow> = {}) =>
+      row({
+        status: "CANCELLED",
+        cancelledAt: new Date("2026-10-31T09:00:00.000Z"),
+        cancelCustomerMessage: "We no longer service that area, sorry.",
+        ...overrides,
+      });
+
+    it("is null for a request that is not cancelled, whatever the columns hold", () => {
+      expect(
+        toCustomerRequestDto({
+          row: row({ cancelCustomerMessage: "Leftover", cancelledAt: new Date() }),
+          timeline: [],
+          viewer: VIEWER,
+        }).cancellation,
+      ).toBeNull();
+    });
+
+    it("gives a cancelled request's time and the message the business chose to send", () => {
+      expect(
+        toCustomerRequestDto({ row: cancelled(), timeline: [], viewer: VIEWER }).cancellation,
+      ).toEqual({
+        cancelledAt: "2026-10-31T09:00:00.000Z",
+        message: "We no longer service that area, sorry.",
+      });
+    });
+
+    it("has a null message when the business sent none", () => {
+      expect(
+        toCustomerRequestDto({
+          row: cancelled({ cancelCustomerMessage: null }),
+          timeline: [],
+          viewer: VIEWER,
+        }).cancellation,
+      ).toEqual({ cancelledAt: "2026-10-31T09:00:00.000Z", message: null });
+    });
+
+    it("never carries the internal reason, even if a row somehow held it", () => {
+      const withReason = {
+        ...cancelled(),
+        cancelReason: "Customer is on the do-not-serve list.",
+      } as RequestDetailRow;
+
+      const text = JSON.stringify(
+        toCustomerRequestDto({ row: withReason, timeline: [], viewer: VIEWER }),
+      );
+
+      expect(text).not.toContain("do-not-serve");
+      expect(text).not.toContain("cancelReason");
     });
   });
 

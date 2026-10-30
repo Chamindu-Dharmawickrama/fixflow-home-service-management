@@ -156,6 +156,78 @@ describe("ConfirmDialog", () => {
     });
   });
 
+  describe("with a second, optional piece of text", () => {
+    const SECONDARY = {
+      label: "Message to the customer",
+      description: "The customer reads this.",
+    };
+
+    it("shows it beside the reason, optional, and never blocks confirm", async () => {
+      render(<Harness reason={REASON} secondary={SECONDARY} />);
+      await openDialog();
+
+      const secondary = screen.getByLabelText("Message to the customer");
+      expect(secondary).toHaveAccessibleDescription(/The customer reads this\./);
+      expect(secondary).not.toHaveAttribute("aria-required");
+      await userEvent.type(screen.getByLabelText(/Reason for voiding/), "A long enough reason");
+      expect(screen.getByRole("button", { name: "Void invoice" })).toBeEnabled();
+    });
+
+    it("passes the trimmed reason and the trimmed secondary text to onConfirm", async () => {
+      const onConfirm = vi.fn();
+      render(<Harness reason={REASON} secondary={SECONDARY} onConfirm={onConfirm} />);
+      await openDialog();
+
+      await userEvent.type(screen.getByLabelText(/Reason for voiding/), "A long enough reason");
+      await userEvent.type(
+        screen.getByLabelText("Message to the customer"),
+        "  Sorry about this.  ",
+      );
+      await userEvent.click(screen.getByRole("button", { name: "Void invoice" }));
+
+      await waitFor(() =>
+        expect(onConfirm).toHaveBeenCalledWith("A long enough reason", "Sorry about this."),
+      );
+    });
+
+    it("passes undefined when the secondary text is left empty or blank", async () => {
+      const onConfirm = vi.fn();
+      render(<Harness reason={REASON} secondary={SECONDARY} onConfirm={onConfirm} />);
+      await openDialog();
+
+      await userEvent.type(screen.getByLabelText(/Reason for voiding/), "A long enough reason");
+      await userEvent.type(screen.getByLabelText("Message to the customer"), "    ");
+      await userEvent.click(screen.getByRole("button", { name: "Void invoice" }));
+
+      await waitFor(() =>
+        expect(onConfirm).toHaveBeenCalledWith("A long enough reason", undefined),
+      );
+    });
+
+    it("starts empty again the next time it opens", async () => {
+      render(<Harness reason={REASON} secondary={SECONDARY} />);
+      await openDialog();
+      await userEvent.type(screen.getByLabelText("Message to the customer"), "typed earlier");
+      await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+      await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+
+      await openDialog();
+      expect(screen.getByLabelText("Message to the customer")).toHaveValue("");
+    });
+
+    it("does not appear, and does not change what onConfirm receives, when it is not asked for", async () => {
+      const onConfirm = vi.fn();
+      render(<Harness reason={REASON} onConfirm={onConfirm} />);
+      await openDialog();
+
+      expect(screen.queryByLabelText("Message to the customer")).toBeNull();
+      await userEvent.type(screen.getByLabelText(/Reason for voiding/), "A long enough reason");
+      await userEvent.click(screen.getByRole("button", { name: "Void invoice" }));
+
+      await waitFor(() => expect(onConfirm).toHaveBeenCalledWith("A long enough reason"));
+    });
+  });
+
   describe("while the action is pending", () => {
     function deferred() {
       let resolve!: () => void;

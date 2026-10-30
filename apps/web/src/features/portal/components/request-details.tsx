@@ -40,6 +40,14 @@ export function NextStepCard({ request }: { request: CustomerRequestDto }) {
             before any work is scheduled.
           </p>
         ) : null}
+        {request.cancellation?.message ? (
+          <div className="mt-1 rounded-lg border border-border bg-surface-muted p-3">
+            <p className="text-xs font-medium text-ink-secondary">Message from us</p>
+            <p className="mt-1 whitespace-pre-line break-words text-sm text-ink">
+              {request.cancellation.message}
+            </p>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

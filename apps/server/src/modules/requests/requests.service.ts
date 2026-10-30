@@ -49,7 +49,7 @@ export const ADDRESS_NOT_SAVED_MESSAGE =
 const NOT_SET_UP = "The business settings have not been set up yet.";
 
 /** What a submission needs to know about the business. */
-async function loadBusiness(db: Pick<DbClient, "businessSettings">) {
+export async function loadBusiness(db: Pick<DbClient, "businessSettings">) {
   const settings = await db.businessSettings.findUnique({
     where: { id: BUSINESS_SETTINGS_ID },
     select: { timeZone: true, contactEmail: true, businessName: true },

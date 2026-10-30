@@ -110,6 +110,16 @@ describe("central navigation config", () => {
     ]);
   });
 
+  it("lists the dashboard, the request queue and the customers, ahead of the settings (T12, T13)", () => {
+    expect(flattenGroups(NAVIGATION.admin).map((item) => [item.label, item.href])).toEqual([
+      ["Dashboard", "/app/dashboard"],
+      ["Requests", "/app/requests"],
+      ["Customers", "/app/customers"],
+      ["Business", "/app/settings/business"],
+      ["Services", "/app/settings/services"],
+    ]);
+  });
+
   it("lists the settings pages, for the admin only (T07)", () => {
     const settings = NAVIGATION.admin.find((group) => group.label === "Settings");
     expect(settings?.items.map((item) => [item.label, item.href])).toEqual([

@@ -2,5 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "cd ../.. && npm ci",
-  "buildCommand": "cd ../.. && npm run build:shared && (curl -fsS --retry 6 --retry-delay 10 --retry-all-errors --max-time 30 \"$API_INTERNAL_URL/api/v1/health\" > /dev/null || echo 'API did not answer; the public pages will show their retry message until first visited.') && cd apps/web && npm run build"
+  "buildCommand": "node scripts/vercel-build.mjs"
 }

@@ -112,12 +112,12 @@ describe("ServiceDetail", () => {
     expect(screen.queryByText(/Usually takes/)).not.toBeInTheDocument();
   });
 
-  it("offers a Request this service link that is not dead", () => {
+  it("offers a Request this service link to the request form with this service chosen", () => {
     setup(makeService());
 
     expect(screen.getByRole("link", { name: "Request this service" })).toHaveAttribute(
       "href",
-      "/login?returnTo=%2Fportal",
+      "/request-service?service=ac-routine-maintenance",
     );
   });
 

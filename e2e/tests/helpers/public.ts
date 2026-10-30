@@ -10,8 +10,16 @@ export const SEEDED_SERVICES = [
   "Home Deep Cleaning",
 ] as const;
 
-/** Where "Request a service" goes until the request form exists (T11): sign-in, then the portal (D-88). */
-export const REQUEST_SERVICE_HREF = "/login?returnTo=%2Fportal";
+/**
+ * Where the general "Request a service" button goes (T11): the customers-only request form, which
+ * sends a visitor without a session to sign-in and back.
+ */
+export const REQUEST_SERVICE_HREF = "/request-service";
+
+/** Where "Request this service" goes on a service's page: the form with that service chosen. */
+export function requestServiceHrefFor(slug: string): string {
+  return `/request-service?service=${encodeURIComponent(slug)}`;
+}
 
 /**
  * Asserts the page's headings form an outline: exactly one `h1`, it comes first, and going down

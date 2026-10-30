@@ -30,7 +30,7 @@ describe("buildSitemap", () => {
   it("never lists a signed-in or sign-in page", () => {
     const urls = buildSitemap(SITE, [{ slug: "x" }]).map((entry) => new URL(entry.url).pathname);
     for (const path of urls) {
-      expect(path).not.toMatch(/^\/(app|portal|api|login|register)/);
+      expect(path).not.toMatch(/^\/(app|portal|request-service|api|login|register)/);
     }
   });
 
@@ -55,7 +55,7 @@ describe("buildRobots", () => {
     expect(robots.rules).toEqual([
       { userAgent: "*", allow: "/", disallow: [...ROBOTS_DISALLOWED_PATHS] },
     ]);
-    for (const path of ["/app", "/portal", "/api/", "/login", "/register"]) {
+    for (const path of ["/app", "/portal", "/request-service", "/api/", "/login", "/register"]) {
       expect(ROBOTS_DISALLOWED_PATHS).toContain(path);
     }
   });

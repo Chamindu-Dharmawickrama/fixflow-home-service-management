@@ -17,16 +17,26 @@ describe("areaOf", () => {
     ["/app/requests/42", "admin"],
     ["/portal", "portal"],
     ["/portal/requests", "portal"],
+    // The request form is a customers-only page outside /portal (spec §9.1).
+    ["/request-service", "portal"],
+    ["/request-service/", "portal"],
   ])("puts %s in the %s area", (path, area) => {
     expect(areaOf(path)).toBe(area);
   });
 
-  it.each(["/", "/login", "/services", "/application", "/portals", "/apple", "/styleguide"])(
-    "leaves %s public",
-    (path) => {
-      expect(areaOf(path)).toBeUndefined();
-    },
-  );
+  it.each([
+    "/",
+    "/login",
+    "/services",
+    "/application",
+    "/portals",
+    "/apple",
+    "/styleguide",
+    "/request-services",
+    "/request",
+  ])("leaves %s public", (path) => {
+    expect(areaOf(path)).toBeUndefined();
+  });
 });
 
 describe("role home paths", () => {
@@ -59,6 +69,18 @@ describe("destinationAfterSignIn", () => {
       "/app/requests?page=2",
     );
     expect(destinationAfterSignIn("/portal/requests", Role.CUSTOMER)).toBe("/portal/requests");
+  });
+
+  it("returns a customer to the request form with the chosen service kept (spec §7.1 step 3)", () => {
+    expect(destinationAfterSignIn("/request-service?service=ac-repair", Role.CUSTOMER)).toBe(
+      "/request-service?service=ac-repair",
+    );
+  });
+
+  it("does not send an admin to the customers-only request form", () => {
+    expect(destinationAfterSignIn("/request-service?service=ac-repair", Role.BUSINESS_ADMIN)).toBe(
+      "/app/dashboard",
+    );
   });
 
   it("returns a public page too", () => {
@@ -94,6 +116,29 @@ describe("protectionRedirect", () => {
     expect(
       protectionRedirect({ pathname: "/portal", search: "?tab=invoices", hasSessionCookie: false }),
     ).toBe("/login?returnTo=%2Fportal%3Ftab%3Dinvoices");
+  });
+
+  it("sends a visitor without a session from the request form to sign-in, keeping the chosen service", () => {
+    expect(
+      protectionRedirect({
+        pathname: "/request-service",
+        search: "?service=ac-repair",
+        hasSessionCookie: false,
+      }),
+    ).toBe("/login?returnTo=%2Frequest-service%3Fservice%3Dac-repair");
+    expect(
+      protectionRedirect({ pathname: "/request-service", search: "", hasSessionCookie: false }),
+    ).toBe("/login?returnTo=%2Frequest-service");
+  });
+
+  it("lets a request for the request form through when it carries a session cookie", () => {
+    expect(
+      protectionRedirect({
+        pathname: "/request-service",
+        search: "?service=ac-repair",
+        hasSessionCookie: true,
+      }),
+    ).toBeUndefined();
   });
 
   it("lets a request with a session cookie through, even before the API has checked it", () => {

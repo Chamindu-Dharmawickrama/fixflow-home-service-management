@@ -46,7 +46,7 @@ People sign in with an **email and password** or with **Google** (D-07). Custome
 
 **Google sign-in.** Create an OAuth 2.0 **Web application** client in the Google Cloud Console (APIs & Services, Credentials), add `http://localhost:3000` as an **Authorized JavaScript origin**, and put the client ID in `GOOGLE_CLIENT_ID` (API) and `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (web). Restart both. The sign-in and register pages then show Google's button. A Google account whose email is in `ADMIN_EMAILS` becomes the business admin the first time it signs in; anyone else becomes a customer.
 
-**Email: two modes (D-13, D-52).** The API sends password-reset links now and, from T11 on, an email beside each customer notification (quotation sent, job scheduled, invoice issued, …).
+**Email: two modes (D-13, D-52).** The API sends password-reset links and, since T11, a confirmation to a customer who sends a service request plus an alert to the business's contact address. Later tasks add an email beside each customer notification (quotation sent, job scheduled, invoice issued, …).
 
 - **`log` (the default).** Nothing is delivered. Each email is written to **`.data/outbox/`** at the repository root, a `.txt` and a `.html` file named `<timestamp>-<template>`, for example `20261029T153012345Z-quotation-sent.html`. Open the `.txt` file to read it or follow its link, or the `.html` file in a browser to see how it looks. The delivery record says **"logged"**, never "sent". The folder is git-ignored and is not written in production.
 - **`smtp`.** Set `EMAIL_TRANSPORT=smtp` with `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD` and `EMAIL_FROM` (the first five are optional outside production). In **production** every one of them is required, and the API refuses to start without them. `EMAIL_TRANSPORT=log` is allowed in production but the server warns that no email will be delivered, and password reset is then unavailable.
@@ -106,9 +106,13 @@ The browser only ever talks to the web origin. Next.js rewrites `/api/v1/*` to `
 `/`, `/services`, `/services/<slug>` and `/privacy` are the business's public site (T08), in the business's own name and logo from the settings, with "Powered by FixFlow" in the footer. They read the business and the active services from the API and hold what they read for `PUBLIC_REVALIDATE_SECONDS` (60 by default), so a change made in the admin area shows within about a minute. If the API cannot be reached (a cold start, an outage) the pages still render: the parts that need it say so and offer "Try again". `npm run build` does not need the API to be running.
 
 - **Imagery.** Royalty-free Pexels photographs (the hero and one per service picture), shipped in `apps/web/public/images` and credited in `CREDITS.md` (D-90). They are stock images, and the privacy and demo notice says so. To use your own, replace the files and keep the names.
-- **Request a service** leads to sign-in and then the portal until the request form arrives (T11, D-88).
+- **Request a service** and **Request this service** lead to the request form, `/request-service` (T11, D-98). A visitor without an account is sent to sign-in or registration and returned to the form with the service still chosen.
 - **Demo mode** (`NEXT_PUBLIC_DEMO_MODE=true`) adds a dismissible banner ("FixFlow portfolio demo — …") and tells search engines not to index the pages (D-89). Set `SITE_URL` to the site's public address so canonical links and `/sitemap.xml` are right.
 - The content (hero, how it works, trust points, FAQ, privacy notice) is plain data in `apps/web/src/features/marketing/content/site-content.ts`.
+
+## Service requests (customers)
+
+A signed-in customer sends a request at `/request-service` (five numbered sections: service, problem, address, preferred day and time window, review) and follows it under **Requests** in the portal (`/portal/requests`, `/portal/requests/<id>`). The server creates the request with a reference such as `FF-2026-00012`, a copy of the service name and address, the history entry and a notification for every admin, then emails the customer and the business after the transaction commits. Sending the same form twice, or retrying after a lost connection, never creates a second request. The preferred time is a preference in the business's time zone, not a booking. See `docs/API.md` (Service requests) and `docs/ARCHITECTURE.md` §18.
 
 ## Commands
 

@@ -38,7 +38,7 @@ const ADDRESS_ORDER = [
  * The signed-in customer's id, from the session and nowhere else (FR-014). The route guard has
  * already refused everyone who is not a customer; this fails closed if a route ever forgets it.
  */
-function customerIdOf(auth: AuthContext): string {
+export function customerIdOf(auth: AuthContext): string {
   if (auth.customerId === undefined) {
     throw forbidden();
   }
@@ -51,7 +51,7 @@ function customerIdOf(auth: AuthContext): string {
  * other: the limit of ten cannot be passed by racing requests, and the default can be neither
  * duplicated nor lost. The partial unique index is the database's backstop for the first of those.
  */
-async function lockCustomer(tx: DbClient, customerId: string): Promise<void> {
+export async function lockCustomer(tx: DbClient, customerId: string): Promise<void> {
   await tx.$queryRaw`SELECT id FROM customer_profiles WHERE id = ${customerId}::uuid FOR UPDATE`;
 }
 
@@ -136,6 +136,32 @@ export async function listMyAddresses(
   return rows.map(toServiceAddressDto);
 }
 
+/**
+ * Saves a new address for a customer inside the caller's transaction. The first one a customer
+ * saves becomes the default; at most ten are kept (`409 ADDRESS_LIMIT_REACHED`). The caller must
+ * hold the customer's row lock ({@link lockCustomer}) so the count it checks cannot go stale. The
+ * request form uses this too, to save a new address together with the request.
+ */
+export async function insertAddress(tx: DbClient, customerId: string, body: CreateAddressBody) {
+  const count = await tx.serviceAddress.count({ where: { customerId } });
+  if (!canAddAddress(count)) {
+    throw new AppError(409, ErrorCode.ADDRESS_LIMIT_REACHED, ADDRESS_LIMIT_MESSAGE);
+  }
+  return tx.serviceAddress.create({
+    data: {
+      customerId,
+      label: body.label,
+      line1: body.line1,
+      line2: body.line2 ?? null,
+      city: body.city,
+      region: body.region ?? null,
+      postalCode: body.postalCode,
+      accessNotes: body.accessNotes ?? null,
+      isDefault: isFirstAddress(count),
+    },
+  });
+}
+
 /** Saves a new address. The first one a customer saves becomes the default; at most ten are kept. */
 export async function createAddress(
   deps: CustomerDeps,
@@ -145,24 +171,7 @@ export async function createAddress(
   const customerId = customerIdOf(auth);
   return deps.prisma.$transaction(async (tx) => {
     await lockCustomer(tx, customerId);
-    const count = await tx.serviceAddress.count({ where: { customerId } });
-    if (!canAddAddress(count)) {
-      throw new AppError(409, ErrorCode.ADDRESS_LIMIT_REACHED, ADDRESS_LIMIT_MESSAGE);
-    }
-    const row = await tx.serviceAddress.create({
-      data: {
-        customerId,
-        label: body.label,
-        line1: body.line1,
-        line2: body.line2 ?? null,
-        city: body.city,
-        region: body.region ?? null,
-        postalCode: body.postalCode,
-        accessNotes: body.accessNotes ?? null,
-        isDefault: isFirstAddress(count),
-      },
-    });
-    return toServiceAddressDto(row);
+    return toServiceAddressDto(await insertAddress(tx, customerId, body));
   });
 }
 

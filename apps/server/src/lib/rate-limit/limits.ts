@@ -35,6 +35,11 @@ export const RATE_LIMITS = {
   // Customer profile and addresses (T10). Counted per signed-in customer; saving a form is one
   // request, so only a script or a stolen session comes near it.
   customerWrite: { limit: 30, windowSeconds: 60 },
+
+  // Service requests (T11). Counted per signed-in customer, and a repeated submission counts too:
+  // ten requests an hour is far more than a household makes and little enough to stop a script
+  // from filling the business's queue.
+  requestSubmit: { limit: 10, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export type RateLimitName = keyof typeof RATE_LIMITS;

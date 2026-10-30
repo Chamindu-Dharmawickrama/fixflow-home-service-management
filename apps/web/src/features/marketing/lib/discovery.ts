@@ -10,6 +10,7 @@ import type { MetadataRoute } from "next";
 export const ROBOTS_DISALLOWED_PATHS = [
   "/app",
   "/portal",
+  "/request-service",
   "/api/",
   "/login",
   "/register",

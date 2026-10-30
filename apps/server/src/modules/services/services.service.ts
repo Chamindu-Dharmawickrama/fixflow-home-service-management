@@ -41,8 +41,14 @@ import type {
 
 type ServiceDeps = Pick<AppDeps, "prisma" | "clock">;
 
-/** A service is active, so visible and requestable, when it is published and not archived. */
-const ACTIVE = { isPublished: true, archivedAt: null } as const satisfies Prisma.ServiceWhereInput;
+/**
+ * A service is active, so visible and requestable, when it is published and not archived (D-50).
+ * Exported because a request is accepted only for an active service (FR-006).
+ */
+export const ACTIVE = {
+  isPublished: true,
+  archivedAt: null,
+} as const satisfies Prisma.ServiceWhereInput;
 
 /** Tries to find a free slug this many times before giving up (only a burst of equal names loses). */
 const MAX_SLUG_ATTEMPTS = 3;

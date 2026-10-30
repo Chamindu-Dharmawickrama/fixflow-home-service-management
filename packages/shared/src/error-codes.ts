@@ -63,6 +63,13 @@ export const ErrorCode = {
   // Customer profile and addresses (T10)
   /** 409 — the customer already has the maximum number of saved addresses. */
   ADDRESS_LIMIT_REACHED: "ADDRESS_LIMIT_REACHED",
+
+  // Service requests (T11)
+  /**
+   * 422 — the service chosen for a request is not open to requests: unpublished, archived or
+   * unknown (FR-006). Not `SERVICE_UNAVAILABLE`, which already means "503, a dependency is down".
+   */
+  SERVICE_INACTIVE: "SERVICE_INACTIVE",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

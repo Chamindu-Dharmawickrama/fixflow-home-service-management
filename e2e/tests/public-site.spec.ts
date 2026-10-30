@@ -17,6 +17,7 @@ import {
   expectOrderedHeadings,
   metaContent,
   REQUEST_SERVICE_HREF,
+  requestServiceHrefFor,
   SEEDED_SERVICES,
   seriousViolations,
 } from "./helpers/public.js";
@@ -159,7 +160,7 @@ test.describe("homepage", () => {
     await expect(faq.locator("details").first()).toHaveJSProperty("open", false);
   });
 
-  test("Request a service is not a dead link: it leads to sign-in, then the portal", async ({
+  test("Request a service leads to the request form, which sends a visitor to sign-in first", async ({
     page,
   }) => {
     await page.goto("/");
@@ -169,7 +170,9 @@ test.describe("homepage", () => {
     await expect(hero).toContainText("You will sign in or create a free account first");
 
     await cta.click();
-    await expect(page).toHaveURL(/\/login\?returnTo=%2Fportal$/, { timeout: NAVIGATION_TIMEOUT });
+    await expect(page).toHaveURL(/\/login\?returnTo=%2Frequest-service$/, {
+      timeout: NAVIGATION_TIMEOUT,
+    });
     await expect(page.getByRole("form", { name: "Sign in" })).toBeVisible();
   });
 
@@ -289,7 +292,7 @@ test.describe("service page", () => {
     ).toBeVisible();
 
     const request = page.getByRole("link", { name: "Request this service" });
-    await expect(request).toHaveAttribute("href", REQUEST_SERVICE_HREF);
+    await expect(request).toHaveAttribute("href", requestServiceHrefFor("ac-routine-maintenance"));
 
     const related = page.getByRole("region", { name: "Other services you may need" });
     await expect(related.getByRole("heading", { level: 3 })).toHaveCount(3);

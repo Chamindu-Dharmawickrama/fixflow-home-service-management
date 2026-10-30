@@ -11,7 +11,7 @@ import type { NavGroup, NavItem } from "@/lib/navigation";
  * - `public`: the public website header (Home, Services and the How it works and Contact anchors, T08).
  * - `admin`: the business dashboard sidebar, in groups (T05 has the dashboard; T12 adds Requests,
  *   T14 Quotations, …). The admin's "Account" page lives in the user menu, not here.
- * - `portal`: the customer portal top bar (T05 has the overview; T10 adds Profile, T11 My requests, …).
+ * - `portal`: the customer portal top bar (T05 has the overview; T10 adds Profile, T11 Requests, …).
  *
  * The shells take their items from here by default. The dev-only `/styleguide` passes its own
  * example items to the shells so they can be shown with realistic content.
@@ -39,6 +39,7 @@ export const NAVIGATION = {
   ] as readonly NavGroup[],
   portal: [
     { label: "Overview", href: "/portal", icon: "house", match: "exact" },
+    { label: "Requests", href: "/portal/requests", icon: "clipboard-list" },
     { label: "Profile", href: "/portal/profile", icon: "user" },
   ] as readonly NavItem[],
 } as const;

@@ -41,6 +41,8 @@ describe("ErrorCode", () => {
         "SLUG_TAKEN",
         // T10 — customer profile and addresses
         "ADDRESS_LIMIT_REACHED",
+        // T11 — service requests
+        "SERVICE_INACTIVE",
       ].sort(),
     );
   });

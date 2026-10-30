@@ -4,7 +4,8 @@ import { CURRENT_PATH_HEADER, protectionRedirect, SESSION_COOKIE_NAMES } from "@
 
 /**
  * The first line of route protection (Next.js 16 calls the former "middleware" a proxy). A request
- * for `/app/*` or `/portal/*` without a session cookie is redirected to `/login?returnTo=…`. That
+ * for `/app/*`, `/portal/*` or the customers-only request form `/request-service` without a session
+ * cookie is redirected to `/login?returnTo=…`, keeping the query (`?service=<slug>`). That
  * only saves a render for the obvious case: the layouts ask the API who the visitor is, and the API
  * enforces role and ownership on every call, so a forged cookie gets a sign-in redirect or a "no
  * access" page and no data (CLAUDE.md §7).
@@ -30,5 +31,5 @@ export function proxy(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/portal/:path*"],
+  matcher: ["/app/:path*", "/portal/:path*", "/request-service/:path*"],
 };

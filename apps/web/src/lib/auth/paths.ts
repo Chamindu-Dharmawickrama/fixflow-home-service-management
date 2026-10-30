@@ -24,6 +24,13 @@ export type AppArea = "admin" | "portal";
 
 const AREA_PREFIX: Record<AppArea, string> = { admin: "/app", portal: "/portal" };
 
+/**
+ * Pages outside `/portal` that are still for customers only. The request form lives at
+ * `/request-service` because it is where the public site's "Request a service" buttons lead (spec
+ * §9.1), but it needs a customer's session, so it is protected and routed like the portal.
+ */
+export const CUSTOMER_PAGES = ["/request-service"] as const;
+
 /** Which signed-in area a path belongs to, or `undefined` for public pages. */
 export function areaOf(pathname: string): AppArea | undefined {
   for (const area of ["admin", "portal"] as const) {
@@ -31,6 +38,9 @@ export function areaOf(pathname: string): AppArea | undefined {
     if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
       return area;
     }
+  }
+  if (CUSTOMER_PAGES.some((page) => pathname === page || pathname.startsWith(`${page}/`))) {
+    return "portal";
   }
   return undefined;
 }

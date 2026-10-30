@@ -1,13 +1,20 @@
-import type { CustomerProfileDto } from "@fixflow/shared";
+import type { CustomerProfileDto, CustomerRequestListResponse } from "@fixflow/shared";
+import { Plus } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 
+import { buttonVariants } from "@/components/ui/button-variants";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/features/auth/components/area-skeleton";
 import { loadErrorState } from "@/features/catalogue/components/load-error";
+import { REQUEST_SERVICE_PATH } from "@/features/marketing/lib/request-service";
 import { ProfileSummaryCard } from "@/features/portal/components/profile-summary-card";
-import { serverApiGet } from "@/lib/api/server";
+import { RecentRequests } from "@/features/portal/components/recent-requests";
+import { RECENT_REQUESTS_COUNT, toApiQueryString } from "@/features/portal/lib/requests-list";
+import { serverApiGet, serverApiGetEnvelope } from "@/lib/api/server";
 import { getCurrentUser } from "@/lib/auth/session";
+import { getPublicSettings } from "@/lib/settings";
 
 export const metadata: Metadata = { title: "Overview" };
 
@@ -19,9 +26,9 @@ export const metadata: Metadata = { title: "Overview" };
 export const instant = false;
 
 /**
- * The interim customer home (T05, T10): a greeting and a summary of the customer's profile with
- * the way to edit it. Requests, quotations, jobs and invoices are added as they are built; nothing
- * here pretends otherwise.
+ * The customer's home (T05, T10, T11): a greeting, the way to send a request, the latest requests
+ * and a summary of their profile. Quotations, jobs and invoices are added as they are built;
+ * nothing here pretends otherwise.
  */
 export default function PortalHomePage() {
   return (
@@ -38,15 +45,23 @@ async function PortalHomeContent() {
   }
 
   let profile: CustomerProfileDto;
+  let recent: CustomerRequestListResponse;
+  let timeZone: string;
   try {
-    profile = await serverApiGet<CustomerProfileDto>("/customers/me");
+    [profile, recent, { timeZone }] = await Promise.all([
+      serverApiGet<CustomerProfileDto>("/customers/me"),
+      serverApiGetEnvelope<CustomerRequestListResponse>(
+        `/requests/me?${toApiQueryString({ status: undefined, page: 1 }, RECENT_REQUESTS_COUNT)}`,
+      ),
+      getPublicSettings(),
+    ]);
   } catch (error) {
     return (
       <>
         <PageHeader title={`Hello, ${me.user.name}`} />
         {loadErrorState({
           error,
-          title: "We couldn't load your profile",
+          title: "We couldn't load your account",
           retryHref: "/portal",
         })}
       </>
@@ -57,7 +72,18 @@ async function PortalHomeContent() {
     <>
       <PageHeader
         title={`Hello, ${me.user.name}`}
-        description="This is your customer account. Your service requests, quotations and invoices will appear here as soon as those features are ready."
+        description="Send a service request, follow its progress and keep your details up to date."
+        actions={
+          <Link href={REQUEST_SERVICE_PATH} className={buttonVariants({ variant: "primary" })}>
+            <Plus aria-hidden="true" />
+            Request a service
+          </Link>
+        }
+      />
+      <RecentRequests
+        requests={recent.data}
+        totalItems={recent.pagination.totalItems}
+        timeZone={timeZone}
       />
       <ProfileSummaryCard profile={profile} />
     </>

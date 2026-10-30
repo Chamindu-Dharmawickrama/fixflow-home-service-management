@@ -70,6 +70,11 @@ describe("LIMITS", () => {
     expect(customerPhone.maxDigits).toBeLessThanOrEqual(customerPhone.maxLength);
   });
 
+  it("holds the preferred-date range of D-35: from tomorrow to 90 days ahead", () => {
+    expect(LIMITS.preferredDate).toEqual({ minDaysAhead: 1, maxDaysAhead: 90 });
+    expect(LIMITS.preferredDate.minDaysAhead).toBeLessThan(LIMITS.preferredDate.maxDaysAhead);
+  });
+
   it("has pagination defaults that are consistent with each other", () => {
     const { defaultPageSize, maxPageSize, maxPage } = LIMITS.pagination;
 

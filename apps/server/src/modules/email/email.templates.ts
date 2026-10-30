@@ -74,25 +74,43 @@ export interface RequestReceivedCustomerEmailInput {
   requestReference: string;
   serviceName: string;
   requestUrl: string;
+  /** The window the customer asked for, as instants; shown in `timeZone`. */
+  preferredStart: Date;
+  preferredEnd: Date;
+  /** The business time zone (IANA), from the business settings. */
+  timeZone: string;
 }
 
 export function renderRequestReceivedCustomerEmail(
   input: Branded<RequestReceivedCustomerEmailInput>,
 ): RenderedEmail {
-  const { businessName, customerName, requestReference, serviceName, requestUrl } = input;
+  const {
+    businessName,
+    customerName,
+    requestReference,
+    serviceName,
+    requestUrl,
+    preferredStart,
+    preferredEnd,
+    timeZone,
+  } = input;
   return renderEmail(input, {
     subject: `We received your request ${requestReference}`,
     heading: "We received your request",
     intro: [
       greeting(customerName),
-      `Thanks for contacting ${businessName}. We have your request for ${serviceName}. A member of our team will review it and come back to you with a quotation or any questions.`,
+      `Thanks for contacting ${businessName}. We have your request for ${serviceName}.`,
     ],
     details: [
       { label: "Reference", value: requestReference },
       { label: "Service", value: serviceName },
+      { label: "Preferred time", value: formatEmailWindow(preferredStart, preferredEnd, timeZone) },
     ],
     action: { label: "View your request", url: requestUrl },
-    outro: ["You can follow its progress in your account at any time."],
+    outro: [
+      "What happens next: a member of our team will review your request and send you a quotation to accept or decline. We may contact you first if we have a question.",
+      "The time above is the one you prefer, not a booking. We will confirm the exact time with you before any work is scheduled.",
+    ],
   });
 }
 

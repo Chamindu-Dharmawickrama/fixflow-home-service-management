@@ -96,6 +96,9 @@ const SAMPLE_INPUTS: { [Name in EmailTemplateName]: EmailTemplateInput<Name> } =
     requestReference: "FF-2026-00012",
     serviceName: "AC Repair",
     requestUrl: REQUEST_URL,
+    preferredStart: START,
+    preferredEnd: END,
+    timeZone: "America/New_York",
   },
   "request-received-admin": {
     requestReference: "FF-2026-00012",

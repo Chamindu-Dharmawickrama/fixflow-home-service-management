@@ -1,14 +1,17 @@
-import { loginUrl } from "@/lib/auth/paths";
+/** The customers-only request form (spec §9.1). Signed-out visitors are sent to sign-in first. */
+export const REQUEST_SERVICE_PATH = "/request-service";
+
+/** The query parameter that preselects a service on the form: `/request-service?service=<slug>`. */
+export const SERVICE_PARAM = "service";
 
 /**
- * Where "Request a service" goes. The request form is built in T11; until it lands, `/request-service`
- * does not exist and must not be linked. So for now the call to action leads to sign-in, then the
- * customer portal (T08 prompt, D-88). The copy beside each call to action says that an account comes
- * first, which stays true after T11 (a visitor is asked to sign in or register before the form).
- *
- * T11 replaces the body with `/request-service` (and `?service=<slug>` when a service is given);
- * nothing else on the public site needs to change.
+ * Where "Request a service" and "Request this service" go (T11, spec §7.1). A visitor without an
+ * account is sent from the form to sign-in and returned to it afterwards, with the service still
+ * chosen (`proxy.ts`), so the public site links straight to the form and needs no sign-in logic of
+ * its own. With a service slug the form opens with that service selected.
  */
-export function requestServiceHref(_serviceSlug?: string): string {
-  return loginUrl("/portal");
+export function requestServiceHref(serviceSlug?: string): string {
+  return serviceSlug === undefined || serviceSlug === ""
+    ? REQUEST_SERVICE_PATH
+    : `${REQUEST_SERVICE_PATH}?${SERVICE_PARAM}=${encodeURIComponent(serviceSlug)}`;
 }

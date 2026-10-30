@@ -102,6 +102,14 @@ describe("central navigation config", () => {
     expect(navigationForRole(Role.CUSTOMER)).toBe(NAVIGATION.portal);
   });
 
+  it("lists the customer's pages in the order they are used (T10, T11)", () => {
+    expect(NAVIGATION.portal.map((item) => [item.label, item.href])).toEqual([
+      ["Overview", "/portal"],
+      ["Requests", "/portal/requests"],
+      ["Profile", "/portal/profile"],
+    ]);
+  });
+
   it("lists the settings pages, for the admin only (T07)", () => {
     const settings = NAVIGATION.admin.find((group) => group.label === "Settings");
     expect(settings?.items.map((item) => [item.label, item.href])).toEqual([

@@ -1,4 +1,4 @@
-import type { AdminServiceDto } from "@fixflow/shared";
+import { type AdminServiceDto, BUNDLED_SERVICE_IMAGES } from "@fixflow/shared";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -133,7 +133,7 @@ describe("ServiceForm: creating", () => {
 
     await user.click(screen.getByRole("radio", { name: "One of the illustrations" }));
     const group = screen.getByRole("group", { name: /Choose an illustration/ });
-    expect(within(group).getAllByRole("radio")).toHaveLength(7);
+    expect(within(group).getAllByRole("radio")).toHaveLength(BUNDLED_SERVICE_IMAGES.length);
 
     await user.click(screen.getByRole("radio", { name: /A web address/ }));
     expect(field(/^Picture web address/)).toBeInTheDocument();

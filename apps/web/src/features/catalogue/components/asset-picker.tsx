@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { cn } from "@/lib/utils";
 
 import type { BundledAsset } from "../lib/bundled-assets";
@@ -71,7 +73,23 @@ export function AssetPicker({
               "peer-disabled:opacity-50",
             )}
           >
-            <BundledTile asset={option.asset} className="size-14 rounded-lg" />
+            {option.asset.photo ? (
+              // A service picture is shown as the photograph itself, so the chooser looks like the website.
+              <span
+                aria-hidden="true"
+                className="relative block h-14 w-full overflow-hidden rounded-lg bg-surface-muted"
+              >
+                <Image
+                  src={option.asset.photo.src}
+                  alt=""
+                  fill
+                  sizes="(min-width: 640px) 160px, 45vw"
+                  className="object-cover"
+                />
+              </span>
+            ) : (
+              <BundledTile asset={option.asset} className="size-14 rounded-lg" />
+            )}
             <span className="font-medium">{option.label}</span>
           </span>
         </label>

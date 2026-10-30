@@ -37,7 +37,17 @@ describe("bundled asset registry", () => {
     expect(serviceImageAsset("https://example.test/a.png")).toBeUndefined();
   });
 
-  it("has a picture to fall back on", () => {
-    expect(FALLBACK_SERVICE_IMAGE).toBe(SERVICE_IMAGE_ASSETS["general-repair"]);
+  it("has an illustration to fall back on, never a photograph that belongs to another service", () => {
+    expect(FALLBACK_SERVICE_IMAGE.icon).toBeTruthy();
+    expect(FALLBACK_SERVICE_IMAGE.photo).toBeUndefined();
+  });
+
+  it("gives every service picture a photograph and no logo one", () => {
+    for (const [key, asset] of Object.entries(SERVICE_IMAGE_ASSETS)) {
+      expect(asset.photo, key).toBeDefined();
+    }
+    for (const asset of Object.values(LOGO_ASSETS)) {
+      expect(asset.photo).toBeUndefined();
+    }
   });
 });

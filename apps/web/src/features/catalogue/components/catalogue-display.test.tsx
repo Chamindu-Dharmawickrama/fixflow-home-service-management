@@ -72,19 +72,41 @@ describe("ServiceCard", () => {
 });
 
 describe("ServiceImage", () => {
-  it("draws a bundled picture without an image request, and hides it from screen readers", () => {
+  it("shows a bundled picture as a photograph from this app, decorative and hidden from screen readers", () => {
     const { container } = render(<ServiceImage imageKey="cleaning" imageUrl={null} />);
 
-    expect(container.querySelector("img")).toBeNull();
+    const image = container.querySelector("img");
+    expect(image).not.toBeNull();
+    expect(image).toHaveAttribute("alt", "");
+    // Served by this app's own image optimiser from its own file, never from another site.
+    expect(decodeURIComponent(image?.getAttribute("src") ?? "")).toContain(
+      "/images/services/cleaning.jpg",
+    );
+    expect(image?.getAttribute("src")).not.toMatch(/^https?:/);
     expect(container.firstElementChild).toHaveAttribute("aria-hidden", "true");
   });
 
-  it("prefers the bundled picture to a web address", () => {
+  it("tells the browser how wide the picture is shown, so it does not fetch more than it needs", () => {
+    const { container } = render(
+      <ServiceImage imageKey="cleaning" imageUrl={null} sizes="(min-width: 1024px) 800px, 100vw" />,
+    );
+
+    expect(container.querySelector("img")).toHaveAttribute(
+      "sizes",
+      "(min-width: 1024px) 800px, 100vw",
+    );
+  });
+
+  it("prefers the bundled photograph to a web address", () => {
     const { container } = render(
       <ServiceImage imageKey="cleaning" imageUrl="https://cdn.example.test/a.jpg" />,
     );
 
-    expect(container.querySelector("img")).toBeNull();
+    const sources = [...container.querySelectorAll("img")].map((image) =>
+      decodeURIComponent(image.getAttribute("src") ?? ""),
+    );
+    expect(sources.some((source) => source.includes("cdn.example.test"))).toBe(false);
+    expect(sources.some((source) => source.includes("/images/services/cleaning.jpg"))).toBe(true);
   });
 
   it("shows a web address as a decorative, lazily loaded image that sends no referrer", () => {

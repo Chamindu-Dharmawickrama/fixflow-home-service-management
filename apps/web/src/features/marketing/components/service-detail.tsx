@@ -122,7 +122,8 @@ export function ServiceDetail({ slug, result }: ServiceDetailProps) {
             <ServiceImage
               imageKey={service.imageKey}
               imageUrl={service.imageUrl}
-              className="aspect-[21/9] overflow-hidden rounded-xl"
+              sizes="(min-width: 1280px) 800px, (min-width: 1024px) 60vw, 100vw"
+              className="aspect-[16/8] overflow-hidden rounded-xl sm:aspect-[21/9]"
             />
             <div className="flex max-w-3xl flex-col gap-3">
               <h2

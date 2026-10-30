@@ -262,6 +262,7 @@ export function buildPrivacySections(context: PrivacyContext): PrivacySection[] 
         `${businessName} is a fictional business. This website is a demonstration of FixFlow, a service-management application built as a portfolio project. No real service will be carried out and no real invoice or payment exists.`,
         "Do not submit real personal information. The demo's sign-in details are published so anyone can explore the business side, which means anyone can read the names, email addresses and requests that visitors enter. Use made-up details, such as a name and an address that do not belong to you.",
         "The demo's data is reset regularly, and anything you enter may be deleted without notice.",
+        "The photographs on this website are royalty-free stock images that illustrate the kind of work involved. The people and equipment in them are not this business's staff, customers or work.",
       ],
     });
   }

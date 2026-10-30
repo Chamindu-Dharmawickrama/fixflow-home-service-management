@@ -1,0 +1,80 @@
+# Render Blueprint for the FixFlow API (T09, D-48). Docs: docs/DEPLOYMENT.md
+#
+# One web service for apps/server. The web app is deployed separately on Vercel, and the database is
+# Neon: neither is described here. Secret values are never written in this file: `sync: false` makes
+# Render ask for the value when the Blueprint is first applied (and again for each new key).
+#
+# The service is built from the repository root because the npm workspaces share one package-lock.json.
+services:
+  - type: web
+    name: fixflow-api
+    runtime: node
+    # The free plan sleeps after about 15 minutes without traffic (a cold start takes about a minute;
+    # the public website shows a retry message meanwhile, D-87). Use a paid plan for the public demo (Q-09).
+    plan: free
+    # A Render region cannot be changed later. Pick the one nearest the Neon project, then keep it.
+    region: oregon
+    branch: main
+    autoDeployTrigger: commit
+    # Only changes that can affect the API rebuild it (the web app has its own Vercel deployments).
+    buildFilter:
+      paths:
+        - apps/server/**
+        - packages/shared/**
+        - package.json
+        - package-lock.json
+        - render.yaml
+    # NODE_ENV=production is set below, and it applies to the build too: npm would then skip devDependencies,
+    # but the build needs prisma and typescript (F-14), hence --include=dev.
+    # Migrations run here, with DIRECT_DATABASE_URL, because pre-deploy commands are not on every plan (D-48).
+    # A failing migration fails the build, so the previous deploy keeps serving.
+    buildCommand: >-
+      npm ci --include=dev
+      && npm run build -w @fixflow/shared
+      && npm run db:deploy -w @fixflow/server
+      && npm run build -w @fixflow/server
+    startCommand: npm run start -w @fixflow/server
+    # Liveness only: it never queries the database, so Render's checks do not keep Neon awake (D-14).
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      # Render terminates TLS in front of the app, and Vercel's rewrite sits in front of Render. How many of
+      # the X-Forwarded-For hops to trust is verified on the hosted preview (docs/DEPLOYMENT.md, section 8).
+      - key: TRUST_PROXY
+        value: "1"
+      # Neon. DATABASE_URL is the POOLED string (host contains "-pooler"), used by the running API.
+      # DIRECT_DATABASE_URL is the non-pooled string, used only by `prisma migrate deploy` in the build.
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_DATABASE_URL
+        sync: false
+      # The Vercel origin, for example https://fixflow-preview.vercel.app (no path, no trailing slash).
+      - key: WEB_ORIGIN
+        sync: false
+      - key: PUBLIC_WEB_URL
+        sync: false
+      # Generated once by Render (random, kept across deploys). Changing it signs everyone out.
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      # Comma-separated Google accounts that become administrators (plus the seeded demo admin).
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: DEMO_MODE
+        value: "true"
+      - key: PUBLIC_SIGNUP_ENABLED
+        value: "true"
+      # Upstash Redis (REST): distributed rate limiting. Production refuses to start without it.
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      # No SMTP on the preview: emails are only logged (masked), and password reset is unavailable.
+      - key: EMAIL_TRANSPORT
+        value: log

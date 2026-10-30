@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -7,31 +8,49 @@ import { cn } from "@/lib/utils";
 import { FALLBACK_SERVICE_IMAGE, serviceImageAsset } from "../lib/bundled-assets";
 import { BundledTile } from "./bundled-tile";
 
+/** What a card in a three-column grid needs: a third of the width on desktop, half on a tablet, all on a phone. */
+export const CARD_IMAGE_SIZES = "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw";
+
 export interface ServiceImageProps {
   /** A bundled picture key (see `BUNDLED_SERVICE_IMAGES`). */
   imageKey: string | null;
   /** An `https://` address, shown on the page only (D-30). Used when there is no bundled picture. */
   imageUrl: string | null;
+  /** The widths the picture is shown at, so `next/image` sends a file no larger than needed. */
+  sizes?: string | undefined;
   className?: string | undefined;
 }
 
 /**
- * The picture of a service: its bundled picture, or its web address, or a neutral illustration.
+ * The picture of a service: its bundled photograph, or its web address, or a neutral illustration.
  * It never shows a broken image: an address that fails to load, or a key this build does not know,
  * falls back to the illustration. The picture is decorative (the service name is next to it), so it
  * has an empty `alt`.
+ *
+ * A bundled photograph is served from this app through `next/image` (resized, as WebP where the
+ * browser allows it, with the width it is shown at); the tinted tile behind it is what shows while
+ * it loads.
  */
-export function ServiceImage({ imageKey, imageUrl, className }: ServiceImageProps) {
+export function ServiceImage({
+  imageKey,
+  imageUrl,
+  sizes = CARD_IMAGE_SIZES,
+  className,
+}: ServiceImageProps) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const bundled = serviceImageAsset(imageKey);
 
-  if (bundled) {
+  if (bundled?.photo) {
     return (
-      <BundledTile
-        asset={bundled}
-        className={cn("aspect-video w-full", className)}
-        iconClassName="size-1/3"
-      />
+      <span
+        aria-hidden="true"
+        className={cn(
+          "relative block aspect-video w-full overflow-hidden bg-surface-muted",
+          className,
+        )}
+      >
+        <Image src={bundled.photo.src} alt="" fill sizes={sizes} className="object-cover" />
+      </span>
     );
   }
   if (imageUrl !== null && failedUrl !== imageUrl) {

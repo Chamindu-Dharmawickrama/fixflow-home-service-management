@@ -45,6 +45,22 @@ const PAGES = [
 ] as const;
 
 async function shoot(page: Page, width: number, name: string): Promise<void> {
+  // Pictures load as they come near the screen: walk down the page once so the photograph in every
+  // card is in the full-page shot, and fail if one did not load.
+  await page.evaluate(async () => {
+    for (let y = 0; y < document.body.scrollHeight; y += 400) {
+      window.scrollTo(0, y);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    window.scrollTo(0, 0);
+  });
+  await page.waitForLoadState("networkidle");
+  const broken = await page.evaluate(() =>
+    [...document.images]
+      .filter((image) => !(image.complete && image.naturalWidth > 0))
+      .map((image) => image.currentSrc || image.src),
+  );
+  expect(broken, "pictures that did not load").toEqual([]);
   await page.evaluate(() => document.fonts.ready);
   const dir = resolve(SCREENSHOT_DIR, String(width));
   mkdirSync(dir, { recursive: true });

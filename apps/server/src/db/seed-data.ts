@@ -79,7 +79,7 @@ export const DEMO_SERVICES: readonly Prisma.ServiceUncheckedCreateInput[] = [
     pricingMode: "FIXED",
     startingPrice: "129.00",
     isPublished: true,
-    imageKey: "air-conditioning",
+    imageKey: "indoor-unit",
     sortOrder: 20,
   },
   {

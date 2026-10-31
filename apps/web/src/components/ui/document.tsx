@@ -9,6 +9,11 @@ export interface DocumentLine {
   unitPrice: string;
   /** Calculated by the server. */
   lineTotal: string;
+  /**
+   * Whether tax is charged on the line. Leave it out and no "Tax" column is drawn; give it on every
+   * line and the document says which lines carry tax, which the customer needs when only some do.
+   */
+  taxable?: boolean | undefined;
 }
 
 /**
@@ -27,6 +32,7 @@ export function DocumentLines({
   caption: string;
   className?: string | undefined;
 }) {
+  const showTax = lines.some((line) => line.taxable !== undefined);
   return (
     <div className={className}>
       <table className="hidden w-full border-collapse text-left text-sm sm:table">
@@ -42,6 +48,11 @@ export function DocumentLines({
             <th scope="col" className="px-4 py-2 text-right">
               Unit price
             </th>
+            {showTax ? (
+              <th scope="col" className="px-4 py-2 text-left">
+                Tax
+              </th>
+            ) : null}
             <th scope="col" className="py-2 pl-4 text-right">
               Amount
             </th>
@@ -50,11 +61,16 @@ export function DocumentLines({
         <tbody className="divide-y divide-border">
           {lines.map((line) => (
             <tr key={line.id}>
-              <td className="py-3 pr-4 text-ink">{line.description}</td>
+              <td className="py-3 pr-4 text-ink [overflow-wrap:anywhere]">{line.description}</td>
               <td className="px-4 py-3 text-right tabular-nums">{line.quantity}</td>
               <td className="px-4 py-3 text-right">
                 <MoneyText amount={line.unitPrice} currencyCode={currencyCode} />
               </td>
+              {showTax ? (
+                <td className="px-4 py-3 text-ink-secondary">
+                  {line.taxable === undefined ? null : line.taxable ? "Taxed" : "No tax"}
+                </td>
+              ) : null}
               <td className="py-3 pl-4 text-right font-medium">
                 <MoneyText amount={line.lineTotal} currencyCode={currencyCode} />
               </td>
@@ -66,7 +82,10 @@ export function DocumentLines({
       <ul aria-label={caption} className="divide-y divide-border border-y border-border sm:hidden">
         {lines.map((line) => (
           <li key={line.id} className="flex flex-col gap-1 py-3 text-sm">
-            <p className="text-ink">{line.description}</p>
+            <p className="text-ink [overflow-wrap:anywhere]">{line.description}</p>
+            {showTax && line.taxable !== undefined ? (
+              <p className="text-xs text-ink-secondary">{line.taxable ? "Taxed" : "No tax"}</p>
+            ) : null}
             <p className="flex items-baseline justify-between gap-3 text-ink-secondary">
               <span className="tabular-nums">
                 {line.quantity} × <MoneyText amount={line.unitPrice} currencyCode={currencyCode} />

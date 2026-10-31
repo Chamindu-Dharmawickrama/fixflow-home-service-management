@@ -3,6 +3,7 @@ import { RequestAction } from "@fixflow/shared";
 /** What each action is called on its button and in the menu. */
 export const REQUEST_ACTION_LABELS: Readonly<Record<RequestAction, string>> = {
   [RequestAction.START_REVIEW]: "Start review",
+  [RequestAction.CREATE_QUOTATION]: "Create quotation",
   [RequestAction.REOPEN]: "Reopen request",
   [RequestAction.CANCEL]: "Cancel request",
 };

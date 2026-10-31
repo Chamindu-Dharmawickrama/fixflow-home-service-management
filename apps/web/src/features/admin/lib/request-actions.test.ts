@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { REQUEST_ACTION_LABELS, splitActions } from "./request-actions";
 
-const { START_REVIEW, REOPEN, CANCEL } = RequestAction;
+const { START_REVIEW, REOPEN, CANCEL, CREATE_QUOTATION } = RequestAction;
 
 describe("splitActions", () => {
   it.each([
@@ -22,6 +22,12 @@ describe("splitActions", () => {
     },
     { name: "a request with nothing left to do", actions: [], primary: undefined, menu: [] },
     { name: "only the main step", actions: [START_REVIEW], primary: START_REVIEW, menu: [] },
+    {
+      name: "a request under review",
+      actions: [CREATE_QUOTATION, CANCEL],
+      primary: CREATE_QUOTATION,
+      menu: [CANCEL],
+    },
   ])("offers $name: main button and menu", ({ actions, primary, menu }) => {
     expect(splitActions(actions)).toEqual({ primary, menu });
   });

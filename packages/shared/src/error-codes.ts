@@ -70,6 +70,12 @@ export const ErrorCode = {
    * unknown (FR-006). Not `SERVICE_UNAVAILABLE`, which already means "503, a dependency is down".
    */
   SERVICE_INACTIVE: "SERVICE_INACTIVE",
+
+  // Quotations (T14)
+  /** 409 — the request already has a draft quotation; `details.quotationId` is the existing draft. */
+  DRAFT_EXISTS: "DRAFT_EXISTS",
+  /** 409 — only a draft quotation can be edited; a sent, voided or answered one is fixed (BR-07). */
+  QUOTATION_NOT_EDITABLE: "QUOTATION_NOT_EDITABLE",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

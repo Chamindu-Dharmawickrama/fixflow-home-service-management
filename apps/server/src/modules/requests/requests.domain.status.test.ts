@@ -1,5 +1,6 @@
 import {
   ErrorCode,
+  REQUEST_STATUS_ACTIONS,
   RequestAction,
   type RequestStatusCounts,
   ServiceRequestStatus,
@@ -13,6 +14,7 @@ import {
   assertAdminAction,
   assertRequestTransition,
   availableAdminActions,
+  canCreateQuotation,
   canPerformAdminAction,
   canTransition,
   isNewRequest,
@@ -160,7 +162,7 @@ describe("the messages of a refused change", () => {
 describe("availableAdminActions (D-43)", () => {
   const EXPECTED: Record<ServiceRequestStatus, RequestAction[]> = {
     SUBMITTED: ["START_REVIEW", "CANCEL"],
-    UNDER_REVIEW: ["CANCEL"],
+    UNDER_REVIEW: ["CREATE_QUOTATION", "CANCEL"],
     QUOTED: ["CANCEL"],
     ACCEPTED: ["CANCEL"],
     DECLINED: ["REOPEN", "CANCEL"],
@@ -178,9 +180,32 @@ describe("availableAdminActions (D-43)", () => {
         expect(availableAdminActions(status).includes(action)).toBe(
           EXPECTED[status].includes(action),
         );
+      }
+      for (const action of REQUEST_STATUS_ACTIONS) {
         expect(canPerformAdminAction(status, action)).toBe(EXPECTED[status].includes(action));
       }
     }
+  });
+
+  it("offers Create quotation only to a request under review that has no draft yet (D-21, D-22)", () => {
+    for (const status of STATUSES) {
+      expect(canCreateQuotation(status)).toBe(status === "UNDER_REVIEW");
+      expect(
+        availableAdminActions(status, { hasDraftQuotation: false }).includes("CREATE_QUOTATION"),
+      ).toBe(status === "UNDER_REVIEW");
+      // A request with a draft continues that draft: it never offers a second.
+      expect(canCreateQuotation(status, { hasDraftQuotation: true })).toBe(false);
+      expect(availableAdminActions(status, { hasDraftQuotation: true })).not.toContain(
+        "CREATE_QUOTATION",
+      );
+    }
+    // A quoted request is changed by replacing its sent quotation, not by starting a first one.
+    expect(availableAdminActions("QUOTED")).toEqual(["CANCEL"]);
+  });
+
+  it("does not make Create quotation a status change: the status endpoint cannot name it", () => {
+    expect([...REQUEST_STATUS_ACTIONS].sort()).toEqual(["CANCEL", "REOPEN", "START_REVIEW"]);
+    expect(Object.values(RequestAction)).toContain("CREATE_QUOTATION");
   });
 
   it("keeps Start review and Reopen apart although both lead to UNDER_REVIEW", () => {
@@ -197,7 +222,7 @@ describe("availableAdminActions (D-43)", () => {
 
   it("refuses every action on a closed request, with a message that says it is closed", () => {
     for (const status of ["CANCELLED", "CONVERTED_TO_JOB"] as const) {
-      for (const action of Object.values(RequestAction)) {
+      for (const action of REQUEST_STATUS_ACTIONS) {
         expect(() => {
           assertAdminAction(status, action);
         }).toThrow(/can no longer be changed/);
@@ -229,7 +254,7 @@ describe("availableAdminActions (D-43)", () => {
   });
 
   it("offers no system change: nothing in the list leads to QUOTED, ACCEPTED, DECLINED or CONVERTED_TO_JOB", () => {
-    for (const action of Object.values(RequestAction)) {
+    for (const action of REQUEST_STATUS_ACTIONS) {
       expect(["QUOTED", "ACCEPTED", "DECLINED", "CONVERTED_TO_JOB"]).not.toContain(
         ADMIN_ACTION_TARGET[action],
       );

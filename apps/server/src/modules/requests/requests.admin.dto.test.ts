@@ -96,7 +96,12 @@ describe("toAdminRequestListItem", () => {
 
 describe("toAdminRequestDto", () => {
   it("has the customer's fields plus the business's, and the keys are an allowlist", () => {
-    const dto = toAdminRequestDto({ row: detailRow(), timeline: [], history: HISTORY });
+    const dto = toAdminRequestDto({
+      row: detailRow(),
+      timeline: [],
+      history: HISTORY,
+      quotations: [],
+    });
 
     expect(Object.keys(dto).sort()).toEqual(
       [
@@ -119,13 +124,53 @@ describe("toAdminRequestDto", () => {
         "notes",
         "timeline",
         "cancellation",
+        "quotations",
         "availableActions",
       ].sort(),
     );
   });
 
+  it("lists the quotations it is given, and offers Create quotation unless one is already a draft", () => {
+    const summary = (id: string, status: "DRAFT" | "VOID") => ({
+      id,
+      reference: `QT-2026-0000${id}`,
+      status,
+      statusLabel: status === "DRAFT" ? "Draft" : "Void",
+      totalAmount: "100.00",
+      currencyCode: "USD",
+      validUntil: "2026-12-01",
+      sentAt: null,
+      createdAt: "2026-11-01T10:00:00.000Z",
+      replacesReference: null,
+    });
+    const underReview = detailRow({ status: "UNDER_REVIEW" });
+
+    const none = toAdminRequestDto({
+      row: underReview,
+      timeline: [],
+      history: HISTORY,
+      quotations: [summary("1", "VOID")],
+    });
+    expect(none.quotations).toHaveLength(1);
+    expect(none.availableActions).toEqual(["CREATE_QUOTATION", "CANCEL"]);
+
+    const withDraft = toAdminRequestDto({
+      row: underReview,
+      timeline: [],
+      history: HISTORY,
+      quotations: [summary("2", "DRAFT"), summary("1", "VOID")],
+    });
+    expect(withDraft.quotations.map((quotation) => quotation.id)).toEqual(["2", "1"]);
+    expect(withDraft.availableActions).toEqual(["CANCEL"]);
+  });
+
   it("carries the customer's contact details and the access notes", () => {
-    const dto = toAdminRequestDto({ row: detailRow(), timeline: [], history: HISTORY });
+    const dto = toAdminRequestDto({
+      row: detailRow(),
+      timeline: [],
+      history: HISTORY,
+      quotations: [],
+    });
 
     expect(dto.customer).toMatchObject({
       name: "Alex Morgan",
@@ -156,6 +201,7 @@ describe("toAdminRequestDto", () => {
         ],
       }),
       timeline: [],
+      quotations: [],
       history: HISTORY,
     });
 
@@ -179,8 +225,12 @@ describe("toAdminRequestDto", () => {
 
   it("offers the actions D-21 allows for the status, with the likely next step first", () => {
     const actionsFor = (status: AdminDetailRow["status"]) =>
-      toAdminRequestDto({ row: detailRow({ status }), timeline: [], history: HISTORY })
-        .availableActions;
+      toAdminRequestDto({
+        row: detailRow({ status }),
+        timeline: [],
+        history: HISTORY,
+        quotations: [],
+      }).availableActions;
 
     expect(actionsFor("SUBMITTED")).toEqual(["START_REVIEW", "CANCEL"]);
     expect(actionsFor("DECLINED")).toEqual(["REOPEN", "CANCEL"]);
@@ -192,6 +242,7 @@ describe("toAdminRequestDto", () => {
       toAdminRequestDto({
         row: detailRow({ cancelReason: "left over" }),
         timeline: [],
+        quotations: [],
         history: HISTORY,
       }).cancellation,
     ).toBeNull();
@@ -207,6 +258,7 @@ describe("toAdminRequestDto", () => {
         cancelledBy: { name: "Morgan Reyes" },
       }),
       timeline: [],
+      quotations: [],
       history: HISTORY,
     });
 
@@ -222,6 +274,7 @@ describe("toAdminRequestDto", () => {
     const dto = toAdminRequestDto({
       row: detailRow(),
       timeline: [],
+      quotations: [],
       history: {
         previous: [
           {
@@ -253,7 +306,7 @@ describe("toAdminRequestDto", () => {
 
   it("does not expose a password hash, a session or the customer's user id", () => {
     const text = JSON.stringify(
-      toAdminRequestDto({ row: detailRow(), timeline: [], history: HISTORY }),
+      toAdminRequestDto({ row: detailRow(), timeline: [], history: HISTORY, quotations: [] }),
     );
 
     expect(text).not.toMatch(/passwordHash|googleSubject|sessionId/);

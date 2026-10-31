@@ -113,12 +113,21 @@ describe("CustomerHistoryPanel: quotations", () => {
     );
   });
 
-  it("does not link the quotation itself: it has no page yet", () => {
+  it("opens the quotation itself from its reference, and still links the request it belongs to", () => {
     panel({ tab: "quotations", response: historyResponse([historyQuotation()]) });
 
-    const links = within(tableRow("Quotations")).getAllByRole("link");
-    expect(links).toHaveLength(1);
-    expect(links[0]).toHaveAttribute("href", `/app/requests/${REQUEST_ID}`);
+    const row = within(tableRow("Quotations"));
+    expect(row.getByRole("link", { name: /QT-2026-00004/ })).toHaveAttribute(
+      "href",
+      "/app/quotations/q-1",
+    );
+    expect(row.getByRole("link", { name: /FF-2026-00012/ })).toHaveAttribute(
+      "href",
+      `/app/requests/${REQUEST_ID}`,
+    );
+    expect(row.getAllByRole("link")).toHaveLength(2);
+    // The row is one big link to the quotation; the request link sits above it, so it can be clicked.
+    expect(row.getByRole("link", { name: /FF-2026-00012/ })).toHaveClass("relative", "z-10");
   });
 
   it("says a draft was not sent", () => {

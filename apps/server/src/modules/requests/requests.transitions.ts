@@ -1,4 +1,4 @@
-import { type RequestAction, ServiceRequestStatus } from "@fixflow/shared";
+import { type RequestStatusAction, ServiceRequestStatus } from "@fixflow/shared";
 
 import type { Prisma } from "../../generated/prisma/client.js";
 import type { DbClient } from "../../lib/db.js";
@@ -27,7 +27,7 @@ export interface TransitionInput {
    */
   expectedStatus?: ServiceRequestStatus;
   /** For an admin: the action being taken, checked against the current status as well as the target. */
-  action?: RequestAction;
+  action?: RequestStatusAction;
   /** Other columns that change with the status, in the same statement (for example the cancellation). */
   data?: Prisma.ServiceRequestUncheckedUpdateManyInput;
 }
@@ -104,27 +104,3 @@ export const revertToUnderReview = systemTransition(ServiceRequestStatus.UNDER_R
 
 /** A work order was created from the accepted request: `ACCEPTED` → `CONVERTED_TO_JOB` (T17). */
 export const markConvertedToJob = systemTransition(ServiceRequestStatus.CONVERTED_TO_JOB);
-
-// ---- Hook for T14 ---------------------------------------------------------------------------------
-
-export interface CancellationContext {
-  requestId: string;
-  /** The admin who cancelled, for the voided quotation's own history. */
-  actorUserId: string;
-  /** The internal reason, to be recorded on each voided quotation (BR-16). */
-  reason: string;
-}
-
-/**
- * **T14 hook.** D-21 says that cancelling a request voids any open (`DRAFT` or `SENT`) quotation in
- * the same transaction, with the reason, the actor and an activity event on each. Quotations cannot
- * be created until T14, so there is nothing to void yet and this does nothing; `changeRequestStatus`
- * already calls it inside the cancellation's transaction, so T14 only has to fill in this body and
- * add its tests. It is recorded in `docs/IMPLEMENTATION_PROGRESS.md` as a T14 follow-up.
- */
-export async function voidOpenQuotationsOnCancel(
-  _tx: DbClient,
-  _context: CancellationContext,
-): Promise<void> {
-  // Intentionally empty until T14 (see above).
-}

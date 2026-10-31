@@ -151,21 +151,29 @@ export interface RequestCancelledEmailInput {
   customerMessage?: string | undefined;
 }
 
+/**
+ * A message the business wrote for the customer, as paragraphs under a lead-in line. Blank lines go;
+ * with no message there are no paragraphs and the email says nothing more than its standard text.
+ */
+function customerMessageParagraphs(businessName: string, message: string | undefined): string[] {
+  if (message === undefined || message.trim() === "") {
+    return [];
+  }
+  return [
+    `A message from ${businessName}:`,
+    ...message
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line !== ""),
+  ];
+}
+
 export function renderRequestCancelledEmail(
   input: Branded<RequestCancelledEmailInput>,
 ): RenderedEmail {
   const { businessName, customerName, requestReference, serviceName, requestUrl, customerMessage } =
     input;
-  const messageParagraphs =
-    customerMessage === undefined || customerMessage.trim() === ""
-      ? []
-      : [
-          `A message from ${businessName}:`,
-          ...customerMessage
-            .split(/\r?\n/)
-            .map((line) => line.trim())
-            .filter((line) => line !== ""),
-        ];
+  const messageParagraphs = customerMessageParagraphs(businessName, customerMessage);
   return renderEmail(input, {
     subject: `Request ${requestReference} was cancelled`,
     heading: "Your request was cancelled",
@@ -222,18 +230,33 @@ export interface QuotationWithdrawnEmailInput {
   quotationReference: string;
   serviceName: string;
   requestUrl: string;
+  /**
+   * What the business wrote for the customer. Without one the email says nothing more than the
+   * standard text. There is deliberately **no field for the internal void reason**: it cannot be
+   * passed in, so it cannot reach a customer (BR-19).
+   */
+  customerMessage?: string | undefined;
 }
 
 export function renderQuotationWithdrawnEmail(
   input: Branded<QuotationWithdrawnEmailInput>,
 ): RenderedEmail {
-  const { customerName, quotationReference, serviceName, requestUrl } = input;
+  const {
+    businessName,
+    customerName,
+    quotationReference,
+    serviceName,
+    requestUrl,
+    customerMessage,
+  } = input;
+  const messageParagraphs = customerMessageParagraphs(businessName, customerMessage);
   return renderEmail(input, {
     subject: `Quotation ${quotationReference} was withdrawn`,
     heading: "A quotation was withdrawn",
     intro: [
       greeting(customerName),
       `We have withdrawn quotation ${quotationReference} for ${serviceName}. It can no longer be accepted. If we send a replacement, you will be notified.`,
+      ...messageParagraphs,
     ],
     details: [
       { label: "Quotation", value: quotationReference },

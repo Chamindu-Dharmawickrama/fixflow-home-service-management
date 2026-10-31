@@ -7,7 +7,7 @@ export {
   formatTimeZoneName,
 } from "./datetime";
 export { FORMAT_LOCALE } from "./locale";
-export { formatMoney, isDecimalString } from "./money";
+export { formatMoney, isDecimalString, isZeroAmount } from "./money";
 export { formatReference, referenceType } from "./reference";
 export type {
   StatusIconName,

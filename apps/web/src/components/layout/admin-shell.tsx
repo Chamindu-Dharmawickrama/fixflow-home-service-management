@@ -58,7 +58,7 @@ export function AdminShell({
       <div className="flex min-w-0 flex-1">
         <aside
           data-surface="dark"
-          className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col bg-brand-deep lg:flex"
+          className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col bg-brand-deep lg:flex print:hidden"
         >
           <div className="flex h-16 shrink-0 items-center px-5">{brand}</div>
           <nav aria-label="Main" className="flex-1 overflow-y-auto px-3 pb-4">
@@ -72,8 +72,8 @@ export function AdminShell({
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          {banner}
-          <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-surface px-4 sm:px-6 lg:px-8">
+          {banner === undefined ? null : <div className="print:hidden">{banner}</div>}
+          <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-surface px-4 sm:px-6 lg:px-8 print:hidden">
             <div className="lg:hidden">
               <MobileNav groups={navigation} brand={brand} footer={sidebarFooter} />
             </div>
@@ -87,7 +87,7 @@ export function AdminShell({
           <main
             id={MAIN_CONTENT_ID}
             tabIndex={-1}
-            className="flex-1 px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8"
+            className="flex-1 px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8 print:p-0"
           >
             <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">{children}</div>
           </main>

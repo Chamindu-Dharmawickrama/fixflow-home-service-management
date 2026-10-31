@@ -1,6 +1,7 @@
 import {
   type AdminCustomerDto,
   type AdminCustomerListItemDto,
+  type AdminQuotationDto,
   type AdminRequestDto,
   type AdminRequestListItemDto,
   type CustomerHistoryInvoiceDto,
@@ -72,6 +73,7 @@ export function adminRequest(overrides: Partial<AdminRequestDto> = {}): AdminReq
     notes: [],
     timeline: [],
     cancellation: null,
+    quotations: [],
     availableActions: [RequestAction.START_REVIEW, RequestAction.CANCEL],
     ...overrides,
   };
@@ -224,5 +226,106 @@ export function historyResponse<Row>(rows: Row[], totalItems = rows.length) {
   return {
     data: rows,
     pagination: { page: 1, pageSize: 10, totalItems, totalPages: Math.ceil(totalItems / 10) },
+  };
+}
+
+// ---- Quotations (T14) -----------------------------------------------------------------------
+
+export const QUOTATION_ID = "6f1c7a0e-5d0b-4f55-9d52-0d8d1c3b8a11";
+
+/** The worked example of D-19: subtotal 252.00, taxable 45.50, tax 3.64, total 255.64. */
+export function adminQuotation(overrides: Partial<AdminQuotationDto> = {}): AdminQuotationDto {
+  return {
+    id: QUOTATION_ID,
+    reference: "QT-2026-00004",
+    status: "DRAFT",
+    statusLabel: "Draft",
+    requestId: REQUEST_ID,
+    requestReference: "FF-2026-00012",
+    requestStatus: "UNDER_REVIEW",
+    requestStatusLabel: "Under review",
+    serviceName: "AC Repair",
+    customerName: "Amara Okafor",
+    customer: {
+      id: "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+      name: "Amara Okafor",
+      email: "amara.okafor@example.com",
+      phone: "(212) 555-0142",
+    },
+    address: {
+      line1: "214 Larkspur Lane",
+      line2: "Unit 4",
+      city: "Harbor City",
+      region: "NY",
+      postalCode: "10001",
+    },
+    business: {
+      name: "CoolBreeze Home Services",
+      tagline: "Home comfort and repairs, done properly the first time.",
+      logoKey: null,
+      logoUrl: null,
+      email: "hello@coolbreeze.test",
+      phone: "(212) 555-0142",
+      address: {
+        line1: "48 Harbor Point Road",
+        line2: "Unit 3",
+        city: "Harbor City",
+        region: "NY",
+        postalCode: "10999",
+      },
+    },
+    currencyCode: "USD",
+    taxRate: "8.00",
+    lines: [
+      {
+        id: "line-1",
+        position: 1,
+        description: "Diagnostic visit",
+        quantity: "1.00",
+        unitPrice: "79.00",
+        taxable: false,
+        lineTotal: "79.00",
+      },
+      {
+        id: "line-2",
+        position: 2,
+        description: "Run capacitor",
+        quantity: "1.00",
+        unitPrice: "45.50",
+        taxable: true,
+        lineTotal: "45.50",
+      },
+      {
+        id: "line-3",
+        position: 3,
+        description: "Labour",
+        quantity: "1.50",
+        unitPrice: "85.00",
+        taxable: false,
+        lineTotal: "127.50",
+      },
+    ],
+    subtotal: "252.00",
+    discountAmount: "0.00",
+    taxableBase: "45.50",
+    taxAmount: "3.64",
+    totalAmount: "255.64",
+    validUntil: "2026-11-17",
+    terms: "Prices are valid until the date shown.",
+    customerNote: null,
+    sentAt: null,
+    respondedAt: null,
+    createdAt: "2026-11-02T10:00:00.000Z",
+    updatedAt: "2026-11-02T10:05:00.123Z",
+    createdBy: { name: "Morgan Reyes" },
+    sentBy: null,
+    declineReason: null,
+    expiredAt: null,
+    voided: null,
+    replaces: null,
+    replacedBy: null,
+    timeline: [],
+    availableActions: ["EDIT", "SEND", "VOID"],
+    ...overrides,
   };
 }

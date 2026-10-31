@@ -5,6 +5,8 @@ import {
   type AdminRequestListItemDto,
   type AdminRequestNoteDto,
   type AdminTimelineEventDto,
+  QuotationStatus,
+  type QuotationSummaryDto,
   requestNextStep,
   requestStatusLabel,
   ServiceRequestStatus,
@@ -151,14 +153,17 @@ export interface CustomerHistory {
 
 /**
  * A request in full for the business: the customer's own fields, their contact details and history,
- * every note, the internal timeline and the actions the server allows now (D-43).
+ * every note, every version of its quotation, the internal timeline and the actions the server
+ * allows now (D-43).
  */
 export function toAdminRequestDto(input: {
   row: AdminDetailRow;
   timeline: AdminTimelineEventDto[];
   history: CustomerHistory;
+  /** Newest first. */
+  quotations: QuotationSummaryDto[];
 }): AdminRequestDto {
-  const { row, timeline, history } = input;
+  const { row, timeline, history, quotations } = input;
   return {
     id: row.id,
     reference: row.reference,
@@ -188,6 +193,9 @@ export function toAdminRequestDto(input: {
     notes: row.notes.map(toAdminNote),
     timeline,
     cancellation: toCancellation(row),
-    availableActions: availableAdminActions(row.status),
+    quotations,
+    availableActions: availableAdminActions(row.status, {
+      hasDraftQuotation: quotations.some((quotation) => quotation.status === QuotationStatus.DRAFT),
+    }),
   };
 }

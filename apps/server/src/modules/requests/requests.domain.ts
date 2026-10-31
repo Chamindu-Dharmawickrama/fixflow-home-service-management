@@ -9,10 +9,12 @@ import {
   REQUEST_STATUS_LABELS,
   RequestAction,
   type RequestAddressDto,
+  type RequestStatusAction,
   type RequestStatusCounts,
   ServiceRequestStatus,
 } from "@fixflow/shared";
 
+import { startOfBusinessDay } from "../../lib/business-day.js";
 import { type AppError, conflict } from "../../lib/errors.js";
 
 /**
@@ -33,7 +35,7 @@ export interface RequestTransition {
   to: ServiceRequestStatus;
   trigger: RequestTrigger;
   /** The admin action that makes it. Absent for system transitions. */
-  action?: RequestAction;
+  action?: RequestStatusAction;
 }
 
 const S = ServiceRequestStatus;
@@ -143,14 +145,14 @@ export function staleRequestError(currentStatus: ServiceRequestStatus): AppError
 }
 
 /** The status each admin action leads to. */
-export const ADMIN_ACTION_TARGET: Readonly<Record<RequestAction, ServiceRequestStatus>> = {
+export const ADMIN_ACTION_TARGET: Readonly<Record<RequestStatusAction, ServiceRequestStatus>> = {
   [RequestAction.START_REVIEW]: S.UNDER_REVIEW,
   [RequestAction.CANCEL]: S.CANCELLED,
   [RequestAction.REOPEN]: S.UNDER_REVIEW,
 };
 
 /** Cancelling and reopening need a written reason (5 to 500 characters, BR-16); starting a review does not. */
-export const ACTIONS_REQUIRING_REASON: readonly RequestAction[] = [
+export const ACTIONS_REQUIRING_REASON: readonly RequestStatusAction[] = [
   RequestAction.CANCEL,
   RequestAction.REOPEN,
 ];
@@ -158,6 +160,7 @@ export const ACTIONS_REQUIRING_REASON: readonly RequestAction[] = [
 /** The most likely next step first, the destructive one last. */
 const ACTION_ORDER: readonly RequestAction[] = [
   RequestAction.START_REVIEW,
+  RequestAction.CREATE_QUOTATION,
   RequestAction.REOPEN,
   RequestAction.CANCEL,
 ];
@@ -169,7 +172,7 @@ const ACTION_ORDER: readonly RequestAction[] = [
  */
 export function canPerformAdminAction(
   status: ServiceRequestStatus,
-  action: RequestAction,
+  action: RequestStatusAction,
 ): boolean {
   return REQUEST_TRANSITIONS.some(
     (transition) =>
@@ -180,18 +183,43 @@ export function canPerformAdminAction(
 }
 
 /** `409 INVALID_STATE_TRANSITION` unless the admin action is allowed in this status. */
-export function assertAdminAction(status: ServiceRequestStatus, action: RequestAction): void {
+export function assertAdminAction(status: ServiceRequestStatus, action: RequestStatusAction): void {
   if (!canPerformAdminAction(status, action)) {
     throw invalidTransition(status, ADMIN_ACTION_TARGET[action], RequestTrigger.ADMIN);
   }
 }
 
+/** What the rest of the system knows about a request that decides which actions it offers. */
+export interface AdminActionContext {
+  /** The request already has a draft quotation: the admin continues it instead of starting another (D-22). */
+  hasDraftQuotation?: boolean;
+}
+
 /**
- * What an admin may do to a request in this status (D-43), computed from the transition map so the
- * screen and the endpoint cannot disagree. T14 and T17 add `CREATE_QUOTATION` and `CREATE_WORK_ORDER`.
+ * Whether the admin may start a quotation. Only an `UNDER_REVIEW` request can: a `QUOTED` one already
+ * has a sent quotation, which is changed by replacing it (D-21, D-22), and a request with a draft
+ * has its one draft already.
  */
-export function availableAdminActions(status: ServiceRequestStatus): RequestAction[] {
-  return ACTION_ORDER.filter((action) => canPerformAdminAction(status, action));
+export function canCreateQuotation(
+  status: ServiceRequestStatus,
+  context: AdminActionContext = {},
+): boolean {
+  return status === S.UNDER_REVIEW && context.hasDraftQuotation !== true;
+}
+
+/**
+ * What an admin may do to a request in this status (D-43), computed from the transition map and the
+ * quotation rules so the screen and the endpoint cannot disagree. T17 adds `CREATE_WORK_ORDER`.
+ */
+export function availableAdminActions(
+  status: ServiceRequestStatus,
+  context: AdminActionContext = {},
+): RequestAction[] {
+  return ACTION_ORDER.filter((action) =>
+    action === RequestAction.CREATE_QUOTATION
+      ? canCreateQuotation(status, context)
+      : canPerformAdminAction(status, action),
+  );
 }
 
 /** A request nobody has looked at yet. */
@@ -222,16 +250,6 @@ export interface SubmittedRange {
   before?: Date;
 }
 
-function startOfDay(date: string, timeZone: string): Date {
-  const instant = new TZDate(
-    Number(date.slice(0, 4)),
-    Number(date.slice(5, 7)) - 1,
-    Number(date.slice(8, 10)),
-    timeZone,
-  );
-  return new Date(instant.getTime());
-}
-
 /**
  * The instants a "submitted from / to" filter means. Both dates are days on the business's calendar
  * and both are inclusive: someone who picks 1 to 3 March gets everything submitted from midnight at
@@ -244,8 +262,8 @@ export function submittedRange(
   timeZone: string,
 ): SubmittedRange {
   return {
-    ...(from !== undefined && { from: startOfDay(from, timeZone) }),
-    ...(to !== undefined && { before: startOfDay(addDaysToDateOnly(to, 1), timeZone) }),
+    ...(from !== undefined && { from: startOfBusinessDay(from, timeZone) }),
+    ...(to !== undefined && { before: startOfBusinessDay(addDaysToDateOnly(to, 1), timeZone) }),
   };
 }
 

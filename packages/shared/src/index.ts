@@ -38,7 +38,9 @@ export {
   type AdminRequestNoteDto,
   type AdminRequestSortField,
   type ChangeRequestStatusBody,
+  REQUEST_STATUS_ACTIONS,
   RequestAction,
+  type RequestStatusAction,
   type RequestStatusCounts,
 } from "./admin-requests.js";
 export type {
@@ -111,12 +113,40 @@ export {
 } from "./enums.js";
 export { ErrorCode } from "./error-codes.js";
 export { LIMITS } from "./limits.js";
+export {
+  calculateDocumentTotals,
+  type DocumentLineInput,
+  DocumentTotalsError,
+  type DocumentTotalsInput,
+  type DocumentTotalsResult,
+  formatTaxRate,
+  isPositiveAmount,
+  tryCalculateDocumentTotals,
+} from "./money.js";
 export type {
   NotificationDto,
   NotificationListMeta,
   NotificationListResponse,
   NotificationsReadAllDto,
 } from "./notifications.js";
+export {
+  type AdminQuotationDto,
+  type CreateQuotationBody,
+  type CustomerQuotationDto,
+  QUOTATION_STATUS_LABELS,
+  QuotationAction,
+  type QuotationAddressDto,
+  type QuotationBusinessDto,
+  type QuotationDocumentDto,
+  type QuotationLineBody,
+  type QuotationLineDto,
+  type QuotationLinkDto,
+  quotationStatusLabel,
+  type QuotationSummaryDto,
+  type SendQuotationBody,
+  type UpdateQuotationBody,
+  type VoidQuotationBody,
+} from "./quotations.js";
 export {
   type CreateServiceRequestBody,
   type CustomerRequestCancellationDto,

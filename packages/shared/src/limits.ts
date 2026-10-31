@@ -17,6 +17,10 @@ export const LIMITS = {
   lineItems: { min: 1, max: 50 },
   quantity: { min: "0.01", max: "9999.99" },
   unitPrice: { min: "0.00", max: "999999.99" },
+  /** The largest subtotal or total a document can hold: its `Decimal(12,2)` columns. */
+  documentAmount: { max: "9999999999.99" },
+  /** What a line of a quotation or invoice says. */
+  lineDescription: { minLength: 1, maxLength: 200 },
   /** Percentage, so `8.25` means 8.25 %. */
   taxRate: { min: "0", max: "100" },
   discount: { min: "0.00" },

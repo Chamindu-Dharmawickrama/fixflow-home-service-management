@@ -40,6 +40,14 @@ export function formatMoney(amount: string, currencyCode: string): string {
   return currencyFormatter(currencyCode).format(amount as `${number}`);
 }
 
+/**
+ * True for a decimal string with no value in it (`"0"`, `"0.00"`, `"-0.00"`). Money stays a string all
+ * the way to the screen (CLAUDE.md §9), so "is anything there" is asked of the text, not of a number.
+ */
+export function isZeroAmount(amount: string): boolean {
+  return !/[1-9]/.test(amount);
+}
+
 /** True when the string is a decimal amount `formatMoney` accepts. */
 export function isDecimalString(value: string): boolean {
   return DECIMAL_STRING.test(value);

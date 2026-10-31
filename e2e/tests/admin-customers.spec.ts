@@ -448,13 +448,21 @@ test.describe("a customer's page (FR-030, FR-031)", () => {
     await openTab(page, "quotations");
     const quotations = page.getByRole("table", { name: "Quotations" });
     await expect(quotations.getByRole("row")).toHaveCount(9, { timeout: NAVIGATION_TIMEOUT });
-    // A quotation has no page of its own yet: its reference is plain text, and the row leads to the request.
-    await expect(quotations.getByRole("row").nth(1).getByRole("link")).toHaveCount(1);
-    await expect(quotations.getByRole("row").nth(1).locator("[data-status]")).toHaveAttribute(
+    // The reference opens the quotation (T14, F-58); the request it belongs to is linked as well.
+    const firstQuotation = quotations.getByRole("row").nth(1);
+    await expect(firstQuotation.getByRole("link")).toHaveCount(2);
+    await expect(firstQuotation.locator("[data-status]")).toHaveAttribute(
       "data-status",
       "ACCEPTED",
     );
-    await quotations.getByRole("row").nth(1).getByRole("link").click();
+    await firstQuotation.getByRole("link", { name: /^QT-/ }).click();
+    await page.waitForURL(/\/app\/quotations\/[0-9a-f-]{36}$/, { timeout: NAVIGATION_TIMEOUT });
+    await expect(page.getByRole("heading", { level: 1, name: /^Quotation QT-/ })).toBeVisible({
+      timeout: NAVIGATION_TIMEOUT,
+    });
+    await page.goBack();
+    await expect(quotations.getByRole("row")).toHaveCount(9, { timeout: NAVIGATION_TIMEOUT });
+    await quotations.getByRole("row").nth(1).getByRole("link", { name: /FF-/ }).click();
     await page.waitForURL(REQUEST_PATH, { timeout: NAVIGATION_TIMEOUT });
     await page.goBack();
 

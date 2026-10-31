@@ -4,6 +4,7 @@ import {
   type AdminRequestNoteDto,
   type CustomerRequestDto,
   ErrorCode,
+  REQUEST_STATUS_ACTIONS,
   RequestAction,
   ServiceRequestStatus,
 } from "@fixflow/shared";
@@ -47,7 +48,8 @@ const PRIYA = "priya.shah@example.test";
 const ADMIN_REQUESTS = "/api/v1/admin/requests";
 const MISSING_ID = "0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11";
 const STATUSES = Object.values(ServiceRequestStatus);
-const ACTIONS = Object.values(RequestAction);
+/** The actions of the status endpoint: Create quotation (T14) is not a status change and is not among them. */
+const ACTIONS = REQUEST_STATUS_ACTIONS;
 
 const detailPath = (id: string) => `${ADMIN_REQUESTS}/${id}`;
 const statusPath = (id: string) => `${ADMIN_REQUESTS}/${id}/status`;
@@ -840,14 +842,14 @@ describe("GET /admin/requests/:id: a request in full (FR-024, G.2)", () => {
         email: ALEX,
         phone: "(212) 555-0100",
       },
-      availableActions: ["CANCEL"],
+      availableActions: ["CREATE_QUOTATION", "CANCEL"],
       cancellation: null,
     });
   });
 
   it.each([
     ["SUBMITTED", ["START_REVIEW", "CANCEL"]],
-    ["UNDER_REVIEW", ["CANCEL"]],
+    ["UNDER_REVIEW", ["CREATE_QUOTATION", "CANCEL"]],
     ["QUOTED", ["CANCEL"]],
     ["ACCEPTED", ["CANCEL"]],
     ["DECLINED", ["REOPEN", "CANCEL"]],
@@ -1071,7 +1073,7 @@ describe("PATCH /admin/requests/:id/status (FR-025, FR-026, D-21, G.3)", () => {
       expect(dto).toMatchObject({
         status: "UNDER_REVIEW",
         statusLabel: "Under review",
-        availableActions: ["CANCEL"],
+        availableActions: ["CREATE_QUOTATION", "CANCEL"],
       });
       const events = await prisma.activityEvent.findMany({ where: { requestId: request.id } });
       expect(events).toHaveLength(1);
@@ -1349,6 +1351,22 @@ describe("PATCH /admin/requests/:id/status (FR-025, FR-026, D-21, G.3)", () => {
   });
 
   describe("refusals leave the record unchanged (G.3)", () => {
+    it("does not take CREATE_QUOTATION: it is not a status change, so it is 422 and nothing is written", async () => {
+      const w = await world();
+      const request = await makeRequest(w, { status: "UNDER_REVIEW" });
+      const before = { row: await rowOf(request.id), footprint: await footprint(w) };
+
+      const response = await patchStatus(w, request.id, {
+        action: RequestAction.CREATE_QUOTATION,
+        expectedStatus: "UNDER_REVIEW",
+      });
+
+      const error = expectApiError(response, { status: 422, code: ErrorCode.VALIDATION_ERROR });
+      expect(Object.keys(error.fieldErrors ?? {})).toEqual(["action"]);
+      expect(await rowOf(request.id)).toBe(before.row);
+      expect(await footprint(w)).toEqual(before.footprint);
+    });
+
     /** The actions an admin may not take in each status, with a valid body for each. */
     const REFUSED = STATUSES.flatMap((status) =>
       ACTIONS.filter(

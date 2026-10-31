@@ -12,6 +12,9 @@
  */
 
 @theme {
+  /* The least width of a line-items editor in which its rows are a table (T14): see line-items-editor.tsx. */
+  --container-linetable: 46rem;
+
   /* ---- Reset: nothing outside the FixFlow tokens exists ---- */
   --color-*: initial;
   --text-*: initial;
@@ -188,5 +191,21 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Printing (T14): a printed quotation is the document alone on plain paper. The application's frame
+ * (sidebar, top bar, page header, side cards) carries `print:hidden`; this removes the tinted page
+ * background and sets the margins. Invoices (T22) print the same way.
+ */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  body,
+  .bg-page {
+    background: var(--color-surface);
   }
 }

@@ -184,9 +184,9 @@ describe("history links", () => {
 });
 
 describe("RECORD_PATHS", () => {
-  it("opens a request, and nothing else has a page yet (no link to a page that does not exist)", () => {
+  it("opens a request and a quotation, and nothing else has a page yet (no link to a page that does not exist)", () => {
     expect(RECORD_PATHS.requests?.("abc")).toBe(adminRequestPath("abc"));
-    expect(RECORD_PATHS.quotations).toBeNull();
+    expect(RECORD_PATHS.quotations?.("abc")).toBe("/app/quotations/abc");
     expect(RECORD_PATHS.jobs).toBeNull();
     expect(RECORD_PATHS.invoices).toBeNull();
   });

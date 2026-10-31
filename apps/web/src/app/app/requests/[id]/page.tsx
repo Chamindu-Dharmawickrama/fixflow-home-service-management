@@ -17,6 +17,7 @@ import {
   RequestCustomerCard,
 } from "@/features/admin/components/request-detail-cards";
 import { RequestNotesPanel } from "@/features/admin/components/request-notes-panel";
+import { RequestQuotationsCard } from "@/features/admin/components/request-quotations-card";
 import { adminRequestPath, QUEUE_PATH } from "@/features/admin/lib/requests-queue";
 import { PageSkeleton } from "@/features/auth/components/area-skeleton";
 import { loadErrorState } from "@/features/catalogue/components/load-error";
@@ -114,6 +115,7 @@ async function RequestContent({ params }: RequestPageProps) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="flex flex-col gap-6">
           <AdminRequestDetailsCard request={request} timeZone={timeZone} />
+          <RequestQuotationsCard request={request} timeZone={timeZone} />
           {request.cancellation ? (
             <RequestCancellationCard cancellation={request.cancellation} timeZone={timeZone} />
           ) : null}

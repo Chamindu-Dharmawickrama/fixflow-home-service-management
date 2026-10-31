@@ -1,6 +1,7 @@
 import type { AdminTimelineEventDto } from "./activity.js";
 import type { PaginatedResponse } from "./api.js";
 import type { NoteVisibility, PreferredWindow, ServiceRequestStatus } from "./enums.js";
+import type { QuotationSummaryDto } from "./quotations.js";
 import type { CustomerRequestDto } from "./requests.js";
 
 /**
@@ -12,15 +13,24 @@ import type { CustomerRequestDto } from "./requests.js";
 
 /**
  * What an admin can do to a request from where it stands (D-43). The screen offers these and
- * nothing else; the server checks the action again when it is used. T14 and T17 add
- * `CREATE_QUOTATION` and `CREATE_WORK_ORDER`.
+ * nothing else; the server checks the action again when it is used. T17 adds `CREATE_WORK_ORDER`.
  */
 export const RequestAction = {
   START_REVIEW: "START_REVIEW",
   CANCEL: "CANCEL",
   REOPEN: "REOPEN",
+  /** Prepare a quotation (T14). It does not change the request's status, so it is not a status action. */
+  CREATE_QUOTATION: "CREATE_QUOTATION",
 } as const;
 export type RequestAction = (typeof RequestAction)[keyof typeof RequestAction];
+
+/** The actions that move the request's status, which `PATCH /admin/requests/:id/status` accepts. */
+export const REQUEST_STATUS_ACTIONS = [
+  RequestAction.START_REVIEW,
+  RequestAction.CANCEL,
+  RequestAction.REOPEN,
+] as const;
+export type RequestStatusAction = (typeof REQUEST_STATUS_ACTIONS)[number];
 
 /** The columns the queue can be sorted by (`status` follows the workflow order, not the alphabet). */
 export const ADMIN_REQUEST_SORT_FIELDS = [
@@ -133,13 +143,15 @@ export interface AdminRequestDto extends Omit<
   timeline: AdminTimelineEventDto[];
   /** Only for a cancelled request. */
   cancellation: AdminRequestCancellationDto | null;
+  /** Every version of the quotation, newest first: the draft, the sent one, the replaced and the voided. */
+  quotations: QuotationSummaryDto[];
   /** What the admin may do now, the most likely next step first (D-43). */
   availableActions: RequestAction[];
 }
 
 /** `PATCH /admin/requests/:id/status`. */
 export interface ChangeRequestStatusBody {
-  action: RequestAction;
+  action: RequestStatusAction;
   /** The status the screen showed. A different current status is `409 STALE_STATE` (D-46). */
   expectedStatus: ServiceRequestStatus;
   /** Required for `CANCEL` and `REOPEN`, 5 to 500 characters, internal. */

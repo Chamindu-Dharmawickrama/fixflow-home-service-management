@@ -24,6 +24,7 @@ import { customerIdOf, insertAddress, lockCustomer } from "../customers/customer
 import { absoluteAppUrl } from "../email/email.domain.js";
 import { emailJob } from "../email/email.jobs.js";
 import { notifyAdmins } from "../notifications/notifications.service.js";
+import { syncExpiredQuotationsIfDue } from "../quotations/quotations.service.js";
 import { ACTIVE } from "../services/services.service.js";
 import {
   type AddressInput,
@@ -260,10 +261,12 @@ export async function submitRequest(
 
 /** The signed-in customer's requests, newest first, optionally of one status. */
 export async function listMyRequests(
-  deps: Pick<AppDeps, "prisma">,
+  deps: Pick<AppDeps, "prisma" | "clock">,
   auth: AuthContext,
   query: ListMyRequestsQuery,
 ): Promise<CustomerRequestListResponse> {
+  // A quotation that ran out of time moves its request back under review: save that before listing (D-23).
+  await syncExpiredQuotationsIfDue(deps);
   const where = {
     customerId: customerIdOf(auth),
     ...(query.status !== undefined && { status: query.status }),
@@ -286,10 +289,11 @@ export async function listMyRequests(
  * checked every time (BR-21).
  */
 export async function getRequest(
-  deps: Pick<AppDeps, "prisma" | "config">,
+  deps: Pick<AppDeps, "prisma" | "config" | "clock">,
   auth: AuthContext,
   id: string,
 ): Promise<CustomerRequestDto> {
+  await syncExpiredQuotationsIfDue(deps);
   // Authorize first, from the owner's id alone: nothing else is read for a caller who may not see it.
   const owner = await deps.prisma.serviceRequest.findUnique({
     where: { id },

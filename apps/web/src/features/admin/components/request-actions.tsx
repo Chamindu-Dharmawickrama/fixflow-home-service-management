@@ -1,13 +1,15 @@
 "use client";
 
 import {
+  type AdminQuotationDto,
   type ChangeRequestStatusBody,
   ErrorCode,
   LIMITS,
   RequestAction,
+  type RequestStatusAction,
   type ServiceRequestStatus,
 } from "@fixflow/shared";
-import { Ban, ChevronDown, ClipboardCheck, RotateCcw } from "lucide-react";
+import { Ban, ChevronDown, ClipboardCheck, FilePlus2, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -24,6 +26,7 @@ import {
 import { toast } from "@/components/ui/sonner";
 import { apiFetch, describeApiError, isApiError } from "@/lib/api";
 
+import { adminQuotationPath } from "../lib/quotations";
 import { REQUEST_ACTION_LABELS, splitActions } from "../lib/request-actions";
 
 export interface RequestActionsProps {
@@ -40,6 +43,7 @@ type DialogKind = typeof RequestAction.CANCEL | typeof RequestAction.REOPEN | nu
 
 const ACTION_ICONS = {
   [RequestAction.START_REVIEW]: ClipboardCheck,
+  [RequestAction.CREATE_QUOTATION]: FilePlus2,
   [RequestAction.REOPEN]: RotateCcw,
   [RequestAction.CANCEL]: Ban,
 } as const;
@@ -70,7 +74,7 @@ export function RequestActions({
 }: RequestActionsProps) {
   const router = useRouter();
   const [dialog, setDialog] = useState<DialogKind>(null);
-  const [pending, setPending] = useState(false);
+  const [pending, setPending] = useState<RequestAction | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const { primary, menu } = splitActions(actions);
@@ -92,7 +96,11 @@ export function RequestActions({
   }, [status, actions]);
 
   /** Sends the change. A request that has moved on is reloaded, so the page and the buttons catch up. */
-  const change = async (body: Omit<ChangeRequestStatusBody, "expectedStatus">) => {
+  const change = async (
+    body: Omit<ChangeRequestStatusBody, "expectedStatus" | "action"> & {
+      action: RequestStatusAction;
+    },
+  ) => {
     try {
       await apiFetch(`/admin/requests/${encodeURIComponent(requestId)}/status`, {
         method: "PATCH",
@@ -109,7 +117,7 @@ export function RequestActions({
   };
 
   const startReview = async () => {
-    setPending(true);
+    setPending(RequestAction.START_REVIEW);
     setError(null);
     try {
       await change({ action: RequestAction.START_REVIEW });
@@ -119,8 +127,42 @@ export function RequestActions({
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : describeApiError(caught));
     } finally {
-      setPending(false);
+      setPending(null);
     }
+  };
+
+  /**
+   * Starts the quotation (FR-040) and opens its editor. The server fills the draft in. A request that
+   * already has a draft (someone else started it a moment ago) opens that one instead of failing.
+   * The button stays blocked until the page has moved on, so it is not pressed twice.
+   */
+  const createQuotation = async () => {
+    setPending(RequestAction.CREATE_QUOTATION);
+    setError(null);
+    try {
+      const draft = await apiFetch<AdminQuotationDto>(
+        `/admin/requests/${encodeURIComponent(requestId)}/quotations`,
+        { method: "POST", body: {} },
+      );
+      router.push(adminQuotationPath(draft.id));
+      return;
+    } catch (caught) {
+      if (isApiError(caught) && caught.code === ErrorCode.DRAFT_EXISTS) {
+        const existing = caught.details?.quotationId;
+        if (typeof existing === "string") {
+          toast.info("This request already has a draft", {
+            description: "Opening it so you can carry on.",
+          });
+          router.push(adminQuotationPath(existing));
+          return;
+        }
+      }
+      if (isApiError(caught) && (caught.status === 404 || caught.status === 409)) {
+        router.refresh();
+      }
+      setError(describeApiError(caught));
+    }
+    setPending(null);
   };
 
   const closeDialog = (open: boolean) => {
@@ -133,6 +175,10 @@ export function RequestActions({
   const choose = (action: RequestAction, fromMenu: boolean) => {
     if (action === RequestAction.START_REVIEW) {
       void startReview();
+      return;
+    }
+    if (action === RequestAction.CREATE_QUOTATION) {
+      void createQuotation();
       return;
     }
     openingDialogFromMenu.current = fromMenu;
@@ -150,8 +196,11 @@ export function RequestActions({
       {primary === undefined || PrimaryIcon === null ? null : (
         <Button
           onClick={() => choose(primary, false)}
-          loading={pending}
-          loadingText="Starting review…"
+          loading={pending !== null && pending === primary}
+          disabled={pending !== null && pending !== primary}
+          loadingText={
+            primary === RequestAction.CREATE_QUOTATION ? "Creating the draft…" : "Starting review…"
+          }
         >
           <PrimaryIcon aria-hidden="true" />
           {REQUEST_ACTION_LABELS[primary]}
@@ -161,7 +210,7 @@ export function RequestActions({
       {menu.length === 0 ? null : (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button ref={menuTriggerRef} variant="outline" disabled={pending}>
+            <Button ref={menuTriggerRef} variant="outline" disabled={pending !== null}>
               More actions
               <ChevronDown aria-hidden="true" />
             </Button>

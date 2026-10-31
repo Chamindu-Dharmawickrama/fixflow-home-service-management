@@ -8,6 +8,7 @@ import {
 
 import { buildHref, type SearchParamsInput } from "@/lib/url";
 
+import { adminQuotationPath } from "./quotations";
 import { adminRequestPath } from "./requests-queue";
 
 /** The business's customer directory (IA-A08). */
@@ -28,13 +29,8 @@ export function adminCustomerTabPath(id: string, tab: CustomerHistoryType): stri
   return buildHref(adminCustomerPath(id), {}, { tab });
 }
 
-/**
- * True for a decimal string with no value in it (`"0"`, `"0.00"`). Money stays a string all the way
- * to the screen (CLAUDE.md §9), so "is anything owed" is asked of the text, not of a number.
- */
-export function isZeroAmount(amount: string): boolean {
-  return !/[1-9]/.test(amount);
-}
+// Moved to `lib/formatting` when the quotation totals needed it too; kept here for this feature's imports.
+export { isZeroAmount } from "@/lib/formatting/money";
 
 // ---- The directory ----------------------------------------------------------------------------
 
@@ -169,7 +165,7 @@ export function tabHref(id: string, params: SearchParamsInput, tab: CustomerHist
 export const RECORD_PATHS: Readonly<Record<CustomerHistoryType, ((id: string) => string) | null>> =
   {
     requests: adminRequestPath,
-    quotations: null,
+    quotations: adminQuotationPath,
     jobs: null,
     invoices: null,
   };

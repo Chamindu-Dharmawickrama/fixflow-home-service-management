@@ -1,4 +1,4 @@
-import type { ApiErrorBody, ErrorCode, FieldErrors } from "@fixflow/shared";
+import type { ApiErrorBody, ErrorCode, ErrorDetails, FieldErrors } from "@fixflow/shared";
 
 /**
  * `NETWORK_ERROR` = the request never got an answer (offline, the API is down). `UNKNOWN_ERROR` =
@@ -15,6 +15,8 @@ export class ApiError extends Error {
   readonly status: number;
   readonly code: ApiErrorCode;
   readonly fieldErrors: FieldErrors | undefined;
+  /** Non-sensitive context the API attaches to a conflict, such as the id of the draft that exists. */
+  readonly details: ErrorDetails | undefined;
   readonly requestId: string | undefined;
   /** From the `Retry-After` header of a `429`. */
   readonly retryAfterSeconds: number | undefined;
@@ -24,6 +26,7 @@ export class ApiError extends Error {
     code: ApiErrorCode;
     message: string;
     fieldErrors?: FieldErrors | undefined;
+    details?: ErrorDetails | undefined;
     requestId?: string | undefined;
     retryAfterSeconds?: number | undefined;
   }) {
@@ -32,6 +35,7 @@ export class ApiError extends Error {
     this.status = options.status;
     this.code = options.code;
     this.fieldErrors = options.fieldErrors;
+    this.details = options.details;
     this.requestId = options.requestId;
     this.retryAfterSeconds = options.retryAfterSeconds;
   }
@@ -78,6 +82,7 @@ export async function errorFromResponse(response: Response): Promise<ApiError> {
       code: body.error.code,
       message: body.error.message,
       fieldErrors: body.error.fieldErrors,
+      details: body.error.details,
       requestId: body.error.requestId,
       retryAfterSeconds: retryAfter(response),
     });

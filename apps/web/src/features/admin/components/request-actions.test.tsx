@@ -9,17 +9,21 @@ import { REQUEST_ID } from "../test-fixtures";
 import { RequestActions, type RequestActionsProps } from "./request-actions";
 
 const refresh = vi.hoisted(() => vi.fn());
+const push = vi.hoisted(() => vi.fn());
 const toastSuccess = vi.hoisted(() => vi.fn());
+const toastInfo = vi.hoisted(() => vi.fn());
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh }) }));
-vi.mock("@/components/ui/sonner", () => ({ toast: { success: toastSuccess, error: vi.fn() } }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh }) }));
+vi.mock("@/components/ui/sonner", () => ({
+  toast: { success: toastSuccess, error: vi.fn(), info: toastInfo },
+}));
 vi.mock("@/lib/api", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   apiFetch: vi.fn(),
 }));
 
 const apiFetchMock = vi.mocked(apiFetch);
-const { START_REVIEW, REOPEN, CANCEL } = RequestAction;
+const { START_REVIEW, REOPEN, CANCEL, CREATE_QUOTATION } = RequestAction;
 
 function renderActions(props: Partial<RequestActionsProps> = {}) {
   const user = userEvent.setup();
@@ -356,5 +360,87 @@ describe("RequestActions: reopening", () => {
       },
     });
     expect(toastSuccess).toHaveBeenCalledWith("FF-2026-00012 was reopened", expect.anything());
+  });
+});
+
+describe("RequestActions: creating a quotation (FR-040)", () => {
+  const DRAFT_ID = "6f1c7a0e-5d0b-4f55-9d52-0d8d1c3b8a11";
+
+  it("offers Create quotation as the main step of a request under review", async () => {
+    const user = renderActions({ status: "UNDER_REVIEW", actions: [CREATE_QUOTATION, CANCEL] });
+
+    expect(button("Create quotation")).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "Start review" })).not.toBeInTheDocument();
+    await user.click(button("More actions"));
+    expect(await screen.findByRole("menuitem", { name: "Cancel request" })).toBeVisible();
+    expect(screen.queryByRole("menuitem", { name: "Create quotation" })).not.toBeInTheDocument();
+  });
+
+  it("creates the draft on the server and opens its editor, announcing nothing it has not done", async () => {
+    apiFetchMock.mockResolvedValue({ id: DRAFT_ID });
+    const user = renderActions({ status: "UNDER_REVIEW", actions: [CREATE_QUOTATION, CANCEL] });
+
+    await user.click(button("Create quotation"));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith(`/app/quotations/${DRAFT_ID}`));
+    expect(apiFetchMock).toHaveBeenCalledTimes(1);
+    expect(apiFetchMock).toHaveBeenCalledWith(`/admin/requests/${REQUEST_ID}/quotations`, {
+      method: "POST",
+      body: {},
+    });
+    expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
+  it("blocks a second click while the draft is being created, and the rest of the actions too", async () => {
+    let finish: () => void = () => undefined;
+    apiFetchMock.mockReturnValue(
+      new Promise((resolve) => {
+        finish = () => resolve({ id: DRAFT_ID });
+      }),
+    );
+    const user = renderActions({ status: "UNDER_REVIEW", actions: [CREATE_QUOTATION, CANCEL] });
+
+    await user.click(button("Create quotation"));
+    const pending = button("Create quotation");
+    expect(pending).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("status")).toHaveTextContent("Creating the draft…");
+    await user.click(pending);
+    expect(apiFetchMock).toHaveBeenCalledTimes(1);
+    expect(button("More actions")).toBeDisabled();
+
+    finish();
+    await waitFor(() => expect(push).toHaveBeenCalledTimes(1));
+  });
+
+  it("opens the draft that already exists instead of failing when a colleague just made one", async () => {
+    apiFetchMock.mockRejectedValue(
+      new ApiError({
+        status: 409,
+        code: "DRAFT_EXISTS",
+        message: "This request already has a draft quotation (QT-2026-00004).",
+        details: { quotationId: DRAFT_ID },
+      }),
+    );
+    const user = renderActions({ status: "UNDER_REVIEW", actions: [CREATE_QUOTATION, CANCEL] });
+
+    await user.click(button("Create quotation"));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith(`/app/quotations/${DRAFT_ID}`));
+    expect(toastInfo).toHaveBeenCalledWith("This request already has a draft", expect.anything());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("says why it failed, frees the button, and reloads the page when the request has moved on", async () => {
+    apiFetchMock.mockRejectedValue(
+      conflict("INVALID_STATE_TRANSITION", "This request is cancelled, so it can't be quoted."),
+    );
+    const user = renderActions({ status: "UNDER_REVIEW", actions: [CREATE_QUOTATION, CANCEL] });
+
+    await user.click(button("Create quotation"));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("This request is cancelled");
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(push).not.toHaveBeenCalled();
+    expect(button("Create quotation")).toBeEnabled();
   });
 });

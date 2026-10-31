@@ -6,6 +6,7 @@ import {
   NoteVisibility,
   NotificationType,
   RequestAction,
+  type RequestStatusAction,
 } from "@fixflow/shared";
 
 import type { AppDeps } from "../../deps.js";
@@ -20,6 +21,9 @@ import type { AuthContext } from "../auth/auth.types.js";
 import { absoluteAppUrl } from "../email/email.domain.js";
 import { emailJob } from "../email/email.jobs.js";
 import { notify } from "../notifications/notifications.service.js";
+import { QUOTATION_SUMMARY_SELECT, toQuotationSummary } from "../quotations/quotations.dto.js";
+import { syncExpiredQuotationsIfDue } from "../quotations/quotations.service.js";
+import { voidOpenQuotationsOnCancel } from "../quotations/quotations.transitions.js";
 import {
   ADMIN_DETAIL_SELECT,
   ADMIN_LIST_SELECT,
@@ -40,7 +44,7 @@ import {
   toStatusCounts,
 } from "./requests.domain.js";
 import { loadBusiness } from "./requests.service.js";
-import { transitionRequest, voidOpenQuotationsOnCancel } from "./requests.transitions.js";
+import { transitionRequest } from "./requests.transitions.js";
 
 type AdminRequestDeps = Pick<AppDeps, "prisma" | "clock" | "config" | "emailDispatcher">;
 
@@ -86,9 +90,11 @@ function filtersWhere(
  * (the customer's name comes in the same query), its total, and one grouped count for the chips.
  */
 export async function listAdminRequests(
-  deps: Pick<AppDeps, "prisma">,
+  deps: Pick<AppDeps, "prisma" | "clock">,
   query: AdminRequestsQuery,
 ): Promise<AdminRequestListResponse> {
+  // A quotation that ran out of time moves its request back under review: save that before listing (D-23).
+  await syncExpiredQuotationsIfDue(deps);
   const business = await loadBusiness(deps.prisma);
   const base = filtersWhere(query, business.timeZone);
   const where: Prisma.ServiceRequestWhereInput = {
@@ -126,10 +132,11 @@ export async function listAdminRequests(
  * their jobs and invoices, and what the admin may do next (D-43).
  */
 export async function getAdminRequest(
-  deps: Pick<AppDeps, "prisma">,
+  deps: Pick<AppDeps, "prisma" | "clock">,
   id: string,
 ): Promise<AdminRequestDto> {
-  const { prisma } = deps;
+  const { prisma, clock } = deps;
+  await syncExpiredQuotationsIfDue(deps);
   const row = await prisma.serviceRequest.findUnique({
     where: { id },
     select: ADMIN_DETAIL_SELECT,
@@ -139,23 +146,32 @@ export async function getAdminRequest(
   }
 
   const customerId = row.customerId;
-  const [timeline, previous, totalRequests, workOrderCount, invoiceCount] = await Promise.all([
-    getTimeline(prisma, { requestId: id }, "admin"),
-    prisma.serviceRequest.findMany({
-      where: { customerId, id: { not: id } },
-      orderBy: [{ submittedAt: "desc" }, { id: "desc" }],
-      take: 10,
-      select: PREVIOUS_REQUEST_SELECT,
-    }),
-    prisma.serviceRequest.count({ where: { customerId } }),
-    prisma.workOrder.count({ where: { customerId } }),
-    prisma.invoice.count({ where: { customerId } }),
-  ]);
+  const [timeline, previous, totalRequests, workOrderCount, invoiceCount, quotations, business] =
+    await Promise.all([
+      getTimeline(prisma, { requestId: id }, "admin"),
+      prisma.serviceRequest.findMany({
+        where: { customerId, id: { not: id } },
+        orderBy: [{ submittedAt: "desc" }, { id: "desc" }],
+        take: 10,
+        select: PREVIOUS_REQUEST_SELECT,
+      }),
+      prisma.serviceRequest.count({ where: { customerId } }),
+      prisma.workOrder.count({ where: { customerId } }),
+      prisma.invoice.count({ where: { customerId } }),
+      prisma.quotation.findMany({
+        where: { requestId: id },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        select: QUOTATION_SUMMARY_SELECT,
+      }),
+      loadBusiness(prisma),
+    ]);
 
+  const context = { now: clock.now(), timeZone: business.timeZone };
   return toAdminRequestDto({
     row,
     timeline,
     history: { previous, totalRequests, workOrderCount, invoiceCount },
+    quotations: quotations.map((quotation) => toQuotationSummary(quotation, context)),
   });
 }
 
@@ -163,7 +179,7 @@ export async function getAdminRequest(
 
 /** What each admin action says in the history: for staff, and for the customer where they see it. */
 const ACTION_EVENTS: Record<
-  RequestAction,
+  RequestStatusAction,
   { action: string; staff: (reference: string) => string; customer: string }
 > = {
   [RequestAction.START_REVIEW]: {
@@ -280,8 +296,13 @@ export async function changeRequestStatus(
     }
 
     if (isCancel && reason !== undefined) {
-      // D-21: open quotations are voided in this same transaction (implemented by T14).
-      await voidOpenQuotationsOnCancel(tx, { requestId: id, actorUserId: auth.userId, reason });
+      // D-21: open quotations are voided in this same transaction, each with the reason, the actor
+      // and an event. The cancellation notice below is the one the customer reads about it.
+      await voidOpenQuotationsOnCancel(
+        tx,
+        { after, publicWebUrl: config.email.publicWebUrl },
+        { requestId: id, actorUserId: auth.userId, reason, now },
+      );
 
       const linkPath = `/portal/requests/${id}`;
       const notification = await notify(tx, {

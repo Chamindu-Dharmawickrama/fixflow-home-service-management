@@ -83,12 +83,16 @@ function countOf(summary: AdminCustomerSummaryDto, tab: CustomerHistoryType): nu
   }
 }
 
-/** The request a record belongs to, as a link: the one page every record can lead to today. */
+/**
+ * The request a record belongs to, as a link. A row whose record has a page of its own (a quotation
+ * since T14) is one big link, stretched over the whole row; `relative z-10` keeps this second link
+ * above that layer, so a mouse can still reach it.
+ */
 function RequestLink({ request }: { request: { id: string; reference: string } }) {
   return (
     <Link
       href={adminRequestPath(request.id)}
-      className="font-medium text-brand underline-offset-4 hover:underline"
+      className="relative z-10 font-medium text-brand underline-offset-4 hover:underline"
     >
       <ReferenceText reference={request.reference} />
     </Link>

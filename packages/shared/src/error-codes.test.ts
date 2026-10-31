@@ -43,6 +43,9 @@ describe("ErrorCode", () => {
         "ADDRESS_LIMIT_REACHED",
         // T11 — service requests
         "SERVICE_INACTIVE",
+        // T14 — quotations
+        "DRAFT_EXISTS",
+        "QUOTATION_NOT_EDITABLE",
       ].sort(),
     );
   });

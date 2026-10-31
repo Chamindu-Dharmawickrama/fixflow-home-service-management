@@ -3,7 +3,9 @@ import {
   isDateOnly,
   LIMITS,
   NoteVisibility,
+  REQUEST_STATUS_ACTIONS,
   RequestAction,
+  type RequestStatusAction,
   ServiceRequestStatus,
 } from "@fixflow/shared";
 import { z } from "zod";
@@ -80,7 +82,7 @@ export const adminRequestIdParamsSchema = z.object({
   id: z.uuid({ error: "The request id must be a valid id." }),
 });
 
-const actionValues = Object.values(RequestAction) as [RequestAction, ...RequestAction[]];
+const actionValues = [...REQUEST_STATUS_ACTIONS] as [RequestStatusAction, ...RequestStatusAction[]];
 
 /**
  * `PATCH /api/v1/admin/requests/:id/status` (FR-025, FR-026). Strict: only the three admin actions

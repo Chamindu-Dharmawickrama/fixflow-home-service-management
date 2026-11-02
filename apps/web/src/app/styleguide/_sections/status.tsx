@@ -14,6 +14,7 @@ const KIND_TITLES: Record<StatusKind, string> = {
   notification: "Notification",
   emailDelivery: "Email delivery (staff only)",
   service: "Service in the catalogue (staff only)",
+  technician: "Technician (staff only)",
 };
 
 const TONE_MEANING = {

@@ -4,6 +4,8 @@ import {
   type AdminQuotationDto,
   type AdminRequestDto,
   type AdminRequestListItemDto,
+  type AdminTechnicianDto,
+  type AdminTechnicianListItemDto,
   type CustomerHistoryInvoiceDto,
   type CustomerHistoryJobDto,
   type CustomerHistoryQuotationDto,
@@ -326,6 +328,50 @@ export function adminQuotation(overrides: Partial<AdminQuotationDto> = {}): Admi
     replacedBy: null,
     timeline: [],
     availableActions: ["EDIT", "SEND", "VOID"],
+    ...overrides,
+  };
+}
+
+// ---- Technicians (T16) ----------------------------------------------------------------------
+
+export const TECHNICIAN_ID = "3c1d9e52-7a64-4f0b-8b0e-5a2f6d4c8e77";
+
+/** A technician as the list shows them: no notes, nothing coming up. */
+export function technicianListItem(
+  overrides: Partial<AdminTechnicianListItemDto> = {},
+): AdminTechnicianListItemDto {
+  return {
+    id: TECHNICIAN_ID,
+    name: "Jordan Lee",
+    phone: "(212) 555-0151",
+    email: "jordan.lee@coolbreeze.test",
+    specialties: ["Air conditioning", "Heat pumps"],
+    calendarColor: "blue",
+    isActive: true,
+    upcomingJobCount: 0,
+    nextJob: null,
+    availableActions: ["EDIT", "DEACTIVATE"],
+    ...overrides,
+  };
+}
+
+/** One technician in full, with a week of nothing booked and nothing coming up. */
+export function adminTechnician(overrides: Partial<AdminTechnicianDto> = {}): AdminTechnicianDto {
+  return {
+    ...technicianListItem(),
+    notes: "Senior technician. Takes the diagnostic visits first thing in the morning.",
+    createdAt: "2026-10-28T12:00:00.000Z",
+    updatedAt: "2026-10-30T09:30:00.000Z",
+    upcomingAssignments: [],
+    availability: [
+      { date: "2026-03-02", scheduledMinutes: 0 },
+      { date: "2026-03-03", scheduledMinutes: 0 },
+      { date: "2026-03-04", scheduledMinutes: 0 },
+      { date: "2026-03-05", scheduledMinutes: 0 },
+      { date: "2026-03-06", scheduledMinutes: 0 },
+      { date: "2026-03-07", scheduledMinutes: 0 },
+      { date: "2026-03-08", scheduledMinutes: 0 },
+    ],
     ...overrides,
   };
 }

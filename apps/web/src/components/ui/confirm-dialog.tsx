@@ -158,11 +158,11 @@ export function ConfirmDialog({
           )}
         >
           <div className="flex flex-col gap-2">
-            <AlertDialogPrimitive.Title className="font-display text-xl font-semibold text-ink">
+            <AlertDialogPrimitive.Title className="break-words font-display text-xl font-semibold text-ink">
               {title}
             </AlertDialogPrimitive.Title>
             <AlertDialogPrimitive.Description asChild>
-              <div className="text-sm text-ink-secondary">{consequence}</div>
+              <div className="break-words text-sm text-ink-secondary">{consequence}</div>
             </AlertDialogPrimitive.Description>
           </div>
 

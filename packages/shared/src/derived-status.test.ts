@@ -7,6 +7,7 @@ import {
   paymentRecordState,
   ServiceCatalogueState,
   serviceCatalogueState,
+  TechnicianState,
 } from "./derived-status.js";
 import * as shared from "./index.js";
 
@@ -21,7 +22,12 @@ describe("derived display states", () => {
   });
 
   it("use each value as its own key", () => {
-    for (const states of [PaymentRecordState, NotificationReadState, ServiceCatalogueState]) {
+    for (const states of [
+      PaymentRecordState,
+      NotificationReadState,
+      ServiceCatalogueState,
+      TechnicianState,
+    ]) {
       for (const [key, value] of Object.entries(states)) {
         expect(value).toBe(key);
       }

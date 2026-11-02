@@ -3,6 +3,8 @@ import { Inbox } from "lucide-react";
 import Link from "next/link";
 import { describe, expect, it, vi } from "vitest";
 
+import { FormAlert } from "@/components/forms/form-alert";
+
 import { Avatar, initialsOf } from "./avatar";
 import { Breadcrumbs } from "./breadcrumbs";
 import { DateTimeText } from "./date-time-text";
@@ -115,6 +117,19 @@ describe("Breadcrumbs", () => {
     const { container } = render(<Breadcrumbs items={[]} />);
     expect(container).toBeEmptyDOMElement();
   });
+
+  it("lets a very long name shrink to the line and break anywhere instead of widening the page", () => {
+    // A name of 100 characters with no space in it (T16): the crumb and its list item must be able to
+    // shrink (min-w-0) and the text to break anywhere, or the page scrolls sideways.
+    const name = "W".repeat(100);
+    render(
+      <Breadcrumbs items={[{ label: "Technicians", href: "/app/technicians" }, { label: name }]} />,
+    );
+
+    const current = screen.getByText(name);
+    expect(current).toHaveClass("min-w-0", "[overflow-wrap:anywhere]");
+    expect(current.closest("li")).toHaveClass("min-w-0", "max-w-full");
+  });
 });
 
 describe("PageHeader", () => {
@@ -151,6 +166,21 @@ describe("state components", () => {
     expect(screen.getByRole("heading", { name: "You're all caught up" })).toBeVisible();
     expect(screen.getByText("New requests appear here.")).toBeVisible();
     expect(screen.getByRole("link", { name: "View all requests" })).toBeVisible();
+  });
+
+  it("EmptyState and FormAlert let text that carries a person's name break instead of widening the page", () => {
+    // The name of a technician, customer or service can be a long word with no space (T16).
+    const name = "W".repeat(100);
+    render(
+      <>
+        <EmptyState icon={Inbox} title="Nothing here" description={`${name} has no jobs.`} />
+        <FormAlert tone="info">{`${name} is inactive.`}</FormAlert>
+      </>,
+    );
+    // The empty state's text is centred in a column, so it is as wide as its words: it must be able
+    // to break anywhere. The alert's is a block, where `break-words` is enough.
+    expect(screen.getByText(`${name} has no jobs.`)).toHaveClass("[overflow-wrap:anywhere]");
+    expect(screen.getByText(`${name} is inactive.`)).toHaveClass("break-words");
   });
 
   it("ErrorState is an alert with a retry and a support reference", () => {

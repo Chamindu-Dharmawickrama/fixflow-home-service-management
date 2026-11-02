@@ -77,6 +77,30 @@
   --color-neutral-soft: #f0f2f4;
   --color-neutral-edge: #d0d5dd;
 
+  /*
+   * ---- Technician calendar colours (T16; the keys are TECHNICIAN_COLORS in @fixflow/shared) ----
+   * Each colour is a pair: `cal-<key>` for the dot, the left edge and the text of a block, and
+   * `cal-<key>-soft` for the fill behind it. Both text colours (this one and ink) keep 4.5:1 on the
+   * fill, and the strong colour keeps 4.5:1 on white too, so a block is readable on any calendar
+   * background. tokens.test.ts measures every pair.
+   */
+  --color-cal-blue: #1d4f91;
+  --color-cal-blue-soft: #e6eefa;
+  --color-cal-green: #1b6b3f;
+  --color-cal-green-soft: #e6f4ec;
+  --color-cal-amber: #8a5300;
+  --color-cal-amber-soft: #fdf1d8;
+  --color-cal-purple: #6b3fa0;
+  --color-cal-purple-soft: #f1e9fa;
+  --color-cal-rose: #b0214f;
+  --color-cal-rose-soft: #fde8ee;
+  --color-cal-teal: #0f6b6b;
+  --color-cal-teal-soft: #dff3f2;
+  --color-cal-orange: #a8400a;
+  --color-cal-orange-soft: #fde9dc;
+  --color-cal-slate: #3f4f5e;
+  --color-cal-slate-soft: #e9edf1;
+
   /* Names used by shadcn/ui, so components added with `shadcn add` pick up the FixFlow palette. */
   --color-background: var(--color-page);
   --color-foreground: var(--color-ink);

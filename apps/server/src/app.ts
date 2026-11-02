@@ -21,6 +21,7 @@ import { createAdminRequestsRouter } from "./modules/requests/requests.admin.rou
 import { createRequestsRouter } from "./modules/requests/requests.routes.js";
 import { createServicesRouter } from "./modules/services/services.routes.js";
 import { createSettingsRouter } from "./modules/settings/settings.routes.js";
+import { createAdminTechniciansRouter } from "./modules/technicians/technicians.routes.js";
 
 /** Largest JSON body accepted; larger requests get `413 PAYLOAD_TOO_LARGE`. */
 const JSON_BODY_LIMIT = "100kb";
@@ -76,6 +77,7 @@ export function createApp(deps: AppDeps, options: CreateAppOptions = {}): Expres
   app.use(`${API_PREFIX}/requests`, createRequestsRouter(deps));
   app.use(`${API_PREFIX}/admin/requests`, createAdminRequestsRouter(deps));
   app.use(`${API_PREFIX}/admin/customers`, createAdminCustomersRouter(deps));
+  app.use(`${API_PREFIX}/admin/technicians`, createAdminTechniciansRouter(deps));
   app.use(`${API_PREFIX}/quotations`, createQuotationsRouter(deps));
   // Mounted on `/admin` itself: it serves `/admin/requests/:id/quotations` and `/admin/quotations/...`
   // and puts the role check on each route, so it never answers for another module's `/admin/...` paths.

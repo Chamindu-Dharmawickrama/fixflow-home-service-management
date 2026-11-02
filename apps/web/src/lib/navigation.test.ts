@@ -110,11 +110,12 @@ describe("central navigation config", () => {
     ]);
   });
 
-  it("lists the dashboard, the request queue and the customers, ahead of the settings (T12, T13)", () => {
+  it("lists the dashboard, the request queue, the customers and the technicians, ahead of the settings (T12, T13, T16)", () => {
     expect(flattenGroups(NAVIGATION.admin).map((item) => [item.label, item.href])).toEqual([
       ["Dashboard", "/app/dashboard"],
       ["Requests", "/app/requests"],
       ["Customers", "/app/customers"],
+      ["Technicians", "/app/technicians"],
       ["Business", "/app/settings/business"],
       ["Services", "/app/settings/services"],
     ]);

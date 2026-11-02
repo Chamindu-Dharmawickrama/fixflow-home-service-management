@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -43,6 +43,18 @@ describe("ConfirmDialog", () => {
     expect(dialog).toHaveAccessibleName("Void invoice INV-2026-00007?");
     expect(dialog).toHaveAccessibleDescription("The invoice stays in the history marked Void.");
     expect(screen.getByRole("button", { name: "Void invoice" })).toBeEnabled();
+  });
+
+  it("lets a very long name in its title or sentence break instead of widening the dialog", async () => {
+    // A technician's name can be 100 characters with no space in it (T16).
+    const name = "W".repeat(100);
+    render(<Harness title={`Deactivate ${name}?`} consequence={`${name} has no upcoming jobs.`} />);
+    const dialog = await openDialog();
+
+    expect(within(dialog).getByRole("heading", { name: `Deactivate ${name}?` })).toHaveClass(
+      "break-words",
+    );
+    expect(within(dialog).getByText(`${name} has no upcoming jobs.`)).toHaveClass("break-words");
   });
 
   it("starts on Cancel, the safe choice, when there is no reason to type", async () => {

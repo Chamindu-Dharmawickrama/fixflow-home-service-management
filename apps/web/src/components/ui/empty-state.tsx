@@ -38,7 +38,10 @@ export function EmptyState({
         <Icon aria-hidden="true" className="size-6" />
       </span>
       <Heading className="text-lg font-semibold text-ink">{title}</Heading>
-      <p className="max-w-md text-pretty text-sm text-ink-secondary">{description}</p>
+      {/* A flex item centred in a column is as wide as its text, so a long word needs `anywhere`: `break-words` keeps it whole. */}
+      <p className="max-w-md text-pretty text-sm text-ink-secondary [overflow-wrap:anywhere]">
+        {description}
+      </p>
       {action ? <div className="mt-2">{action}</div> : null}
     </div>
   );

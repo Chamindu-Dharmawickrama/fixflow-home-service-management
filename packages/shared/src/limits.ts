@@ -73,6 +73,16 @@ export const LIMITS = {
     paymentInstructions: { maxLength: 1000 },
     invoiceFooter: { maxLength: 500 },
   },
+  /**
+   * Technician resources (FR-060, T16). The name follows `personName`, and the phone number the
+   * customer rule above (`customerPhone`): a person's number is a person's number.
+   */
+  technician: {
+    specialties: { maxItems: 8, itemMaxLength: 40 },
+    /** Internal: never in a customer-facing shape. */
+    notes: { maxLength: 1000 },
+    search: { maxLength: 100 },
+  },
   /** The service catalogue (FR-101, D-50). */
   service: {
     name: { minLength: 3, maxLength: 80 },

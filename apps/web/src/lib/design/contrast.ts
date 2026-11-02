@@ -1,3 +1,5 @@
+import { TECHNICIAN_COLORS } from "@fixflow/shared";
+
 /**
  * WCAG 2.x contrast helpers and the list of colour pairs the design system promises to keep
  * accessible. `tokens.test.ts` measures every pair against `src/app/globals.css`, so editing a
@@ -117,6 +119,14 @@ export const CONTRAST_PAIRS: readonly ContrastPair[] = [
   text("neutral", "surface", "Neutral text and icons on cards"),
   text("surface", "danger", "Destructive button label"),
   text("surface", "danger-hover", "Destructive button label on hover"),
+
+  // The technician calendar colours (T16), one set of three promises for each key in the shared
+  // palette, so a colour added there without tokens fails here.
+  ...TECHNICIAN_COLORS.flatMap((color) => [
+    text(`cal-${color}`, `cal-${color}-soft`, `Calendar block text, ${color}`),
+    text("ink", `cal-${color}-soft`, `Body text on a ${color} calendar block`),
+    text(`cal-${color}`, "surface", `Technician ${color} name or dot on cards`),
+  ]),
 
   nonText("border-strong", "surface", "Form control boundary on cards"),
   nonText("border-strong", "page", "Form control boundary on the page"),

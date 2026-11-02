@@ -6,6 +6,7 @@ import type {
   QuotationStatus,
   ServiceCatalogueState,
   ServiceRequestStatus,
+  TechnicianState,
   WorkOrderStatus,
 } from "@fixflow/shared";
 
@@ -76,7 +77,8 @@ export type StatusKind =
   | "payment"
   | "notification"
   | "emailDelivery"
-  | "service";
+  | "service"
+  | "technician";
 
 export interface StatusValueByKind {
   request: ServiceRequestStatus;
@@ -87,6 +89,7 @@ export interface StatusValueByKind {
   notification: NotificationReadState;
   emailDelivery: EmailDeliveryStatus;
   service: ServiceCatalogueState;
+  technician: TechnicianState;
 }
 
 export type StatusMetaTable = { [K in StatusKind]: Record<StatusValueByKind[K], StatusMeta> };
@@ -334,6 +337,20 @@ export const STATUS_META: StatusMetaTable = {
       tone: "neutral",
       icon: "archive",
       description: "Hidden from the website and closed to new requests. It can be restored.",
+    },
+  },
+  technician: {
+    ACTIVE: {
+      label: "Active",
+      tone: "success",
+      icon: "circle-check",
+      description: "Can be given new jobs.",
+    },
+    INACTIVE: {
+      label: "Inactive",
+      tone: "neutral",
+      icon: "circle-minus",
+      description: "Not offered for new jobs. Jobs already assigned stay with them.",
     },
   },
 };

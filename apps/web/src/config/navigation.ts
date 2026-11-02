@@ -32,6 +32,7 @@ export const NAVIGATION = {
         { label: "Dashboard", href: "/app/dashboard", icon: "layout-dashboard" },
         { label: "Requests", href: "/app/requests", icon: "inbox" },
         { label: "Customers", href: "/app/customers", icon: "users" },
+        { label: "Technicians", href: "/app/technicians", icon: "wrench" },
       ],
     },
     {

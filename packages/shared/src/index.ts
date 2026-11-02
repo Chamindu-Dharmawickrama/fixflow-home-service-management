@@ -95,6 +95,8 @@ export {
   paymentRecordState,
   ServiceCatalogueState,
   serviceCatalogueState,
+  TechnicianState,
+  technicianState,
 } from "./derived-status.js";
 export {
   ActivityEntityType,
@@ -183,6 +185,28 @@ export {
 } from "./services.js";
 export type { AdminSettingsDto, AdminSettingsField, PublicSettingsDto } from "./settings.js";
 export { isValidSlug, SLUG_MAX_LENGTH, SLUG_PATTERN, slugify } from "./slug.js";
+export {
+  ADMIN_TECHNICIAN_SORT_FIELDS,
+  type AdminTechnicianDto,
+  type AdminTechnicianListItemDto,
+  type AdminTechnicianListMeta,
+  type AdminTechnicianListResponse,
+  type AdminTechnicianSortField,
+  type AssignableTechnicianDto,
+  type CreateTechnicianBody,
+  isTechnicianColor,
+  TECHNICIAN_ACTIVE_FILTERS,
+  TECHNICIAN_AVAILABILITY_DAYS,
+  TECHNICIAN_COLORS,
+  TECHNICIAN_UPCOMING_DAYS,
+  TechnicianAction,
+  type TechnicianActiveFilter,
+  type TechnicianAssignmentDto,
+  type TechnicianAvailabilityDayDto,
+  type TechnicianColor,
+  type TechnicianNextJobDto,
+  type UpdateTechnicianBody,
+} from "./technicians.js";
 export { isSupportedTimeZone, listSupportedTimeZones } from "./time-zones.js";
 export {
   isHttpsUrl,

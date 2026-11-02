@@ -47,7 +47,7 @@ export function FormAlert({
       {...props}
     >
       <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-      <div className="min-w-0">{children}</div>
+      <div className="min-w-0 break-words">{children}</div>
     </div>
   );
 }

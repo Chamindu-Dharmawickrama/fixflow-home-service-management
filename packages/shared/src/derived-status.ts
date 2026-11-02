@@ -41,6 +41,20 @@ export function serviceCatalogueState(service: {
   return service.isPublished ? ServiceCatalogueState.PUBLISHED : ServiceCatalogueState.UNPUBLISHED;
 }
 
+/**
+ * Whether a technician can be given new jobs (FR-061). Stored as the single column `isActive`; the
+ * words are what the badge shows. Deactivating never touches jobs already assigned (FR-060).
+ */
+export const TechnicianState = {
+  ACTIVE: "ACTIVE",
+  INACTIVE: "INACTIVE",
+} as const;
+export type TechnicianState = (typeof TechnicianState)[keyof typeof TechnicianState];
+
+export function technicianState(technician: { readonly isActive: boolean }): TechnicianState {
+  return technician.isActive ? TechnicianState.ACTIVE : TechnicianState.INACTIVE;
+}
+
 /** A payment record is never deleted; a correction voids it (BR-16). */
 export function paymentRecordState(payment: {
   readonly voidedAt: string | null;

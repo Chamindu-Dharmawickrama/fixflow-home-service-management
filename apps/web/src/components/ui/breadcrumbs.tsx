@@ -26,7 +26,12 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
         {items.map((item, index) => {
           const isCurrent = index === items.length - 1;
           return (
-            <li key={`${item.label}-${index}`} className="flex items-center gap-1.5">
+            // `min-w-0` lets a crumb with a very long name shrink to the line and wrap, instead of
+            // pushing the page sideways.
+            <li
+              key={`${item.label}-${index}`}
+              className="flex min-w-0 max-w-full items-center gap-1.5"
+            >
               {index > 0 ? (
                 <ChevronRight aria-hidden="true" className="size-3.5 shrink-0 text-ink-muted" />
               ) : null}
@@ -40,7 +45,10 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
               ) : (
                 <span
                   aria-current={isCurrent ? "page" : undefined}
-                  className={cn(isCurrent && "font-medium text-ink")}
+                  className={cn(
+                    "min-w-0 [overflow-wrap:anywhere]",
+                    isCurrent && "font-medium text-ink",
+                  )}
                 >
                   {item.label}
                 </span>

@@ -851,7 +851,8 @@ describe("GET /admin/requests/:id: a request in full (FR-024, G.2)", () => {
     ["SUBMITTED", ["START_REVIEW", "CANCEL"]],
     ["UNDER_REVIEW", ["CREATE_QUOTATION", "CANCEL"]],
     ["QUOTED", ["CANCEL"]],
-    ["ACCEPTED", ["CANCEL"]],
+    // The customer accepted (T15): the work order is listed here and performed by T17.
+    ["ACCEPTED", ["CREATE_WORK_ORDER", "CANCEL"]],
     ["DECLINED", ["REOPEN", "CANCEL"]],
     ["CONVERTED_TO_JOB", []],
     ["CANCELLED", []],
@@ -1359,6 +1360,22 @@ describe("PATCH /admin/requests/:id/status (FR-025, FR-026, D-21, G.3)", () => {
       const response = await patchStatus(w, request.id, {
         action: RequestAction.CREATE_QUOTATION,
         expectedStatus: "UNDER_REVIEW",
+      });
+
+      const error = expectApiError(response, { status: 422, code: ErrorCode.VALIDATION_ERROR });
+      expect(Object.keys(error.fieldErrors ?? {})).toEqual(["action"]);
+      expect(await rowOf(request.id)).toBe(before.row);
+      expect(await footprint(w)).toEqual(before.footprint);
+    });
+
+    it("does not take CREATE_WORK_ORDER either: it is listed for an accepted request but built by T17, so it is 422 and nothing is written", async () => {
+      const w = await world();
+      const request = await makeRequest(w, { status: "ACCEPTED" });
+      const before = { row: await rowOf(request.id), footprint: await footprint(w) };
+
+      const response = await patchStatus(w, request.id, {
+        action: RequestAction.CREATE_WORK_ORDER,
+        expectedStatus: "ACCEPTED",
       });
 
       const error = expectApiError(response, { status: 422, code: ErrorCode.VALIDATION_ERROR });

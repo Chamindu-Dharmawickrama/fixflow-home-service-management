@@ -1,6 +1,7 @@
 import type { CustomerTimelineEventDto } from "./activity.js";
 import type { PaginatedResponse } from "./api.js";
 import { PreferredWindow, ServiceRequestStatus } from "./enums.js";
+import type { CustomerQuotationSummaryDto } from "./quotations.js";
 
 /**
  * Service requests as a customer sees them (FR-020 to FR-022, D-35, D-41). The customer shapes
@@ -181,6 +182,11 @@ export interface CustomerRequestDto extends CustomerRequestListItemDto {
   preferredEnd: string;
   /** Only for a cancelled request; `null` otherwise. */
   cancellation: CustomerRequestCancellationDto | null;
+  /**
+   * The quotations the customer was sent for this request, newest first (T15). The first is the
+   * current one. A draft is never in the list.
+   */
+  quotations: CustomerQuotationSummaryDto[];
   notes: CustomerRequestNoteDto[];
   timeline: CustomerTimelineEventDto[];
 }

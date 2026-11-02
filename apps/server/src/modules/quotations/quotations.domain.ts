@@ -13,6 +13,7 @@ import {
 
 import { startOfBusinessDay } from "../../lib/business-day.js";
 import { type AppError, conflict } from "../../lib/errors.js";
+import { formatEmailDate } from "../email/email.format.js";
 
 /**
  * Pure rules for quotations (spec §6.3, §7.2, D-19, D-22, D-23): which status changes are allowed and
@@ -192,6 +193,109 @@ export function availableQuotationActions(
     default:
       return [];
   }
+}
+
+// ---- The customer's answer (D-22, BR-08, T15) -----------------------------------------------------
+
+/** What the customer decides: the status the quotation moves to. */
+export type QuotationDecision = typeof Q.ACCEPTED | typeof Q.DECLINED;
+
+function decisionVerb(decision: QuotationDecision): string {
+  return decision === Q.ACCEPTED ? "accept" : "decline";
+}
+
+/** The date a customer reads: `Nov 17, 2026`, in the business time zone. */
+function businessDate(instant: Date, timeZone: string): string {
+  return formatEmailDate(dateOnlyInTimeZone(instant, timeZone));
+}
+
+/**
+ * `409 QUOTATION_NOT_AVAILABLE`: why the customer cannot answer this quotation, in words that say
+ * what happened and what to do. `status` is what the quotation is now (a sent one past its last day
+ * is `EXPIRED`), and `decision` is what they tried, so a second "accept" and a "decline" after an
+ * accept read differently. Every message is for the owner, so it may name the dates.
+ */
+export function quotationNotAvailableError(input: {
+  status: QuotationStatus;
+  decision: QuotationDecision;
+  validUntil: string;
+  respondedAt: Date | null;
+  timeZone: string;
+}): AppError {
+  const { status, decision, validUntil, respondedAt, timeZone } = input;
+  const answered = respondedAt === null ? "" : ` on ${businessDate(respondedAt, timeZone)}`;
+
+  let message: string;
+  switch (status) {
+    case Q.ACCEPTED:
+      message =
+        decision === Q.ACCEPTED
+          ? `You already accepted this quotation${answered}. There is nothing more to do: we'll contact you to schedule the work.`
+          : `You already accepted this quotation${answered}, so it can't be declined now. Contact us if you need to change anything.`;
+      break;
+    case Q.DECLINED:
+      message =
+        decision === Q.DECLINED
+          ? `You already declined this quotation${answered}.`
+          : `You declined this quotation${answered}, so it can't be accepted now. Contact us and we'll send a new quotation if you'd like one.`;
+      break;
+    case Q.EXPIRED:
+      message = `This quotation was valid until ${formatEmailDate(validUntil)} and has expired. Contact us and we'll send an updated quotation.`;
+      break;
+    case Q.VOID:
+      message = `This quotation was withdrawn, so you can't ${decisionVerb(decision)} it. Check your request for an updated quotation, or contact us.`;
+      break;
+    default:
+      message = `This quotation can't be ${decision === Q.ACCEPTED ? "accepted" : "declined"} right now.`;
+  }
+  return conflict(message, {
+    code: ErrorCode.QUOTATION_NOT_AVAILABLE,
+    details: { currentStatus: status },
+  });
+}
+
+export function decisionTexts(input: {
+  reference: string;
+  decision: QuotationDecision;
+}): EventTexts {
+  const verb = input.decision === Q.ACCEPTED ? "accepted" : "declined";
+  // The customer reads the same words behind "You", staff behind the customer's name.
+  return {
+    staff: `${verb} quotation ${input.reference}`,
+    customer: `${verb} quotation ${input.reference}`,
+  };
+}
+
+/** The request follows the customer's answer (D-21). A staff-only event: the quotation's event is the one they read. */
+export function requestDecidedTexts(input: {
+  requestReference: string;
+  decision: QuotationDecision;
+}): EventTexts {
+  return {
+    staff: `moved request ${input.requestReference} to ${input.decision === Q.ACCEPTED ? "accepted" : "declined"}: the customer answered the quotation`,
+  };
+}
+
+/**
+ * What the admins are told in the app. No reason and no amount: the quotation they open from it has
+ * both, and a notification is shown on every screen.
+ */
+export function decisionNotification(input: {
+  reference: string;
+  customerName: string;
+  serviceName: string;
+  decision: QuotationDecision;
+}): NotificationTexts {
+  const { reference, customerName, serviceName, decision } = input;
+  return decision === Q.ACCEPTED
+    ? {
+        title: `Quotation ${reference} accepted`,
+        message: `${customerName} accepted the quotation for ${serviceName}. The request is ready to be scheduled.`,
+      }
+    : {
+        title: `Quotation ${reference} declined`,
+        message: `${customerName} declined the quotation for ${serviceName}. No work will be scheduled unless you send a new quotation.`,
+      };
 }
 
 // ---- Before a quotation is sent (D-22) -----------------------------------------------------------

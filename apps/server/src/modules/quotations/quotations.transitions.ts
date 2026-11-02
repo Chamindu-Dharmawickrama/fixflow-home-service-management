@@ -7,7 +7,7 @@ import {
 } from "@fixflow/shared";
 
 import type { Prisma } from "../../generated/prisma/client.js";
-import { toDateOnly } from "../../lib/date-only.js";
+import { fromDateOnly, toDateOnly } from "../../lib/date-only.js";
 import { BUSINESS_SETTINGS_ID, type DbClient } from "../../lib/db.js";
 import { notFound, serviceUnavailable } from "../../lib/errors.js";
 import type { AfterCommit } from "../../lib/transaction.js";
@@ -57,6 +57,12 @@ export interface QuotationTransitionInput {
   expectedStatus?: QuotationStatus;
   /** Other columns that change with the status, in the same statement (when it was sent, why voided). */
   data?: Prisma.QuotationUncheckedUpdateManyInput;
+  /**
+   * More conditions the row must meet for the update to apply, beside its id and the status that was
+   * read: the customer's answer adds the owner and the last valid day. When they do not hold the
+   * update writes nothing and the call is `409 STALE_STATE`.
+   */
+  guard?: Prisma.QuotationWhereInput;
 }
 
 /**
@@ -75,7 +81,7 @@ export async function transitionQuotation(
   tx: DbClient,
   input: QuotationTransitionInput,
 ): Promise<{ from: QuotationStatus }> {
-  const { quotationId, to, trigger, expectedStatus, data } = input;
+  const { quotationId, to, trigger, expectedStatus, data, guard } = input;
 
   const current = await tx.quotation.findUnique({
     where: { id: quotationId },
@@ -90,7 +96,7 @@ export async function transitionQuotation(
   assertQuotationTransition(current.status, to, trigger);
 
   const { count } = await tx.quotation.updateMany({
-    where: { id: quotationId, status: current.status },
+    where: { ...guard, id: quotationId, status: current.status },
     // The status comes last, so `data` can never overwrite it.
     data: { ...data, status: to },
   });
@@ -333,7 +339,7 @@ export async function syncExpiredQuotations(tx: DbClient, now: Date): Promise<{ 
   const due = await tx.quotation.findMany({
     where: {
       status: QuotationStatus.SENT,
-      validUntil: { lt: new Date(`${today}T00:00:00.000Z`) },
+      validUntil: { lt: fromDateOnly(today) },
     },
     select: { id: true, requestId: true },
     orderBy: [{ requestId: "asc" }, { id: "asc" }],

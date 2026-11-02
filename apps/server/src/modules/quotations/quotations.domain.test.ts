@@ -3,10 +3,16 @@ import { describe, expect, it } from "vitest";
 
 import type { AppError } from "../../lib/errors.js";
 import {
+  NOTIFICATION_MESSAGE_MAX_LENGTH,
+  NOTIFICATION_TITLE_MAX_LENGTH,
+} from "../notifications/notifications.domain.js";
+import {
   assertQuotationTransition,
   availableQuotationActions,
   canTransitionQuotation,
   createdTexts,
+  decisionNotification,
+  decisionTexts,
   defaultValidUntil,
   effectiveQuotationStatus,
   expiredTexts,
@@ -14,7 +20,9 @@ import {
   isPastValidity,
   notEditableError,
   QUOTATION_TRANSITIONS,
+  quotationNotAvailableError,
   QuotationTrigger,
+  requestDecidedTexts,
   sendProblems,
   sentNotification,
   sentTexts,
@@ -397,6 +405,131 @@ describe("the words of the history and the notifications", () => {
         title: "Quotation QT-1 was withdrawn",
         message: "We withdrew the quotation for AC Diagnostic Visit. It can no longer be accepted.",
       });
+    }
+  });
+});
+
+describe("the customer's answer (T15)", () => {
+  const ANSWERED_AT = new Date("2026-11-03T15:30:00.000Z");
+
+  function refusal(
+    status: QuotationStatus,
+    decision: "ACCEPTED" | "DECLINED",
+    respondedAt: Date | null = ANSWERED_AT,
+  ): AppError {
+    return quotationNotAvailableError({
+      status,
+      decision,
+      validUntil: "2026-11-17",
+      respondedAt,
+      timeZone: NEW_YORK,
+    });
+  }
+
+  it("refuses with 409 QUOTATION_NOT_AVAILABLE and says which status it is now", () => {
+    for (const status of ["ACCEPTED", "DECLINED", "EXPIRED", "VOID"] as const) {
+      const error = refusal(status, "ACCEPTED");
+      expect(error.status).toBe(409);
+      expect(error.code).toBe(ErrorCode.QUOTATION_NOT_AVAILABLE);
+      expect(error.details).toEqual({ currentStatus: status });
+    }
+  });
+
+  it("gives each status its own words, and the day it was answered in the business's calendar", () => {
+    expect(refusal("ACCEPTED", "ACCEPTED").message).toBe(
+      "You already accepted this quotation on Nov 3, 2026. There is nothing more to do: we'll contact you to schedule the work.",
+    );
+    expect(refusal("ACCEPTED", "DECLINED").message).toBe(
+      "You already accepted this quotation on Nov 3, 2026, so it can't be declined now. Contact us if you need to change anything.",
+    );
+    expect(refusal("DECLINED", "DECLINED").message).toBe(
+      "You already declined this quotation on Nov 3, 2026.",
+    );
+    expect(refusal("DECLINED", "ACCEPTED").message).toBe(
+      "You declined this quotation on Nov 3, 2026, so it can't be accepted now. Contact us and we'll send a new quotation if you'd like one.",
+    );
+    expect(refusal("EXPIRED", "ACCEPTED").message).toBe(
+      "This quotation was valid until Nov 17, 2026 and has expired. Contact us and we'll send an updated quotation.",
+    );
+    expect(refusal("VOID", "ACCEPTED").message).toBe(
+      "This quotation was withdrawn, so you can't accept it. Check your request for an updated quotation, or contact us.",
+    );
+    expect(refusal("VOID", "DECLINED").message).toContain("you can't decline it");
+  });
+
+  it("reads the day an answer was given on the business calendar, not UTC", () => {
+    // 02:00 UTC on 4 November is still the evening of the 3rd in New York.
+    const error = refusal("ACCEPTED", "ACCEPTED", new Date("2026-11-04T02:00:00.000Z"));
+    expect(error.message).toContain("on Nov 3, 2026");
+  });
+
+  it("leaves the day out when there is none to give", () => {
+    expect(refusal("ACCEPTED", "ACCEPTED", null).message).toMatch(
+      /^You already accepted this quotation\. /,
+    );
+  });
+
+  it("never reveals the business's side: no internal word is in any refusal", () => {
+    for (const status of ["ACCEPTED", "DECLINED", "EXPIRED", "VOID"] as const) {
+      for (const decision of ["ACCEPTED", "DECLINED"] as const) {
+        expect(refusal(status, decision).message).not.toMatch(/internal|margin|admin/i);
+      }
+    }
+  });
+
+  it("writes the event as the customer: 'You accepted' to them, the customer's name to staff", () => {
+    expect(decisionTexts({ reference: "QT-1", decision: "ACCEPTED" })).toEqual({
+      staff: "accepted quotation QT-1",
+      customer: "accepted quotation QT-1",
+    });
+    expect(decisionTexts({ reference: "QT-1", decision: "DECLINED" })).toEqual({
+      staff: "declined quotation QT-1",
+      customer: "declined quotation QT-1",
+    });
+  });
+
+  it("keeps the request's own event for staff only", () => {
+    expect(requestDecidedTexts({ requestReference: "FF-1", decision: "ACCEPTED" })).toEqual({
+      staff: "moved request FF-1 to accepted: the customer answered the quotation",
+    });
+    expect(requestDecidedTexts({ requestReference: "FF-1", decision: "DECLINED" }).staff).toContain(
+      "to declined",
+    );
+  });
+
+  it("tells the admins what was decided, without the price or the customer's reason", () => {
+    expect(
+      decisionNotification({
+        reference: "QT-1",
+        customerName: "Alex Morgan",
+        serviceName: "AC Repair",
+        decision: "ACCEPTED",
+      }),
+    ).toEqual({
+      title: "Quotation QT-1 accepted",
+      message:
+        "Alex Morgan accepted the quotation for AC Repair. The request is ready to be scheduled.",
+    });
+    const declined = decisionNotification({
+      reference: "QT-1",
+      customerName: "Alex Morgan",
+      serviceName: "AC Repair",
+      decision: "DECLINED",
+    });
+    expect(declined.title).toBe("Quotation QT-1 declined");
+    expect(declined.message).toContain("No work will be scheduled");
+  });
+
+  it("fits a notification even with the longest name and service the business allows", () => {
+    for (const decision of ["ACCEPTED", "DECLINED"] as const) {
+      const texts = decisionNotification({
+        reference: "QT-2026-00001",
+        customerName: "N".repeat(80),
+        serviceName: "S".repeat(80),
+        decision,
+      });
+      expect(texts.title.length).toBeLessThanOrEqual(NOTIFICATION_TITLE_MAX_LENGTH);
+      expect(texts.message.length).toBeLessThanOrEqual(NOTIFICATION_MESSAGE_MAX_LENGTH);
     }
   });
 });

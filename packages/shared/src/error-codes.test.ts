@@ -46,6 +46,8 @@ describe("ErrorCode", () => {
         // T14 — quotations
         "DRAFT_EXISTS",
         "QUOTATION_NOT_EDITABLE",
+        // T15 — customer decisions
+        "QUOTATION_NOT_AVAILABLE",
       ].sort(),
     );
   });

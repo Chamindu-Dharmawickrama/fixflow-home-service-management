@@ -53,8 +53,8 @@ export function PortalShell({
 
   return (
     <div className="flex min-h-dvh flex-col bg-page">
-      {banner}
-      <header className="sticky top-0 z-30 border-b border-border bg-surface">
+      {banner === undefined ? null : <div className="print:hidden">{banner}</div>}
+      <header className="sticky top-0 z-30 border-b border-border bg-surface print:hidden">
         <div className="mx-auto flex h-16 w-full max-w-5xl items-center gap-2 px-4 sm:px-6 lg:px-8">
           {navigation.length > 0 ? (
             <div className="lg:hidden">
@@ -77,7 +77,7 @@ export function PortalShell({
       <main
         id={MAIN_CONTENT_ID}
         tabIndex={-1}
-        className="flex-1 px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8"
+        className="flex-1 px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8 print:p-0"
       >
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">{children}</div>
       </main>

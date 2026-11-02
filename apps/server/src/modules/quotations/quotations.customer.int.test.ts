@@ -1,4 +1,9 @@
-import { type AdminQuotationDto, type CustomerQuotationDto, ErrorCode } from "@fixflow/shared";
+import {
+  type AdminQuotationDto,
+  type CustomerQuotationDto,
+  type CustomerRequestDto,
+  ErrorCode,
+} from "@fixflow/shared";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { buildTestApp } from "../../test/build-test-app.js";
@@ -16,6 +21,7 @@ import {
   type QuotationWorld,
   quotationWorld,
   readyDraft,
+  sendRequest,
   sentQuotation,
   startDraft,
   voidRequest,
@@ -45,6 +51,7 @@ const CUSTOMER_KEYS = [
   "lines",
   "preview",
   "reference",
+  "replacedBy",
   "requestId",
   "requestReference",
   "respondedAt",
@@ -347,16 +354,57 @@ describe("GET /quotations/:id: what the customer sees (G.7)", () => {
 });
 
 describe("the request integration", () => {
-  it("keeps the customer's request free of quotation internals", async () => {
+  // T15 changed this on purpose: until then the customer's request carried no quotation at all. It now
+  // lists the quotations the customer was SENT, and still nothing of a draft or of the business's side.
+  it("keeps the customer's request free of drafts and of quotation internals", async () => {
     const w = await quotationWorld(prisma);
     const request = await makeRequest(w);
-    await readyDraft(w, request.id);
+    const draft = await readyDraft(w, request.id);
+    const requestUrl = `/api/v1/requests/${request.id}`;
 
-    const response = await w.client.get(`/api/v1/requests/${request.id}`, { cookie: w.alexCookie });
+    // A draft is the business's own work: not listed, not named anywhere in the answer.
+    const whileDraft = await w.client.get(requestUrl, { cookie: w.alexCookie });
+    expect(whileDraft.status).toBe(200);
+    expect(dataOf<CustomerRequestDto>(whileDraft).quotations).toEqual([]);
+    expect(JSON.stringify(whileDraft.body)).not.toContain(draft.reference);
 
-    expect(response.status).toBe(200);
-    expect(Object.keys(dataOf(response))).not.toContain("quotations");
-    expect(JSON.stringify(response.body)).not.toContain("QT-");
+    // Once sent it is the customer's, with the customer's fields and no more; withdrawn, the
+    // internal reason still goes nowhere near it.
+    const sent = await sendRequest(w, draft.id);
+    expect(sent.status).toBe(200);
+    await voidRequest(w, draft.id, { expectedStatus: "SENT", reason: INTERNAL_VOID_REASON });
+    const afterVoid = await w.client.get(requestUrl, { cookie: w.alexCookie });
+    const [listed] = dataOf<CustomerRequestDto>(afterVoid).quotations;
+    expect(Object.keys(listed ?? {}).sort()).toEqual(
+      [
+        "currencyCode",
+        "id",
+        "reference",
+        "replacedBy",
+        "respondedAt",
+        "sentAt",
+        "status",
+        "statusLabel",
+        "totalAmount",
+        "validUntil",
+      ].sort(),
+    );
+    expect(listed).toMatchObject({ id: draft.id, status: "VOID", reference: draft.reference });
+    // The quotation's own body has a `timeline` and the like; the customer's request has a `timeline`
+    // of its own, so only the words of the business's side are looked for here.
+    for (const secret of [
+      "internal margin",
+      "voidReason",
+      "voidedBy",
+      "createdBy",
+      "sentBy",
+      "availableActions",
+      "declineReason",
+      "expiredAt",
+    ]) {
+      expect(JSON.stringify(afterVoid.body), secret).not.toContain(secret);
+    }
+    expect(JSON.stringify(afterVoid.body)).not.toContain(INTERNAL_VOID_REASON);
   });
 
   it("lists every version on the admin request, newest first, with the chain", async () => {

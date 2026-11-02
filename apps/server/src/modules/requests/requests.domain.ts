@@ -161,6 +161,7 @@ export const ACTIONS_REQUIRING_REASON: readonly RequestStatusAction[] = [
 const ACTION_ORDER: readonly RequestAction[] = [
   RequestAction.START_REVIEW,
   RequestAction.CREATE_QUOTATION,
+  RequestAction.CREATE_WORK_ORDER,
   RequestAction.REOPEN,
   RequestAction.CANCEL,
 ];
@@ -208,18 +209,32 @@ export function canCreateQuotation(
 }
 
 /**
+ * Whether the request is ready to become a job: the customer accepted the quotation (T15). Only
+ * listed for now; T17 builds the action that performs it, and leaves the request `CONVERTED_TO_JOB`.
+ */
+export function canCreateWorkOrder(status: ServiceRequestStatus): boolean {
+  return status === S.ACCEPTED;
+}
+
+/**
  * What an admin may do to a request in this status (D-43), computed from the transition map and the
- * quotation rules so the screen and the endpoint cannot disagree. T17 adds `CREATE_WORK_ORDER`.
+ * quotation rules so the screen and the endpoint cannot disagree. `CREATE_WORK_ORDER` is listed for
+ * an accepted request (T15) and performed by T17.
  */
 export function availableAdminActions(
   status: ServiceRequestStatus,
   context: AdminActionContext = {},
 ): RequestAction[] {
-  return ACTION_ORDER.filter((action) =>
-    action === RequestAction.CREATE_QUOTATION
-      ? canCreateQuotation(status, context)
-      : canPerformAdminAction(status, action),
-  );
+  return ACTION_ORDER.filter((action) => {
+    switch (action) {
+      case RequestAction.CREATE_QUOTATION:
+        return canCreateQuotation(status, context);
+      case RequestAction.CREATE_WORK_ORDER:
+        return canCreateWorkOrder(status);
+      default:
+        return canPerformAdminAction(status, action);
+    }
+  });
 }
 
 /** A request nobody has looked at yet. */

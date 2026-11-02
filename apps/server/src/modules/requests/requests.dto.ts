@@ -12,6 +12,10 @@ import {
 import type { Prisma } from "../../generated/prisma/client.js";
 import { toDateOnly } from "../../lib/date-only.js";
 import { CUSTOMER_ACTOR_YOU } from "../activity/activity.dto.js";
+import {
+  CUSTOMER_QUOTATION_SUMMARY_SELECT,
+  toCustomerQuotationSummary,
+} from "../quotations/quotations.dto.js";
 import { toRequestAddress } from "./requests.domain.js";
 
 /**
@@ -56,6 +60,12 @@ export const REQUEST_DETAIL_SELECT = {
   cancelledAt: true,
   cancelCustomerMessage: true,
   customer: { select: { userId: true } },
+  // Only what the customer was sent (T15): a draft has no `sentAt` and is never selected.
+  quotations: {
+    where: { sentAt: { not: null } },
+    orderBy: [{ sentAt: "desc" }, { id: "asc" }],
+    select: CUSTOMER_QUOTATION_SUMMARY_SELECT,
+  },
   notes: {
     where: { visibility: NoteVisibility.CUSTOMER_VISIBLE },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -81,8 +91,12 @@ export function toCustomerRequestListItem(row: RequestListRow): CustomerRequestL
   };
 }
 
+/** What the serializer needs to know about who is looking: the business, and the clock it reads time by. */
 export interface RequestViewer {
   businessName: string;
+  /** Decides whether a sent quotation has run out, on the business calendar (D-23). */
+  now: Date;
+  timeZone: string;
 }
 
 function toCustomerNote(
@@ -125,6 +139,9 @@ export function toCustomerRequestDto(input: {
             message: row.cancelCustomerMessage,
           }
         : null,
+    quotations: row.quotations.map((quotation) =>
+      toCustomerQuotationSummary(quotation, { now: viewer.now, timeZone: viewer.timeZone }),
+    ),
     notes: row.notes.map((note) => toCustomerNote(note, row.customer.userId, viewer)),
     timeline,
   };

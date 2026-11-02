@@ -63,7 +63,11 @@ export async function loadBusiness(db: Pick<DbClient, "businessSettings">) {
 }
 
 /** The request as its owner sees it, with the history written for the customer (D-41). */
-async function loadCustomerRequest(db: DbClient, id: string): Promise<CustomerRequestDto | null> {
+async function loadCustomerRequest(
+  db: DbClient,
+  id: string,
+  now: Date,
+): Promise<CustomerRequestDto | null> {
   const row = await db.serviceRequest.findUnique({ where: { id }, select: REQUEST_DETAIL_SELECT });
   if (row === null) {
     return null;
@@ -72,7 +76,11 @@ async function loadCustomerRequest(db: DbClient, id: string): Promise<CustomerRe
     getTimeline(db, { requestId: row.id }, "customer", row.customerId),
     loadBusiness(db),
   ]);
-  return toCustomerRequestDto({ row, timeline, viewer: { businessName: business.businessName } });
+  return toCustomerRequestDto({
+    row,
+    timeline,
+    viewer: { businessName: business.businessName, now, timeZone: business.timeZone },
+  });
 }
 
 export interface SubmissionResult {
@@ -251,7 +259,7 @@ export async function submitRequest(
 
   emailDispatcher.dispatchAfterCommit(afterCommit);
 
-  const request = await loadCustomerRequest(prisma, result.id);
+  const request = await loadCustomerRequest(prisma, result.id, now);
   if (request === null) {
     // Cannot happen: the request was just committed and requests are never deleted.
     throw notFound();
@@ -308,7 +316,7 @@ export async function getRequest(
     throw notFound();
   }
 
-  const request = await loadCustomerRequest(deps.prisma, id);
+  const request = await loadCustomerRequest(deps.prisma, id, deps.clock.now());
   if (request === null) {
     throw notFound();
   }

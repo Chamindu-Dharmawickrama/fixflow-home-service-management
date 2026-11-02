@@ -1181,10 +1181,13 @@ describe("GET /requests/:id: ownership and the customer's view (D-41, BR-21, G.5
         "preferredStart",
         "preferredEnd",
         "cancellation",
+        "quotations",
         "notes",
         "timeline",
       ].sort(),
     );
+    // No quotation has been sent for a request that was only just made.
+    expect(request.quotations).toEqual([]);
     const text = JSON.stringify(request);
     expect(text).not.toContain(w.alex.profile.id);
     expect(text).not.toContain(w.alex.user.id);

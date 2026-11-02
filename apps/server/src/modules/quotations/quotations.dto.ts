@@ -2,10 +2,13 @@ import {
   type AdminQuotationDto,
   type AdminTimelineEventDto,
   type CustomerQuotationDto,
+  type CustomerQuotationListItemDto,
+  type CustomerQuotationSummaryDto,
   type QuotationBusinessDto,
   type QuotationDocumentDto,
   type QuotationLineDto,
   type QuotationLinkDto,
+  type QuotationReplacementDto,
   type QuotationStatus,
   quotationStatusLabel,
   type QuotationSummaryDto,
@@ -99,7 +102,10 @@ export const QUOTATION_DETAIL_SELECT = {
   sentBy: { select: { name: true } },
   voidedBy: { select: { name: true } },
   replaces: { select: { id: true, reference: true, status: true, validUntil: true } },
-  replacedBy: { select: { id: true, reference: true, status: true, validUntil: true } },
+  // `sentAt`: a replacement the customer has not been sent is not theirs to know about.
+  replacedBy: {
+    select: { id: true, reference: true, status: true, validUntil: true, sentAt: true },
+  },
   lineItems: {
     orderBy: { position: "asc" },
     select: {
@@ -244,7 +250,88 @@ export function toCustomerQuotationDto(input: {
   preview: boolean;
 }): CustomerQuotationDto {
   const { row, context, business, preview } = input;
-  return { ...toDocument(row, context, business), requestId: row.requestId, preview };
+  return {
+    ...toDocument(row, context, business),
+    requestId: row.requestId,
+    replacedBy: toCustomerReplacement(row.replacedBy),
+    preview,
+  };
+}
+
+/** The replacement, only once the customer has been sent it. */
+function toCustomerReplacement(
+  replacement: { id: string; reference: string; sentAt: Date | null } | null,
+): QuotationReplacementDto | null {
+  return replacement === null || replacement.sentAt === null
+    ? null
+    : { id: replacement.id, reference: replacement.reference };
+}
+
+/**
+ * What the customer's lists need of a quotation they were sent. Never a draft: the `where` that
+ * reads these rows asks for `sentAt` to be set, and {@link toCustomerQuotationSummary} refuses one
+ * that is not, so a draft cannot be serialized for a customer whatever a query did.
+ */
+export const CUSTOMER_QUOTATION_SUMMARY_SELECT = {
+  id: true,
+  reference: true,
+  status: true,
+  currencyCode: true,
+  totalAmount: true,
+  validUntil: true,
+  sentAt: true,
+  respondedAt: true,
+  replacedBy: { select: { id: true, reference: true, sentAt: true } },
+} as const satisfies Prisma.QuotationSelect;
+
+export type CustomerQuotationSummaryRow = Prisma.QuotationGetPayload<{
+  select: typeof CUSTOMER_QUOTATION_SUMMARY_SELECT;
+}>;
+
+export function toCustomerQuotationSummary(
+  row: CustomerQuotationSummaryRow,
+  context: QuotationViewContext,
+): CustomerQuotationSummaryDto {
+  // Fail closed, like the notes: a quotation the customer was never sent is not theirs to see.
+  if (row.sentAt === null) {
+    throw new Error("A draft quotation was passed to the customer serializer.");
+  }
+  const status = statusOf(row, context);
+  return {
+    id: row.id,
+    reference: row.reference,
+    status,
+    statusLabel: quotationStatusLabel(status),
+    totalAmount: row.totalAmount.toFixed(2),
+    currencyCode: row.currencyCode,
+    validUntil: toDateOnly(row.validUntil),
+    sentAt: row.sentAt.toISOString(),
+    respondedAt: row.respondedAt === null ? null : row.respondedAt.toISOString(),
+    replacedBy: toCustomerReplacement(row.replacedBy),
+  };
+}
+
+/** A row of `GET /quotations/me`: the summary and the request it answers. */
+export const CUSTOMER_QUOTATION_LIST_SELECT = {
+  ...CUSTOMER_QUOTATION_SUMMARY_SELECT,
+  requestId: true,
+  request: { select: { reference: true, serviceNameSnapshot: true } },
+} as const satisfies Prisma.QuotationSelect;
+
+export type CustomerQuotationListRow = Prisma.QuotationGetPayload<{
+  select: typeof CUSTOMER_QUOTATION_LIST_SELECT;
+}>;
+
+export function toCustomerQuotationListItem(
+  row: CustomerQuotationListRow,
+  context: QuotationViewContext,
+): CustomerQuotationListItemDto {
+  return {
+    ...toCustomerQuotationSummary(row, context),
+    requestId: row.requestId,
+    requestReference: row.request.reference,
+    serviceName: row.request.serviceNameSnapshot,
+  };
 }
 
 function toLink(

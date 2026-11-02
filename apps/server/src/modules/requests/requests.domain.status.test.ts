@@ -15,6 +15,7 @@ import {
   assertRequestTransition,
   availableAdminActions,
   canCreateQuotation,
+  canCreateWorkOrder,
   canPerformAdminAction,
   canTransition,
   isNewRequest,
@@ -164,7 +165,8 @@ describe("availableAdminActions (D-43)", () => {
     SUBMITTED: ["START_REVIEW", "CANCEL"],
     UNDER_REVIEW: ["CREATE_QUOTATION", "CANCEL"],
     QUOTED: ["CANCEL"],
-    ACCEPTED: ["CANCEL"],
+    // The customer accepted (T15): the work order is listed, performed by T17.
+    ACCEPTED: ["CREATE_WORK_ORDER", "CANCEL"],
     DECLINED: ["REOPEN", "CANCEL"],
     CONVERTED_TO_JOB: [],
     CANCELLED: [],
@@ -206,6 +208,19 @@ describe("availableAdminActions (D-43)", () => {
   it("does not make Create quotation a status change: the status endpoint cannot name it", () => {
     expect([...REQUEST_STATUS_ACTIONS].sort()).toEqual(["CANCEL", "REOPEN", "START_REVIEW"]);
     expect(Object.values(RequestAction)).toContain("CREATE_QUOTATION");
+  });
+
+  it("offers Create work order only to an accepted request (T15), and never as a status change", () => {
+    for (const status of STATUSES) {
+      expect(canCreateWorkOrder(status)).toBe(status === "ACCEPTED");
+      expect(availableAdminActions(status).includes("CREATE_WORK_ORDER")).toBe(
+        status === "ACCEPTED",
+      );
+    }
+    // It leads the list, ahead of the destructive Cancel: it is the next step.
+    expect(availableAdminActions("ACCEPTED")[0]).toBe("CREATE_WORK_ORDER");
+    expect(Object.values(RequestAction)).toContain("CREATE_WORK_ORDER");
+    expect(REQUEST_STATUS_ACTIONS).not.toContain("CREATE_WORK_ORDER");
   });
 
   it("keeps Start review and Reopen apart although both lead to UNDER_REVIEW", () => {

@@ -16,7 +16,7 @@ import {
 } from "@fixflow/shared";
 
 import type { AppDeps } from "../../deps.js";
-import { toDateOnly } from "../../lib/date-only.js";
+import { fromDateOnly, toDateOnly } from "../../lib/date-only.js";
 import { BUSINESS_SETTINGS_ID, type DbClient, isUniqueViolation } from "../../lib/db.js";
 import { conflict, forbidden, notFound, serviceUnavailable, validation } from "../../lib/errors.js";
 import { nextReference } from "../../lib/references.js";
@@ -69,12 +69,9 @@ type QuotationDeps = Pick<AppDeps, "prisma" | "clock" | "config" | "emailDispatc
 
 const NOT_SET_UP = "The business settings have not been set up yet.";
 
-/** A `YYYY-MM-DD` day as the UTC-midnight `Date` Prisma stores a `date` column from. */
-function toDateColumn(value: string): Date {
-  return new Date(`${value}T00:00:00.000Z`);
-}
-
-async function loadSettings(db: Pick<DbClient, "businessSettings">): Promise<QuotationSettingsRow> {
+export async function loadSettings(
+  db: Pick<DbClient, "businessSettings">,
+): Promise<QuotationSettingsRow> {
   const settings = await db.businessSettings.findUnique({
     where: { id: BUSINESS_SETTINGS_ID },
     select: QUOTATION_SETTINGS_SELECT,
@@ -148,7 +145,7 @@ export async function syncExpiredQuotationsIfDue(
   const now = deps.clock.now();
   const today = dateOnlyInTimeZone(now, settings.timeZone);
   const due = await deps.prisma.quotation.findFirst({
-    where: { status: QuotationStatus.SENT, validUntil: { lt: toDateColumn(today) } },
+    where: { status: QuotationStatus.SENT, validUntil: { lt: fromDateOnly(today) } },
     select: { id: true },
   });
   if (due === null) {
@@ -228,18 +225,31 @@ export async function getCustomerQuotation(
     throw notFound();
   }
 
+  return readCustomerQuotation(prisma, clock.now(), id, owner.sentAt === null);
+}
+
+/**
+ * The quotation in the customer's shape (D-41), for a caller that has already decided the viewer may
+ * see it. `preview` is true only for an admin looking at a draft.
+ */
+export async function readCustomerQuotation(
+  db: DbClient,
+  now: Date,
+  id: string,
+  preview: boolean,
+): Promise<CustomerQuotationDto> {
   const [row, settings] = await Promise.all([
-    prisma.quotation.findUnique({ where: { id }, select: QUOTATION_DETAIL_SELECT }),
-    loadSettings(prisma),
+    db.quotation.findUnique({ where: { id }, select: QUOTATION_DETAIL_SELECT }),
+    loadSettings(db),
   ]);
   if (row === null) {
     throw notFound();
   }
   return toCustomerQuotationDto({
     row,
-    context: { now: clock.now(), timeZone: settings.timeZone },
+    context: { now, timeZone: settings.timeZone },
     business: toQuotationBusiness(settings),
-    preview: owner.sentAt === null,
+    preview,
   });
 }
 
@@ -382,7 +392,7 @@ export async function createQuotation(
         currencyCode: settings.currencyCode,
         taxRate,
         ...totalsData(totals),
-        validUntil: toDateColumn(
+        validUntil: fromDateOnly(
           defaultValidUntil(now, settings.timeZone, settings.quotationValidityDays),
         ),
         terms: replaced === null ? settings.defaultQuotationTerms : replaced.terms,
@@ -469,7 +479,7 @@ export async function updateQuotation(
       data: {
         taxRate: input.taxRate,
         ...totalsData(totals),
-        validUntil: toDateColumn(input.validUntil),
+        validUntil: fromDateOnly(input.validUntil),
         terms: input.terms,
         customerNote: input.customerNote,
       },

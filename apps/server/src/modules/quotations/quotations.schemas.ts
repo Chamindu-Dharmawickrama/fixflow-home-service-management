@@ -1,6 +1,7 @@
 import { isDateOnly, LIMITS, QuotationStatus } from "@fixflow/shared";
 import { z } from "zod";
 
+import { createPaginationSchema } from "../../lib/pagination.js";
 import { optionalText, requiredText } from "../../lib/zod-fields.js";
 
 const statusValues = Object.values(QuotationStatus) as [QuotationStatus, ...QuotationStatus[]];
@@ -110,3 +111,46 @@ export const getQuotationQuerySchema = z.object({
 });
 
 export type GetQuotationQuery = z.output<typeof getQuotationQuerySchema>;
+
+// ---- The customer's list and answer (T15) -------------------------------------------------------
+
+/** The statuses a customer can see: a quotation they were sent. A draft is not among them. */
+const CUSTOMER_STATUS_FILTERS = [
+  QuotationStatus.SENT,
+  QuotationStatus.ACCEPTED,
+  QuotationStatus.DECLINED,
+  QuotationStatus.EXPIRED,
+  QuotationStatus.VOID,
+] as const;
+
+/**
+ * `GET /api/v1/quotations/me`. The order is fixed (the ones awaiting an answer first, then the
+ * newest), so there is no `sort`; `status` narrows the list to one status, which the portal home
+ * uses to ask for what awaits a decision.
+ */
+export const listMyQuotationsQuerySchema = createPaginationSchema({
+  sortFields: ["sentAt"],
+  defaultSort: "sentAt",
+  defaultOrder: "desc",
+}).extend({
+  status: z
+    .enum(CUSTOMER_STATUS_FILTERS, {
+      error: `status must be one of: ${CUSTOMER_STATUS_FILTERS.join(", ")}.`,
+    })
+    .optional(),
+});
+
+export type ListMyQuotationsQuery = z.output<typeof listMyQuotationsQuerySchema>;
+
+/**
+ * `POST /api/v1/quotations/:id/decline`. Strict, like every body. The reason is the customer's own
+ * words, optional and at most 500 characters; blank means none.
+ */
+export const declineQuotationBodySchema = z.strictObject({
+  reason: optionalText("reason", { max: LIMITS.reason.maxLength, multiline: true }).optional(),
+});
+
+export type DeclineQuotationInput = z.output<typeof declineQuotationBodySchema>;
+
+/** `POST /api/v1/quotations/:id/accept` takes no body: acceptance is the act itself (BR-08). */
+export const acceptQuotationBodySchema = z.strictObject({});

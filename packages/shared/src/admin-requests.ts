@@ -13,7 +13,8 @@ import type { CustomerRequestDto } from "./requests.js";
 
 /**
  * What an admin can do to a request from where it stands (D-43). The screen offers these and
- * nothing else; the server checks the action again when it is used. T17 adds `CREATE_WORK_ORDER`.
+ * nothing else; the server checks the action again when it is used. T15 lists `CREATE_WORK_ORDER`
+ * for an accepted request; T17 builds it.
  */
 export const RequestAction = {
   START_REVIEW: "START_REVIEW",
@@ -21,6 +22,12 @@ export const RequestAction = {
   REOPEN: "REOPEN",
   /** Prepare a quotation (T14). It does not change the request's status, so it is not a status action. */
   CREATE_QUOTATION: "CREATE_QUOTATION",
+  /**
+   * Turn an accepted request into a job (T17). The customer's acceptance (T15) makes the server list
+   * it; nothing performs it before T17, and the web draws no button for it until then. Like
+   * `CREATE_QUOTATION` it is not a status action here: the status changes with the work order.
+   */
+  CREATE_WORK_ORDER: "CREATE_WORK_ORDER",
 } as const;
 export type RequestAction = (typeof RequestAction)[keyof typeof RequestAction];
 
@@ -131,7 +138,7 @@ export interface AdminRequestCancellationDto {
  */
 export interface AdminRequestDto extends Omit<
   CustomerRequestDto,
-  "notes" | "timeline" | "cancellation"
+  "notes" | "timeline" | "cancellation" | "quotations"
 > {
   /** The service as it is now (`serviceName` is what it was called when the request was made). */
   serviceId: string;

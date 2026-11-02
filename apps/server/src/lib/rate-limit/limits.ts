@@ -40,6 +40,10 @@ export const RATE_LIMITS = {
   // ten requests an hour is far more than a household makes and little enough to stop a script
   // from filling the business's queue.
   requestSubmit: { limit: 10, windowSeconds: 60 * 60 },
+
+  // Quotation decisions (T15). Counted per signed-in customer, accept and decline together and a
+  // refused answer too: a customer answers a handful of quotations, never twenty in an hour.
+  quotationDecision: { limit: 20, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export type RateLimitName = keyof typeof RATE_LIMITS;

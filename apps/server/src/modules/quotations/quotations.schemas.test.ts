@@ -4,8 +4,11 @@ import type { ZodType } from "zod";
 
 import { fieldErrorsFromZod } from "../../lib/zod-errors.js";
 import {
+  acceptQuotationBodySchema,
   createQuotationBodySchema,
+  declineQuotationBodySchema,
   getQuotationQuerySchema,
+  listMyQuotationsQuerySchema,
   quotationIdParamsSchema,
   sendQuotationBodySchema,
   updateQuotationBodySchema,
@@ -236,5 +239,51 @@ describe("params and query", () => {
     expect(getQuotationQuerySchema.parse({ preview: "1" })).toEqual({ preview: true });
     expect(getQuotationQuerySchema.safeParse({ preview: "0" }).success).toBe(false);
     expect(getQuotationQuerySchema.safeParse({ preview: "true" }).success).toBe(false);
+  });
+});
+
+describe("the customer's list and answer (T15)", () => {
+  it("lists a customer's quotations by status, never a draft", () => {
+    expect(listMyQuotationsQuerySchema.parse({})).toMatchObject({ page: 1, pageSize: 20 });
+    for (const status of ["SENT", "ACCEPTED", "DECLINED", "EXPIRED", "VOID"]) {
+      expect(listMyQuotationsQuerySchema.parse({ status }).status).toBe(status);
+    }
+    expect(listMyQuotationsQuerySchema.safeParse({ status: "DRAFT" }).success).toBe(false);
+    expect(listMyQuotationsQuerySchema.safeParse({ status: "sent" }).success).toBe(false);
+  });
+
+  it("paginates like every list and orders only by when it was sent", () => {
+    expect(listMyQuotationsQuerySchema.safeParse({ pageSize: "100" }).success).toBe(true);
+    expect(listMyQuotationsQuerySchema.safeParse({ pageSize: "101" }).success).toBe(false);
+    expect(listMyQuotationsQuerySchema.safeParse({ sort: "totalAmount" }).success).toBe(false);
+  });
+
+  it("takes a decline reason of up to 500 characters, trimmed, and blank means none", () => {
+    expect(declineQuotationBodySchema.parse({})).toEqual({});
+    expect(declineQuotationBodySchema.parse({ reason: "  Too expensive.  " }).reason).toBe(
+      "Too expensive.",
+    );
+    expect(declineQuotationBodySchema.parse({ reason: "   " }).reason).toBeNull();
+    expect(declineQuotationBodySchema.parse({ reason: "x".repeat(500) }).reason).toHaveLength(500);
+    expect(issues(declineQuotationBodySchema, { reason: "x".repeat(501) })).toHaveLength(1);
+  });
+
+  it("keeps a reason's line breaks and refuses control characters", () => {
+    expect(declineQuotationBodySchema.parse({ reason: "Too dear.\nFound cheaper." }).reason).toBe(
+      "Too dear.\nFound cheaper.",
+    );
+    expect(declineQuotationBodySchema.safeParse({ reason: "bad\x07bell" }).success).toBe(false);
+  });
+
+  it("rejects any field it does not know, so an answer cannot name a status, a time or a customer", () => {
+    for (const extra of [
+      { status: "ACCEPTED" },
+      { respondedAt: "2026-01-01T00:00:00.000Z" },
+      { customerId: ID },
+    ]) {
+      expect(declineQuotationBodySchema.safeParse(extra).success).toBe(false);
+      expect(acceptQuotationBodySchema.safeParse(extra).success).toBe(false);
+    }
+    expect(acceptQuotationBodySchema.safeParse({}).success).toBe(true);
   });
 });

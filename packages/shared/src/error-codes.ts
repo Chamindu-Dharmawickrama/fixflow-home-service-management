@@ -76,6 +76,13 @@ export const ErrorCode = {
   DRAFT_EXISTS: "DRAFT_EXISTS",
   /** 409 — only a draft quotation can be edited; a sent, voided or answered one is fixed (BR-07). */
   QUOTATION_NOT_EDITABLE: "QUOTATION_NOT_EDITABLE",
+
+  // Customer decisions on quotations (T15)
+  /**
+   * 409 — the customer can no longer answer this quotation: it was already answered, has expired or
+   * was withdrawn. `details.currentStatus` is what it is now; the message says which, in words.
+   */
+  QUOTATION_NOT_AVAILABLE: "QUOTATION_NOT_AVAILABLE",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

@@ -27,7 +27,7 @@ import { toast } from "@/components/ui/sonner";
 import { apiFetch, describeApiError, isApiError } from "@/lib/api";
 
 import { adminQuotationPath } from "../lib/quotations";
-import { REQUEST_ACTION_LABELS, splitActions } from "../lib/request-actions";
+import { type OfferedAction, REQUEST_ACTION_LABELS, splitActions } from "../lib/request-actions";
 
 export interface RequestActionsProps {
   requestId: string;
@@ -172,7 +172,7 @@ export function RequestActions({
     setTimeout(() => menuTriggerRef.current?.focus(), 0);
   };
 
-  const choose = (action: RequestAction, fromMenu: boolean) => {
+  const choose = (action: OfferedAction, fromMenu: boolean) => {
     if (action === RequestAction.START_REVIEW) {
       void startReview();
       return;

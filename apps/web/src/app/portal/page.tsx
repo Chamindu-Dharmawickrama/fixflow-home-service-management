@@ -1,4 +1,8 @@
-import type { CustomerProfileDto, CustomerRequestListResponse } from "@fixflow/shared";
+import type {
+  CustomerProfileDto,
+  CustomerQuotationListResponse,
+  CustomerRequestListResponse,
+} from "@fixflow/shared";
 import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -9,8 +13,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/features/auth/components/area-skeleton";
 import { loadErrorState } from "@/features/catalogue/components/load-error";
 import { REQUEST_SERVICE_PATH } from "@/features/marketing/lib/request-service";
+import { AwaitingDecision } from "@/features/portal/components/awaiting-decision";
 import { ProfileSummaryCard } from "@/features/portal/components/profile-summary-card";
 import { RecentRequests } from "@/features/portal/components/recent-requests";
+import { AWAITING_DECISION_COUNT } from "@/features/portal/lib/quotations";
 import { RECENT_REQUESTS_COUNT, toApiQueryString } from "@/features/portal/lib/requests-list";
 import { serverApiGet, serverApiGetEnvelope } from "@/lib/api/server";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -26,9 +32,9 @@ export const metadata: Metadata = { title: "Overview" };
 export const instant = false;
 
 /**
- * The customer's home (T05, T10, T11): a greeting, the way to send a request, the latest requests
- * and a summary of their profile. Quotations, jobs and invoices are added as they are built;
- * nothing here pretends otherwise.
+ * The customer's home (T05, T10, T11, T15): a greeting, the way to send a request, the quotations
+ * awaiting their decision, the latest requests and a summary of their profile. Jobs and invoices
+ * are added as they are built; nothing here pretends otherwise.
  */
 export default function PortalHomePage() {
   return (
@@ -46,12 +52,17 @@ async function PortalHomeContent() {
 
   let profile: CustomerProfileDto;
   let recent: CustomerRequestListResponse;
+  let awaiting: CustomerQuotationListResponse;
   let timeZone: string;
   try {
-    [profile, recent, { timeZone }] = await Promise.all([
+    [profile, recent, awaiting, { timeZone }] = await Promise.all([
       serverApiGet<CustomerProfileDto>("/customers/me"),
       serverApiGetEnvelope<CustomerRequestListResponse>(
         `/requests/me?${toApiQueryString({ status: undefined, page: 1 }, RECENT_REQUESTS_COUNT)}`,
+      ),
+      // The quotations still open to an answer, the soonest to run out first (T15).
+      serverApiGetEnvelope<CustomerQuotationListResponse>(
+        `/quotations/me?status=SENT&pageSize=${AWAITING_DECISION_COUNT}`,
       ),
       getPublicSettings(),
     ]);
@@ -80,6 +91,7 @@ async function PortalHomeContent() {
           </Link>
         }
       />
+      <AwaitingDecision quotations={awaiting.data} timeZone={timeZone} now={new Date()} />
       <RecentRequests
         requests={recent.data}
         totalItems={recent.pagination.totalItems}

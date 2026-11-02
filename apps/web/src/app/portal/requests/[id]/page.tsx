@@ -19,6 +19,7 @@ import {
   RequestHistoryCard,
   RequestNotesCard,
 } from "@/features/portal/components/request-details";
+import { RequestQuotationsCard } from "@/features/portal/components/request-quotations-card";
 import { requestPath, REQUESTS_PATH } from "@/features/portal/lib/requests-list";
 import { isApiError } from "@/lib/api";
 import { serverApiGet } from "@/lib/api/server";
@@ -40,8 +41,9 @@ interface RequestPageProps {
 }
 
 /**
- * One request in the customer's words (IA-C02, FR-022): its status and what happens next, the
- * details as sent, the notes the business chose to share, and the history. Right after sending,
+ * One request in the customer's words (IA-C02, FR-022): its status and what happens next, its
+ * quotation (T15), the details as sent, the notes the business chose to share, and the history.
+ * Right after sending,
  * `?submitted=1` adds the confirmation. The API shows a customer only their own requests, so
  * someone else's id looks exactly like one that does not exist.
  */
@@ -121,6 +123,11 @@ async function RequestContent({ params, searchParams }: RequestPageProps) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="flex flex-col gap-6">
           <NextStepCard request={request} />
+          <RequestQuotationsCard
+            quotations={request.quotations}
+            timeZone={timeZone}
+            now={new Date()}
+          />
           <RequestDetailsCard request={request} timeZone={timeZone} />
           <RequestNotesCard request={request} timeZone={timeZone} />
         </div>

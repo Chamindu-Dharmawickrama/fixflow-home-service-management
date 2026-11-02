@@ -1,4 +1,5 @@
 import type { AdminTimelineEventDto } from "./activity.js";
+import type { PaginatedResponse } from "./api.js";
 import { QuotationStatus, type ServiceRequestStatus } from "./enums.js";
 import type { RequestAddressDto } from "./requests.js";
 import type { PublicSettingsDto } from "./settings.js";
@@ -88,6 +89,15 @@ export interface VoidQuotationBody {
   customerMessage?: string;
 }
 
+/**
+ * `POST /quotations/:id/decline` (T15). The reason is the customer's own words and optional; it is
+ * kept with the quotation and read by the business.
+ */
+export interface DeclineQuotationBody {
+  /** At most 500 characters. */
+  reason?: string;
+}
+
 // ---- Responses -------------------------------------------------------------------------------
 
 export interface QuotationLineDto {
@@ -150,16 +160,56 @@ export interface QuotationDocumentDto {
   respondedAt: string | null;
 }
 
+/** The quotation that took a withdrawn one's place, once it has been sent to the customer. */
+export interface QuotationReplacementDto {
+  id: string;
+  reference: string;
+}
+
 /**
- * `GET /quotations/:id`: what the customer sees. The key list is pinned by a test, so a column added
- * to the table never reaches a customer by accident.
+ * `GET /quotations/:id`, and the answer to accepting or declining it: what the customer sees. The key
+ * list is pinned by a test, so a column added to the table never reaches a customer by accident.
  */
 export interface CustomerQuotationDto extends QuotationDocumentDto {
   /** The customer's own request, for the link back. */
   requestId: string;
+  /**
+   * The quotation that replaced this one, only once the customer has been sent it (a draft
+   * replacement is not theirs to know about). Lets a withdrawn quotation point to the current one.
+   */
+  replacedBy: QuotationReplacementDto | null;
   /** True only when an admin looks at a draft the customer cannot see yet. */
   preview: boolean;
 }
+
+/**
+ * A quotation the customer was sent, in a list: on their request's page and in "Awaiting your
+ * decision". Never a draft, and nothing internal. `status` is what it is now (a sent one past its last
+ * day reads `EXPIRED`).
+ */
+export interface CustomerQuotationSummaryDto {
+  id: string;
+  reference: string;
+  status: QuotationStatus;
+  statusLabel: string;
+  totalAmount: string;
+  currencyCode: string;
+  /** `YYYY-MM-DD`: the customer may answer until the end of this day in the business time zone. */
+  validUntil: string;
+  sentAt: string;
+  respondedAt: string | null;
+  replacedBy: QuotationReplacementDto | null;
+}
+
+/** One row of `GET /quotations/me`: the summary and the request it belongs to. */
+export interface CustomerQuotationListItemDto extends CustomerQuotationSummaryDto {
+  requestId: string;
+  requestReference: string;
+  serviceName: string;
+}
+
+/** `GET /quotations/me`: the customer's non-draft quotations, the ones awaiting an answer first. */
+export type CustomerQuotationListResponse = PaginatedResponse<CustomerQuotationListItemDto>;
 
 /** A quotation in a list (the request page, a customer's history). */
 export interface QuotationSummaryDto {

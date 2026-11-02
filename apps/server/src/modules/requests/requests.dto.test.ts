@@ -31,12 +31,32 @@ function row(overrides: Partial<RequestDetailRow> = {}): RequestDetailRow {
     cancelledAt: null,
     cancelCustomerMessage: null,
     customer: { userId: OWNER_USER_ID },
+    quotations: [],
     notes: [],
     ...overrides,
   };
 }
 
-const VIEWER = { businessName: "CoolBreeze Home Services" };
+// 2 March 2026, 04:00 in New York.
+const NOW = new Date("2026-03-02T09:00:00.000Z");
+const VIEWER = { businessName: "CoolBreeze Home Services", now: NOW, timeZone: "America/New_York" };
+
+type QuotationRow = RequestDetailRow["quotations"][number];
+
+function quotationRow(overrides: Partial<QuotationRow> = {}): QuotationRow {
+  return {
+    id: "5a1b2c3d-0000-4000-8000-000000000001",
+    reference: "QT-2026-00007",
+    status: "SENT",
+    currencyCode: "USD",
+    totalAmount: { toFixed: () => "230.08" } as QuotationRow["totalAmount"],
+    validUntil: new Date("2026-03-16T00:00:00.000Z"),
+    sentAt: new Date("2026-03-01T15:00:00.000Z"),
+    respondedAt: null,
+    replacedBy: null,
+    ...overrides,
+  };
+}
 
 describe("toCustomerRequestListItem", () => {
   it("returns the fields of a list row and nothing else", () => {
@@ -77,6 +97,75 @@ describe("toCustomerRequestListItem", () => {
   });
 });
 
+describe("toCustomerRequestDto: quotations (T15)", () => {
+  it("lists the quotations the customer was sent, with exactly the fields they may see", () => {
+    const dto = toCustomerRequestDto({
+      row: row({ quotations: [quotationRow()] }),
+      timeline: [],
+      viewer: VIEWER,
+    });
+
+    expect(dto.quotations).toEqual([
+      {
+        id: "5a1b2c3d-0000-4000-8000-000000000001",
+        reference: "QT-2026-00007",
+        status: "SENT",
+        statusLabel: "Sent",
+        totalAmount: "230.08",
+        currencyCode: "USD",
+        validUntil: "2026-03-16",
+        sentAt: "2026-03-01T15:00:00.000Z",
+        respondedAt: null,
+        replacedBy: null,
+      },
+    ]);
+  });
+
+  it("reads a sent quotation past its last day as expired, before the sync has saved it", () => {
+    const dto = toCustomerRequestDto({
+      row: row({
+        quotations: [quotationRow({ validUntil: new Date("2026-03-01T00:00:00.000Z") })],
+      }),
+      timeline: [],
+      viewer: VIEWER,
+    });
+
+    expect(dto.quotations[0]).toMatchObject({ status: "EXPIRED", statusLabel: "Expired" });
+  });
+
+  it("points a withdrawn quotation to its replacement only once the replacement was sent", () => {
+    const replacedBy = { id: "5a1b2c3d-0000-4000-8000-000000000002", reference: "QT-2026-00008" };
+    const sentReplacement = toCustomerRequestDto({
+      row: row({
+        quotations: [quotationRow({ status: "VOID", replacedBy: { ...replacedBy, sentAt: NOW } })],
+      }),
+      timeline: [],
+      viewer: VIEWER,
+    });
+    const draftReplacement = toCustomerRequestDto({
+      row: row({
+        quotations: [quotationRow({ status: "VOID", replacedBy: { ...replacedBy, sentAt: null } })],
+      }),
+      timeline: [],
+      viewer: VIEWER,
+    });
+
+    expect(sentReplacement.quotations[0]?.replacedBy).toEqual(replacedBy);
+    expect(draftReplacement.quotations[0]?.replacedBy).toBeNull();
+    expect(JSON.stringify(draftReplacement)).not.toContain("QT-2026-00008");
+  });
+
+  it("refuses to serialize a draft, whatever the query returned", () => {
+    expect(() =>
+      toCustomerRequestDto({
+        row: row({ quotations: [quotationRow({ status: "DRAFT", sentAt: null })] }),
+        timeline: [],
+        viewer: VIEWER,
+      }),
+    ).toThrow(/draft quotation/i);
+  });
+});
+
 describe("toCustomerRequestDto", () => {
   it("has exactly the fields a customer may see (an allowlist, so a new column cannot leak)", () => {
     const dto = toCustomerRequestDto({ row: row(), timeline: [], viewer: VIEWER });
@@ -97,6 +186,7 @@ describe("toCustomerRequestDto", () => {
         "preferredStart",
         "preferredEnd",
         "cancellation",
+        "quotations",
         "notes",
         "timeline",
       ].sort(),

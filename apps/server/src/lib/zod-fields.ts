@@ -97,3 +97,30 @@ export function toTwoPlaces(value: string): string {
   const [whole = "0", fraction = ""] = value.split(".");
   return `${whole.replace(/^0+(?=\d)/, "")}.${fraction.padEnd(2, "0")}`;
 }
+
+/**
+ * A list filter that takes one or several values of an enum, as repeated parameters
+ * (`status=A&status=B`) or comma-separated (`status=A,B`), so a link in the address bar and a form
+ * can both express it. Blank entries are ignored and repeats collapse; when nothing is left there is
+ * no filter. A value outside the enum is `422`, named in the message.
+ */
+export function enumListFilter<const Values extends readonly [string, ...string[]]>(
+  values: Values,
+  name: string,
+) {
+  return z.preprocess(
+    (value) => {
+      if (value === undefined) {
+        return undefined;
+      }
+      const parts = (Array.isArray(value) ? value : [value])
+        .flatMap((entry: unknown) => (typeof entry === "string" ? entry.split(",") : [entry]))
+        .map((entry: unknown) => (typeof entry === "string" ? entry.trim() : entry))
+        .filter((entry) => entry !== "");
+      return parts.length === 0 ? undefined : [...new Set(parts)];
+    },
+    z
+      .array(z.enum(values, { error: `${name} must be one or more of: ${values.join(", ")}.` }))
+      .optional(),
+  );
+}

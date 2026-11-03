@@ -83,6 +83,16 @@ export const ErrorCode = {
    * was withdrawn. `details.currentStatus` is what it is now; the message says which, in words.
    */
   QUOTATION_NOT_AVAILABLE: "QUOTATION_NOT_AVAILABLE",
+
+  // Scheduling (T17)
+  /**
+   * 409 — the technician already has a scheduled or in-progress job that overlaps the times asked
+   * for (D-25). `details` names the first of them: `conflictJobId`, `conflictReference`,
+   * `conflictStart`, `conflictEnd` (ISO 8601 instants) and `conflictCount`.
+   */
+  SCHEDULING_CONFLICT: "SCHEDULING_CONFLICT",
+  /** 422 — the technician chosen for a job is inactive, so they cannot be given new work (FR-061). */
+  TECHNICIAN_INACTIVE: "TECHNICIAN_INACTIVE",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

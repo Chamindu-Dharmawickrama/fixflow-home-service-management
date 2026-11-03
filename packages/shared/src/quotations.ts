@@ -22,6 +22,11 @@ export const QuotationAction = {
   VOID: "VOID",
   /** Start a replacement draft from a sent quotation. */
   REPLACE: "REPLACE",
+  /**
+   * Turn the accepted quotation into a job (T17). Listed only while the request is still `ACCEPTED`,
+   * so it disappears once the job exists.
+   */
+  CREATE_WORK_ORDER: "CREATE_WORK_ORDER",
 } as const;
 export type QuotationAction = (typeof QuotationAction)[keyof typeof QuotationAction];
 

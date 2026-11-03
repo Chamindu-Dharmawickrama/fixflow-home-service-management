@@ -22,7 +22,10 @@ const row: Technician = {
   updatedAt: new Date("2026-11-01T09:30:00.000Z"),
 };
 
+const JOB_ID = "b4a1f5c2-3d6e-4c7a-9b8d-2e1f0a9b8c7d";
+
 const assignment = (overrides: Partial<AssignmentRow> = {}): AssignmentRow => ({
+  id: JOB_ID,
   reference: "JOB-2026-00007",
   serviceNameSnapshot: "AC Diagnostic Visit",
   status: "SCHEDULED",
@@ -54,11 +57,19 @@ describe("toTechnicianListItem", () => {
     expect(
       toTechnicianListItem(row, {
         count: 3,
-        next: { reference: "JOB-2026-00007", scheduledStart: new Date("2026-11-03T14:00:00.000Z") },
+        next: {
+          id: JOB_ID,
+          reference: "JOB-2026-00007",
+          scheduledStart: new Date("2026-11-03T14:00:00.000Z"),
+        },
       }),
     ).toMatchObject({
       upcomingJobCount: 3,
-      nextJob: { reference: "JOB-2026-00007", scheduledStart: "2026-11-03T14:00:00.000Z" },
+      nextJob: {
+        id: JOB_ID,
+        reference: "JOB-2026-00007",
+        scheduledStart: "2026-11-03T14:00:00.000Z",
+      },
     });
     expect(toTechnicianListItem(row, { count: 0, next: null }).nextJob).toBeNull();
   });
@@ -117,6 +128,7 @@ describe("toAdminTechnicianDto", () => {
     const dto = toAdminTechnicianDto(row, [first, second], []);
     expect(dto.upcomingJobCount).toBe(2);
     expect(dto.nextJob).toEqual({
+      id: JOB_ID,
       reference: "JOB-2026-00007",
       scheduledStart: "2026-11-03T14:00:00.000Z",
     });
@@ -133,9 +145,11 @@ describe("toAdminTechnicianDto", () => {
     expect(dto.upcomingAssignments).toEqual([]);
   });
 
-  it("shows an assignment as reference, customer, service, start, end and status only", () => {
+  it("shows an assignment as id, reference, customer, service, start, end and status only", () => {
     const [shown] = toAdminTechnicianDto(row, [assignment()], []).upcomingAssignments;
     expect(shown).toEqual({
+      // The id is for the job's page (T17); the reference is a label.
+      id: JOB_ID,
       reference: "JOB-2026-00007",
       customerName: "Alex Morgan",
       serviceName: "AC Diagnostic Visit",

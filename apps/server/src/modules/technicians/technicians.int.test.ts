@@ -980,6 +980,7 @@ describe("upcoming assignments and the 7-day hours, from the real work orders (F
 
     expect(dto.upcomingAssignments).toEqual([
       {
+        id: sooner.id,
         reference: sooner.reference,
         customerName: "Alex Morgan",
         serviceName: "AC Diagnostic Visit",
@@ -988,6 +989,7 @@ describe("upcoming assignments and the 7-day hours, from the real work orders (F
         status: "IN_PROGRESS",
       },
       {
+        id: later.id,
         reference: later.reference,
         customerName: "Alex Morgan",
         serviceName: "Washing Machine Repair",
@@ -997,7 +999,9 @@ describe("upcoming assignments and the 7-day hours, from the real work orders (F
       },
     ]);
     expect(dto.upcomingJobCount).toBe(2);
+    // The job's id is there for its page: the reference is a label, never the address.
     expect(dto.nextJob).toEqual({
+      id: sooner.id,
       reference: sooner.reference,
       scheduledStart: "2026-03-03T14:00:00.000Z",
     });
@@ -1255,6 +1259,7 @@ describe("upcoming assignments and the 7-day hours, from the real work orders (F
 
     expect(Object.keys(assignment ?? {}).sort()).toEqual([
       "customerName",
+      "id",
       "reference",
       "scheduledEnd",
       "scheduledStart",

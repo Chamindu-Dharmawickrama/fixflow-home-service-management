@@ -9,7 +9,7 @@ import {
   type RequestStatusAction,
   type ServiceRequestStatus,
 } from "@fixflow/shared";
-import { Ban, ChevronDown, ClipboardCheck, FilePlus2, RotateCcw } from "lucide-react";
+import { Ban, Briefcase, ChevronDown, ClipboardCheck, FilePlus2, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -28,6 +28,7 @@ import { apiFetch, describeApiError, isApiError } from "@/lib/api";
 
 import { adminQuotationPath } from "../lib/quotations";
 import { type OfferedAction, REQUEST_ACTION_LABELS, splitActions } from "../lib/request-actions";
+import { CreateJobButton } from "./create-job-button";
 
 export interface RequestActionsProps {
   requestId: string;
@@ -37,6 +38,8 @@ export interface RequestActionsProps {
   status: ServiceRequestStatus;
   /** What the server allows now, the most likely next step first (D-43). */
   actions: readonly RequestAction[];
+  /** The quotation the customer accepted, which "Create job" turns into a job. */
+  acceptedQuotationId?: string | null | undefined;
 }
 
 type DialogKind = typeof RequestAction.CANCEL | typeof RequestAction.REOPEN | null;
@@ -44,6 +47,7 @@ type DialogKind = typeof RequestAction.CANCEL | typeof RequestAction.REOPEN | nu
 const ACTION_ICONS = {
   [RequestAction.START_REVIEW]: ClipboardCheck,
   [RequestAction.CREATE_QUOTATION]: FilePlus2,
+  [RequestAction.CREATE_WORK_ORDER]: Briefcase,
   [RequestAction.REOPEN]: RotateCcw,
   [RequestAction.CANCEL]: Ban,
 } as const;
@@ -71,6 +75,7 @@ export function RequestActions({
   customerName,
   status,
   actions,
+  acceptedQuotationId = null,
 }: RequestActionsProps) {
   const router = useRouter();
   const [dialog, setDialog] = useState<DialogKind>(null);
@@ -181,6 +186,10 @@ export function RequestActions({
       void createQuotation();
       return;
     }
+    if (action === RequestAction.CREATE_WORK_ORDER) {
+      // Performed by its own button (`CreateJobButton`), which is always the main one.
+      return;
+    }
     openingDialogFromMenu.current = fromMenu;
     setDialog(action);
   };
@@ -193,7 +202,11 @@ export function RequestActions({
 
   return (
     <>
-      {primary === undefined || PrimaryIcon === null ? null : (
+      {primary === RequestAction.CREATE_WORK_ORDER ? (
+        acceptedQuotationId === null ? null : (
+          <CreateJobButton quotationId={acceptedQuotationId} />
+        )
+      ) : primary === undefined || PrimaryIcon === null ? null : (
         <Button
           onClick={() => choose(primary, false)}
           loading={pending !== null && pending === primary}

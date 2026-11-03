@@ -444,3 +444,47 @@ describe("RequestActions: creating a quotation (FR-040)", () => {
     expect(button("Create quotation")).toBeEnabled();
   });
 });
+
+describe("RequestActions: creating the job (T17)", () => {
+  const QUOTATION = "6f1c7a0e-5d0b-4f55-9d52-0d8d1c3b8a11";
+  const { CREATE_WORK_ORDER } = RequestAction;
+
+  it("puts 'Create job' on the button of an accepted request, with cancelling in the menu", async () => {
+    const user = renderActions({
+      status: "ACCEPTED",
+      actions: [CREATE_WORK_ORDER, CANCEL],
+      acceptedQuotationId: QUOTATION,
+    });
+
+    expect(button("Create job")).toBeEnabled();
+    await user.click(button("More actions"));
+    expect(await screen.findByRole("menuitem", { name: "Cancel request" })).toBeVisible();
+    expect(screen.queryByRole("menuitem", { name: "Create job" })).not.toBeInTheDocument();
+  });
+
+  it("makes the job from the accepted quotation and opens it for scheduling", async () => {
+    apiFetchMock.mockResolvedValue({ id: "job-1" });
+    const user = renderActions({
+      status: "ACCEPTED",
+      actions: [CREATE_WORK_ORDER, CANCEL],
+      acceptedQuotationId: QUOTATION,
+    });
+
+    await user.click(button("Create job"));
+
+    expect(apiFetchMock).toHaveBeenCalledWith(`/admin/quotations/${QUOTATION}/work-order`, {
+      method: "POST",
+    });
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/app/jobs/job-1?schedule=1"));
+  });
+
+  it("draws no button when the server lists the action but the accepted quotation is not known", () => {
+    renderActions({ status: "ACCEPTED", actions: [CREATE_WORK_ORDER], acceptedQuotationId: null });
+    expect(screen.queryByRole("button", { name: "Create job" })).not.toBeInTheDocument();
+  });
+
+  it("offers no 'Create job' for a request the server does not list it for", () => {
+    renderActions({ status: "UNDER_REVIEW", actions: [CREATE_QUOTATION, CANCEL] });
+    expect(screen.queryByRole("button", { name: "Create job" })).not.toBeInTheDocument();
+  });
+});

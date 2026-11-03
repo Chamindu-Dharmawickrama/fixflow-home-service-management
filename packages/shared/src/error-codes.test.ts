@@ -48,6 +48,9 @@ describe("ErrorCode", () => {
         "QUOTATION_NOT_EDITABLE",
         // T15 — customer decisions
         "QUOTATION_NOT_AVAILABLE",
+        // T17 — scheduling
+        "SCHEDULING_CONFLICT",
+        "TECHNICIAN_INACTIVE",
       ].sort(),
     );
   });

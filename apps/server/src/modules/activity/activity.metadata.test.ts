@@ -142,3 +142,34 @@ describe("validateActivityMetadata", () => {
     }
   });
 });
+
+describe("the appointment keys of a reschedule (FR-057)", () => {
+  it("accepts the new and the previous appointment and technician as ISO instants and ids", () => {
+    const input = {
+      workOrderReference: "JOB-2026-00007",
+      scheduledStart: "2026-03-04T19:00:00.000Z",
+      scheduledEnd: "2026-03-04T21:00:00.000Z",
+      previousScheduledStart: "2026-03-03T15:00:00.000Z",
+      previousScheduledEnd: "2026-03-03T17:00:00.000Z",
+      technicianId: "5b2d6d57-97b7-4d0a-9b9b-3e0d1e1b8c11",
+      previousTechnicianId: "0b6c1e0e-6f1a-4b0e-9f1d-2d9d3a7c9a11",
+    };
+    expect(validateActivityMetadata(input)).toEqual(input);
+  });
+
+  it("holds them to strings, so a Date object cannot be stored by mistake", () => {
+    expect(() => validateActivityMetadata({ previousScheduledStart: new Date() })).toThrow(
+      ActivityValidationError,
+    );
+    expect(() => validateActivityMetadata({ previousScheduledEnd: 1772550000000 })).toThrow(
+      ActivityValidationError,
+    );
+  });
+
+  it("still has no place for free text such as the reason", () => {
+    expect(() => validateActivityMetadata({ reason: "The part is late." })).toThrow(
+      ActivityValidationError,
+    );
+    expect(Object.keys(ACTIVITY_METADATA_KEYS)).not.toContain("reason");
+  });
+});

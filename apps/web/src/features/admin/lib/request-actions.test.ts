@@ -40,17 +40,19 @@ describe("splitActions", () => {
     expect(splitActions([START_REVIEW, REOPEN, CANCEL]).menu).toEqual([REOPEN, CANCEL]);
   });
 
-  it("draws nothing for an action no screen performs yet: no button and no menu entry (no dead UI)", () => {
-    // An accepted request: the server lists the work order (T15), which T17 builds.
+  it("puts creating the job on the button of an accepted request, with cancelling in the menu (T17)", () => {
     expect(splitActions([CREATE_WORK_ORDER, CANCEL])).toEqual({
-      primary: undefined,
+      primary: CREATE_WORK_ORDER,
       menu: [CANCEL],
     });
-    expect(splitActions([CREATE_WORK_ORDER])).toEqual({ primary: undefined, menu: [] });
-    expect(splitActions([START_REVIEW, CREATE_WORK_ORDER, CANCEL])).toEqual({
-      primary: START_REVIEW,
-      menu: [CANCEL],
-    });
+    expect(splitActions([CREATE_WORK_ORDER])).toEqual({ primary: CREATE_WORK_ORDER, menu: [] });
+  });
+
+  it("offers every action the server lists: none is dropped because no screen performs it", () => {
+    for (const action of Object.values(RequestAction)) {
+      const { primary, menu } = splitActions([action]);
+      expect([primary, ...menu].filter((offered) => offered !== undefined)).toEqual([action]);
+    }
   });
 
   it("does not change what it was given", () => {
@@ -61,6 +63,10 @@ describe("splitActions", () => {
 });
 
 describe("REQUEST_ACTION_LABELS", () => {
+  it("calls the work-order action 'Create job', the word used everywhere else (T17)", () => {
+    expect(REQUEST_ACTION_LABELS[CREATE_WORK_ORDER]).toBe("Create job");
+  });
+
   it("names every action", () => {
     for (const action of Object.values(RequestAction)) {
       expect(REQUEST_ACTION_LABELS[action]).toMatch(/\S/);

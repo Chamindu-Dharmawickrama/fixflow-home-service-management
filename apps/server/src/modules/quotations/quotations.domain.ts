@@ -9,6 +9,7 @@ import {
   type QuotationLineBody,
   QuotationStatus,
   quotationStatusLabel,
+  ServiceRequestStatus,
 } from "@fixflow/shared";
 
 import { startOfBusinessDay } from "../../lib/business-day.js";
@@ -172,6 +173,11 @@ export function defaultValidUntil(now: Date, timeZone: string, validityDays: num
 export interface QuotationActionContext {
   /** The request already has a draft quotation, so a second one (a replacement) cannot start. */
   requestHasDraft?: boolean;
+  /**
+   * The status of the quotation's request. An accepted quotation can become a job only while its
+   * request is still `ACCEPTED` (a request that was cancelled or already converted cannot).
+   */
+  requestStatus?: ServiceRequestStatus;
 }
 
 /**
@@ -190,6 +196,10 @@ export function availableQuotationActions(
       return context.requestHasDraft === true
         ? [QuotationAction.VOID]
         : [QuotationAction.REPLACE, QuotationAction.VOID];
+    case Q.ACCEPTED:
+      return context.requestStatus === ServiceRequestStatus.ACCEPTED
+        ? [QuotationAction.CREATE_WORK_ORDER]
+        : [];
     default:
       return [];
   }

@@ -107,7 +107,7 @@ async function summariseUpcoming(
   }
   const jobs = await db.workOrder.findMany({
     where: { technicianId: { in: [...ids] }, ...upcomingWhere(window) },
-    select: { technicianId: true, reference: true, scheduledStart: true },
+    select: { technicianId: true, id: true, reference: true, scheduledStart: true },
     orderBy: [{ scheduledStart: "asc" }, { id: "asc" }],
   });
   for (const job of jobs) {
@@ -117,7 +117,7 @@ async function summariseUpcoming(
     }
     summary.count += 1;
     // Soonest first, so the first one seen is the next job.
-    summary.next ??= { reference: job.reference, scheduledStart: job.scheduledStart };
+    summary.next ??= { id: job.id, reference: job.reference, scheduledStart: job.scheduledStart };
   }
   return summaries;
 }
@@ -242,6 +242,7 @@ export async function getAdminTechnician(
       scheduledStart: { lt: window.until },
     },
     select: {
+      id: true,
       reference: true,
       serviceNameSnapshot: true,
       status: true,
@@ -257,6 +258,7 @@ export async function getAdminTechnician(
       ? []
       : [
           {
+            id: job.id,
             reference: job.reference,
             serviceNameSnapshot: job.serviceNameSnapshot,
             status: job.status,

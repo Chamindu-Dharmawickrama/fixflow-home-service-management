@@ -31,6 +31,7 @@ export const NAVIGATION = {
       items: [
         { label: "Dashboard", href: "/app/dashboard", icon: "layout-dashboard" },
         { label: "Requests", href: "/app/requests", icon: "inbox" },
+        { label: "Jobs", href: "/app/jobs", icon: "briefcase" },
         { label: "Customers", href: "/app/customers", icon: "users" },
         { label: "Technicians", href: "/app/technicians", icon: "wrench" },
       ],

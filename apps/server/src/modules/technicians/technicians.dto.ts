@@ -30,7 +30,7 @@ export function colorOf(stored: string): TechnicianColor {
 /** What the list shows of a technician's workload. */
 export interface UpcomingSummary {
   count: number;
-  next: { reference: string; scheduledStart: Date } | null;
+  next: { id: string; reference: string; scheduledStart: Date } | null;
 }
 
 export function toTechnicianListItem(
@@ -50,6 +50,7 @@ export function toTechnicianListItem(
       upcoming.next === null
         ? null
         : {
+            id: upcoming.next.id,
             reference: upcoming.next.reference,
             scheduledStart: upcoming.next.scheduledStart.toISOString(),
           },
@@ -59,6 +60,7 @@ export function toTechnicianListItem(
 
 /** An upcoming job as read from the database, with its customer's name. */
 export interface AssignmentRow {
+  id: string;
   reference: string;
   serviceNameSnapshot: string;
   status: WorkOrderStatus;
@@ -69,6 +71,7 @@ export interface AssignmentRow {
 
 export function toAssignmentDto(row: AssignmentRow): TechnicianAssignmentDto {
   return {
+    id: row.id,
     reference: row.reference,
     customerName: row.customerName,
     serviceName: row.serviceNameSnapshot,

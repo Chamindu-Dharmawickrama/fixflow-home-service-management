@@ -11,7 +11,7 @@ import {
 import { z } from "zod";
 
 import { createPaginationSchema } from "../../lib/pagination.js";
-import { optionalText, requiredText } from "../../lib/zod-fields.js";
+import { enumListFilter, optionalText, requiredText } from "../../lib/zod-fields.js";
 import { ACTIONS_REQUIRING_REASON } from "./requests.domain.js";
 
 const statusValues = Object.values(ServiceRequestStatus) as [
@@ -19,28 +19,8 @@ const statusValues = Object.values(ServiceRequestStatus) as [
   ...ServiceRequestStatus[],
 ];
 
-/**
- * The `status` filter takes one or several statuses, as repeated parameters (`status=A&status=B`)
- * or comma-separated (`status=A,B`), so a link in the address bar and a form can both express it.
- * Blank entries are ignored and repeats collapse.
- */
-const statusFilter = z.preprocess(
-  (value) => {
-    if (value === undefined) {
-      return undefined;
-    }
-    const parts = (Array.isArray(value) ? value : [value])
-      .flatMap((entry: unknown) => (typeof entry === "string" ? entry.split(",") : [entry]))
-      .map((entry: unknown) => (typeof entry === "string" ? entry.trim() : entry))
-      .filter((entry) => entry !== "");
-    return parts.length === 0 ? undefined : [...new Set(parts)];
-  },
-  z
-    .array(
-      z.enum(statusValues, { error: `status must be one or more of: ${statusValues.join(", ")}.` }),
-    )
-    .optional(),
-);
+/** The `status` filter takes one or several statuses (see {@link enumListFilter}). */
+const statusFilter = enumListFilter(statusValues, "status");
 
 const dateOnly = (label: string) =>
   z

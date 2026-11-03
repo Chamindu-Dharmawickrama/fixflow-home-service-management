@@ -231,7 +231,8 @@ describe("POST /quotations/:id/accept (G.1)", () => {
       respondedAt: "2026-03-03T15:30:00.000Z",
       declineReason: null,
       requestStatus: "ACCEPTED",
-      availableActions: [],
+      // T17: an accepted quotation whose request is still accepted can become a job (D-43).
+      availableActions: ["CREATE_WORK_ORDER"],
     });
     expect(quotation.timeline.map((event) => event.summary)).toContain(
       `Alex Morgan accepted quotation ${sent.reference}.`,

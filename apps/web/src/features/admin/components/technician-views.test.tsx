@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { adminTechnician, TECHNICIAN_ID, technicianListItem } from "../test-fixtures";
+import { adminTechnician, JOB_ID, TECHNICIAN_ID, technicianListItem } from "../test-fixtures";
 import {
   AvailabilityCard,
   TechnicianDetailsCard,
@@ -10,6 +10,7 @@ import {
 import { TechniciansTable } from "./technicians-table";
 
 const TZ = "America/New_York";
+const SECOND_JOB_ID = "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f";
 
 function renderTable(technicians = [technicianListItem()]) {
   return render(
@@ -95,7 +96,11 @@ describe("TechniciansTable", () => {
       technicianListItem({
         upcomingJobCount: 3,
         // 14:00Z on 3 Mar is 9:00 AM in New York (EST).
-        nextJob: { reference: "JOB-2026-00007", scheduledStart: "2026-03-03T14:00:00.000Z" },
+        nextJob: {
+          id: JOB_ID,
+          reference: "JOB-2026-00007",
+          scheduledStart: "2026-03-03T14:00:00.000Z",
+        },
       }),
     ]);
 
@@ -103,6 +108,24 @@ describe("TechniciansTable", () => {
     expect(row.getByText("3")).toBeVisible();
     expect(row.getByText("Mar 3, 2026, 9:00 AM")).toBeVisible();
     expect(row.getByText("JOB-2026-00007")).toBeVisible();
+  });
+
+  it("links the next job to its page, above the row's own link to the technician (T17)", () => {
+    renderTable([
+      technicianListItem({
+        upcomingJobCount: 1,
+        nextJob: {
+          id: JOB_ID,
+          reference: "JOB-2026-00007",
+          scheduledStart: "2026-03-03T14:00:00.000Z",
+        },
+      }),
+    ]);
+
+    const link = within(rowOf()).getByRole("link", { name: "JOB-2026-00007" });
+    expect(link).toHaveAttribute("href", `/app/jobs/${JOB_ID}`);
+    // The row is one big link to the technician; the job's link has to sit above it to be clickable.
+    expect(link).toHaveClass("relative", "z-10");
   });
 
   it("never shows the internal notes (the list does not carry them)", () => {
@@ -159,6 +182,7 @@ describe("AvailabilityCard", () => {
 
 describe("UpcomingAssignmentsCard", () => {
   const job = (overrides = {}) => ({
+    id: JOB_ID,
     reference: "JOB-2026-00007",
     customerName: "Alex Morgan",
     serviceName: "AC Diagnostic Visit",
@@ -176,6 +200,7 @@ describe("UpcomingAssignmentsCard", () => {
           upcomingAssignments: [
             job(),
             job({
+              id: SECOND_JOB_ID,
               reference: "JOB-2026-00009",
               customerName: "Priya Shah",
               serviceName: "Washing Machine Repair",
@@ -203,14 +228,26 @@ describe("UpcomingAssignmentsCard", () => {
     expect(second.getByText("In progress")).toBeVisible();
   });
 
-  it("does not link the jobs: their pages do not exist yet", () => {
+  it("links each job to its page by id (T17: the pages exist now)", () => {
     render(
       <UpcomingAssignmentsCard
-        technician={adminTechnician({ upcomingJobCount: 1, upcomingAssignments: [job()] })}
+        technician={adminTechnician({
+          upcomingJobCount: 2,
+          upcomingAssignments: [job(), job({ id: SECOND_JOB_ID, reference: "JOB-2026-00009" })],
+        })}
         timeZone={TZ}
       />,
     );
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+
+    const table = within(screen.getByRole("table", { name: "Upcoming jobs for Jordan Lee" }));
+    expect(table.getByRole("link", { name: "JOB-2026-00007" })).toHaveAttribute(
+      "href",
+      `/app/jobs/${JOB_ID}`,
+    );
+    expect(table.getByRole("link", { name: "JOB-2026-00009" })).toHaveAttribute(
+      "href",
+      `/app/jobs/${SECOND_JOB_ID}`,
+    );
   });
 
   it("guides when there are no upcoming jobs", () => {

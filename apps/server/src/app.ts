@@ -22,6 +22,7 @@ import { createRequestsRouter } from "./modules/requests/requests.routes.js";
 import { createServicesRouter } from "./modules/services/services.routes.js";
 import { createSettingsRouter } from "./modules/settings/settings.routes.js";
 import { createAdminTechniciansRouter } from "./modules/technicians/technicians.routes.js";
+import { createAdminWorkOrdersRouter } from "./modules/work-orders/work-orders.routes.js";
 
 /** Largest JSON body accepted; larger requests get `413 PAYLOAD_TOO_LARGE`. */
 const JSON_BODY_LIMIT = "100kb";
@@ -82,6 +83,8 @@ export function createApp(deps: AppDeps, options: CreateAppOptions = {}): Expres
   // Mounted on `/admin` itself: it serves `/admin/requests/:id/quotations` and `/admin/quotations/...`
   // and puts the role check on each route, so it never answers for another module's `/admin/...` paths.
   app.use(`${API_PREFIX}/admin`, createAdminQuotationsRouter(deps));
+  // The same for jobs: `/admin/quotations/:id/work-order` and `/admin/work-orders/...`, role-checked per route.
+  app.use(`${API_PREFIX}/admin`, createAdminWorkOrdersRouter(deps));
   // These two serve both the public and the admin paths of their module (`/settings/public` and
   // `/admin/settings`, `/services` and `/admin/services`), so they are mounted on the prefix itself.
   app.use(API_PREFIX, createSettingsRouter(deps));

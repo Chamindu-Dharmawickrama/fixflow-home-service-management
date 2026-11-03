@@ -6,6 +6,8 @@ import {
   type AdminRequestListItemDto,
   type AdminTechnicianDto,
   type AdminTechnicianListItemDto,
+  type AdminWorkOrderDto,
+  type AdminWorkOrderListItemDto,
   type CustomerHistoryInvoiceDto,
   type CustomerHistoryJobDto,
   type CustomerHistoryQuotationDto,
@@ -374,4 +376,118 @@ export function adminTechnician(overrides: Partial<AdminTechnicianDto> = {}): Ad
     ],
     ...overrides,
   };
+}
+
+// ---- Jobs (T17) -----------------------------------------------------------------------------
+
+export const JOB_ID = "b4a1f5c2-3d6e-4c7a-9b8d-2e1f0a9b8c7d";
+
+/** A job in the list: scheduled for 10:00 to 12:00 on 3 March 2026 in New York, with Jordan. */
+export function jobListItem(
+  overrides: Partial<AdminWorkOrderListItemDto> = {},
+): AdminWorkOrderListItemDto {
+  return {
+    id: JOB_ID,
+    reference: "JOB-2026-00007",
+    status: "SCHEDULED",
+    statusLabel: "Scheduled",
+    serviceName: "AC Repair",
+    customerName: "Amara Okafor",
+    city: "Harbor City",
+    scheduledStart: "2026-03-03T15:00:00.000Z",
+    scheduledEnd: "2026-03-03T17:00:00.000Z",
+    technician: { id: TECHNICIAN_ID, name: "Jordan Lee", calendarColor: "blue" },
+    createdAt: "2026-03-01T14:05:00.000Z",
+    ...overrides,
+  };
+}
+
+/** A job in full. By default it is scheduled, so the page offers Reschedule. */
+export function adminJob(overrides: Partial<AdminWorkOrderDto> = {}): AdminWorkOrderDto {
+  return {
+    id: JOB_ID,
+    reference: "JOB-2026-00007",
+    status: "SCHEDULED",
+    statusLabel: "Scheduled",
+    scopeDescription:
+      "The outdoor unit hums and the house does not cool.\n\nAgreed work:\n- Diagnostic visit\n- Replace run capacitor",
+    serviceId: "5d3c2b1a-9f8e-4d7c-8b6a-5e4d3c2b1a09",
+    serviceName: "AC Repair",
+    scheduledStart: "2026-03-03T15:00:00.000Z",
+    scheduledEnd: "2026-03-03T17:00:00.000Z",
+    technician: {
+      id: TECHNICIAN_ID,
+      name: "Jordan Lee",
+      calendarColor: "blue",
+      phone: "(212) 555-0151",
+      email: "jordan.lee@coolbreeze.test",
+      isActive: true,
+    },
+    customer: {
+      id: CUSTOMER_ID,
+      name: "Amara Okafor",
+      email: "amara.okafor@example.test",
+      phone: "(212) 555-0100",
+    },
+    address: {
+      line1: "214 Larkspur Lane",
+      line2: null,
+      city: "Harbor City",
+      region: "NY",
+      postalCode: "10001",
+      accessNotes: "Side gate code is 4471.",
+    },
+    request: { id: REQUEST_ID, reference: "FF-2026-00012" },
+    quotation: {
+      id: QUOTATION_ID,
+      reference: "QT-2026-00009",
+      currencyCode: "USD",
+      subtotal: "252.00",
+      discountAmount: "0.00",
+      taxRate: "8.00",
+      taxAmount: "3.64",
+      totalAmount: "255.64",
+      lines: [
+        {
+          id: "line-1",
+          position: 1,
+          description: "Diagnostic visit",
+          quantity: "1.00",
+          unitPrice: "79.00",
+          taxable: false,
+          lineTotal: "79.00",
+        },
+        {
+          id: "line-2",
+          position: 2,
+          description: "Replace run capacitor",
+          quantity: "1.00",
+          unitPrice: "45.50",
+          taxable: true,
+          lineTotal: "45.50",
+        },
+      ],
+    },
+    startedAt: null,
+    completedAt: null,
+    createdBy: { name: "Morgan Reyes" },
+    createdAt: "2026-03-01T14:05:00.000Z",
+    updatedAt: "2026-03-02T09:30:00.000Z",
+    timeline: [],
+    availableActions: ["RESCHEDULE", "START", "MARK_NEEDS_RESCHEDULING", "CANCEL"],
+    ...overrides,
+  };
+}
+
+/** A job nobody has given a time yet. */
+export function unscheduledJob(overrides: Partial<AdminWorkOrderDto> = {}): AdminWorkOrderDto {
+  return adminJob({
+    status: "PENDING_SCHEDULING",
+    statusLabel: "Pending scheduling",
+    scheduledStart: null,
+    scheduledEnd: null,
+    technician: null,
+    availableActions: ["SCHEDULE", "CANCEL"],
+    ...overrides,
+  });
 }

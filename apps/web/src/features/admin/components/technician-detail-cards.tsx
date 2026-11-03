@@ -16,6 +16,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDate, formatTimeRange } from "@/lib/formatting/datetime";
 import { cn } from "@/lib/utils";
 
+import { adminJobPath } from "../lib/jobs";
 import { TECHNICIAN_COLOR_STYLES } from "../lib/technician-colors";
 import {
   dayTileLines,
@@ -219,7 +220,9 @@ export function UpcomingAssignmentsCard({
         <DataTable<TechnicianAssignmentDto>
           caption={`Upcoming jobs for ${name}`}
           rows={upcomingAssignments}
-          getRowId={(job) => job.reference}
+          getRowId={(job) => job.id}
+          // A job's reference is a label; its page is keyed by id (T17, F-74).
+          rowHref={(job) => adminJobPath(job.id)}
           columns={assignmentColumns(timeZone)}
         />
       )}

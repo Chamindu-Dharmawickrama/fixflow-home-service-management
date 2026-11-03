@@ -53,6 +53,8 @@ export type AdminTechnicianSortField = (typeof ADMIN_TECHNICIAN_SORT_FIELDS)[num
 
 /** The job a technician does next, for the list. */
 export interface TechnicianNextJobDto {
+  /** The job's id, for its page (`/app/jobs/:id`); the reference is a label, never the address. */
+  id: string;
   /** `JOB-YYYY-NNNNN`. */
   reference: string;
   /** ISO 8601 instant. */
@@ -81,6 +83,8 @@ export interface AdminTechnicianListItemDto {
 
 /** One upcoming assignment on a technician's page. */
 export interface TechnicianAssignmentDto {
+  /** The job's id, for its page (`/app/jobs/:id`). */
+  id: string;
   reference: string;
   customerName: string;
   serviceName: string;

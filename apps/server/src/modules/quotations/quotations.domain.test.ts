@@ -228,10 +228,21 @@ describe("availableQuotationActions (D-43)", () => {
     ]);
   });
 
-  it("offers nothing on an answered, expired or voided quotation", () => {
-    for (const status of ["ACCEPTED", "DECLINED", "EXPIRED", "VOID"] as const) {
+  it("offers nothing on a declined, expired or voided quotation", () => {
+    for (const status of ["DECLINED", "EXPIRED", "VOID"] as const) {
       expect(availableQuotationActions(status)).toEqual([]);
+      expect(availableQuotationActions(status, { requestStatus: "ACCEPTED" })).toEqual([]);
     }
+  });
+
+  it("offers an accepted quotation to be made a job, only while its request is still accepted (T17)", () => {
+    expect(availableQuotationActions("ACCEPTED", { requestStatus: "ACCEPTED" })).toEqual([
+      QuotationAction.CREATE_WORK_ORDER,
+    ]);
+    for (const requestStatus of ["CONVERTED_TO_JOB", "CANCELLED", "QUOTED"] as const) {
+      expect(availableQuotationActions("ACCEPTED", { requestStatus })).toEqual([]);
+    }
+    expect(availableQuotationActions("ACCEPTED")).toEqual([]);
   });
 });
 

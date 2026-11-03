@@ -22,6 +22,7 @@ import { toast } from "@/components/ui/sonner";
 import { apiFetch, describeApiError, isApiError } from "@/lib/api";
 
 import { adminQuotationPath } from "../lib/quotations";
+import { CreateJobButton } from "./create-job-button";
 import { QuotationVoidDialog } from "./quotation-void-dialog";
 
 /**
@@ -47,6 +48,7 @@ export function QuotationActions({
   const openingDialogFromMenu = useRef(false);
 
   const canReplace = quotation.availableActions.includes(QuotationAction.REPLACE);
+  const canCreateJob = quotation.availableActions.includes(QuotationAction.CREATE_WORK_ORDER);
   const canVoid =
     quotation.availableActions.includes(QuotationAction.VOID) &&
     (quotation.status === QuotationStatus.DRAFT || quotation.status === QuotationStatus.SENT);
@@ -82,6 +84,8 @@ export function QuotationActions({
 
   return (
     <>
+      {canCreateJob ? <CreateJobButton quotationId={quotation.id} /> : null}
+
       <Button
         variant="outline"
         onClick={() => {

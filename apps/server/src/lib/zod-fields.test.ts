@@ -5,6 +5,7 @@ import { fieldErrorsFromZod } from "./zod-errors.js";
 import {
   DECIMAL_2DP,
   emailAddress,
+  enumListFilter,
   isHttpsUrl,
   optionalHttpsUrl,
   optionalKey,
@@ -166,5 +167,34 @@ describe("DECIMAL_2DP and toTwoPlaces", () => {
     expect(toTwoPlaces("0")).toBe("0.00");
     expect(toTwoPlaces("0.5")).toBe("0.50");
     expect(toTwoPlaces("007.5")).toBe("7.50");
+  });
+});
+
+describe("enumListFilter", () => {
+  const filter = enumListFilter(["OPEN", "SHUT", "LOST"] as const, "state");
+
+  it("reads one value, repeated values or a comma-separated list, once each", () => {
+    expect(filter.parse("OPEN")).toEqual(["OPEN"]);
+    expect(filter.parse(["OPEN", "SHUT"])).toEqual(["OPEN", "SHUT"]);
+    expect(filter.parse("OPEN,SHUT,OPEN")).toEqual(["OPEN", "SHUT"]);
+    expect(filter.parse(["OPEN,SHUT", "LOST"])).toEqual(["OPEN", "SHUT", "LOST"]);
+  });
+
+  it("trims entries and ignores blank ones", () => {
+    expect(filter.parse(" OPEN , ,SHUT")).toEqual(["OPEN", "SHUT"]);
+  });
+
+  it("means no filter when nothing is left", () => {
+    expect(filter.parse(undefined)).toBeUndefined();
+    expect(filter.parse("")).toBeUndefined();
+    expect(filter.parse([",", " "])).toBeUndefined();
+  });
+
+  it("refuses a value outside the list, naming the field and the choices", () => {
+    const result = filter.safeParse("OPEN,GONE");
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toBe(
+      "state must be one or more of: OPEN, SHUT, LOST.",
+    );
   });
 });

@@ -1,5 +1,6 @@
 import { type AdminTechnicianListItemDto, technicianState } from "@fixflow/shared";
 import { Mail, Phone } from "lucide-react";
+import Link from "next/link";
 
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { DateTimeText } from "@/components/ui/date-time-text";
@@ -7,6 +8,7 @@ import { ReferenceText } from "@/components/ui/reference-text";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 
+import { adminJobPath } from "../lib/jobs";
 import { TECHNICIAN_COLOR_STYLES } from "../lib/technician-colors";
 import { adminTechnicianPath } from "../lib/technicians";
 import { SpecialtyTags } from "./specialty-tags";
@@ -104,10 +106,13 @@ function columnsFor(timeZone: string): DataTableColumn<AdminTechnicianListItemDt
               timeZone={timeZone}
               display="dateTime"
             />
-            <ReferenceText
-              reference={technician.nextJob.reference}
-              className="text-xs font-normal text-ink-secondary"
-            />
+            {/* The row is one big link to the technician; `relative z-10` keeps this second link clickable (T17, F-74). */}
+            <Link
+              href={adminJobPath(technician.nextJob.id)}
+              className="relative z-10 inline-flex min-h-6 items-center text-xs font-medium text-brand underline-offset-4 hover:underline"
+            >
+              <ReferenceText reference={technician.nextJob.reference} />
+            </Link>
           </span>
         ),
     },

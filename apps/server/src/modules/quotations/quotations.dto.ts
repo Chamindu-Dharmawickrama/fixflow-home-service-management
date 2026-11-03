@@ -157,7 +157,7 @@ export type QuotationSummaryRow = Prisma.QuotationGetPayload<{
   select: typeof QUOTATION_SUMMARY_SELECT;
 }>;
 
-function toLines(rows: QuotationDetailRow["lineItems"]): QuotationLineDto[] {
+export function toQuotationLines(rows: QuotationDetailRow["lineItems"]): QuotationLineDto[] {
   return rows.map((line) => ({
     id: line.id,
     position: line.position,
@@ -225,7 +225,7 @@ function toDocument(
     business,
     currencyCode: row.currencyCode,
     taxRate: row.taxRate.toFixed(2),
-    lines: toLines(row.lineItems),
+    lines: toQuotationLines(row.lineItems),
     subtotal: row.subtotal.toFixed(2),
     discountAmount: row.discountAmount.toFixed(2),
     taxableBase: row.taxableBase.toFixed(2),
@@ -387,6 +387,9 @@ export function toAdminQuotationDto(input: {
     replaces: row.replaces === null ? null : toLink(row.replaces, context),
     replacedBy: row.replacedBy === null ? null : toLink(row.replacedBy, context),
     timeline,
-    availableActions: availableQuotationActions(document.status, { requestHasDraft }),
+    availableActions: availableQuotationActions(document.status, {
+      requestHasDraft,
+      requestStatus: row.request.status,
+    }),
   };
 }

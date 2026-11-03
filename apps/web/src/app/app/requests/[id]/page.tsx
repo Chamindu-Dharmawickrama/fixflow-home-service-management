@@ -1,4 +1,4 @@
-import type { AdminRequestDto } from "@fixflow/shared";
+import { type AdminRequestDto, QuotationStatus } from "@fixflow/shared";
 import { SearchX } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -108,6 +108,10 @@ async function RequestContent({ params }: RequestPageProps) {
             customerName={request.customer.name}
             status={request.status}
             actions={request.availableActions}
+            acceptedQuotationId={
+              request.quotations.find((quotation) => quotation.status === QuotationStatus.ACCEPTED)
+                ?.id ?? null
+            }
           />
         }
       />

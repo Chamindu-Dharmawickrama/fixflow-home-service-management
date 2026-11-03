@@ -35,6 +35,9 @@ export const ACTIVITY_METADATA_KEYS = {
   preferredDate: "string",
   scheduledStart: "string",
   scheduledEnd: "string",
+  // A reschedule keeps the appointment it replaces (FR-057)
+  previousScheduledStart: "string",
+  previousScheduledEnd: "string",
   // Choices and flags
   preferredWindow: "string",
   visibility: "string",

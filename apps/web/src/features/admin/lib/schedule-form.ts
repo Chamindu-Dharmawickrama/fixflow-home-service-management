@@ -13,6 +13,8 @@ import {
 
 import { formatTimeRange } from "@/lib/formatting/datetime";
 
+import { shortDateLabel, shortWeekdayName } from "../calendar/lib/dates";
+
 /**
  * The scheduling dialog's rules, as pure functions (FR-053, FR-054, D-104). A person types a day and
  * a time of day as they read on the business's clocks; the API takes UTC instants. The conversion is
@@ -273,4 +275,43 @@ export function conflictSentence(
   if (first === undefined) return "";
   const more = others.length === 0 ? "" : ` and ${String(others.length)} more`;
   return `Conflicts with ${describeJobTime(first, timeZone)}${more}.`;
+}
+
+/** `Tue, Mar 3, 10:00 AM – 12:00 PM`: a slot with its day, on the business's clocks. */
+export function describeSlot(start: string, end: string, timeZone: string): string {
+  const { date } = instantToWallClock(start, timeZone);
+  return `${shortWeekdayName(date)}, ${shortDateLabel(date)}, ${formatTimeRange(start, end, timeZone)}`;
+}
+
+/**
+ * The sentence that states a reschedule before it is saved (spec §10.3: safe rescheduling): "Move
+ * JOB-2026-00031 from Tue, Mar 3, 10:00 AM – 12:00 PM to Wed, Mar 4, 2:00 – 4:00 PM?". When only the
+ * technician changes it says that instead, and when nothing changes there is nothing to confirm
+ * (`null`). The server still decides; this only lets the admin read what they are about to do.
+ */
+export function describeMove(
+  input: {
+    reference: string;
+    current: { start: string; end: string };
+    next: ScheduleWindow;
+    /** The chosen technician differs from the job's current one. */
+    technicianChanged: boolean;
+    technicianName: string | undefined;
+  },
+  timeZone: string,
+): string | null {
+  const nextStart = input.next.start.toISOString();
+  const nextEnd = input.next.end.toISOString();
+  const sameTime =
+    input.next.start.getTime() === Date.parse(input.current.start) &&
+    input.next.end.getTime() === Date.parse(input.current.end);
+  const who =
+    input.technicianChanged && input.technicianName !== undefined ? input.technicianName : null;
+  const from = describeSlot(input.current.start, input.current.end, timeZone);
+
+  if (sameTime) {
+    return who === null ? null : `Keep ${input.reference} at ${from} and give it to ${who}?`;
+  }
+  const to = describeSlot(nextStart, nextEnd, timeZone);
+  return `Move ${input.reference} from ${from} to ${to}${who === null ? "" : `, with ${who}`}?`;
 }

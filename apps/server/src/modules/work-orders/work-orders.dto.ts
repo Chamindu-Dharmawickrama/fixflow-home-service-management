@@ -2,6 +2,8 @@ import {
   type AdminTimelineEventDto,
   type AdminWorkOrderDto,
   type AdminWorkOrderListItemDto,
+  type CalendarItemDto,
+  type CalendarWaitingJobDto,
   type RequestAddressDto,
   type SchedulingConflictDto,
   workOrderStatusLabel,
@@ -60,6 +62,51 @@ export function toAdminWorkOrderListItem(row: AdminListRow): AdminWorkOrderListI
           },
     completedAt: row.completedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
+  };
+}
+
+function technicianRef(row: AdminListRow["technician"]): AdminWorkOrderListItemDto["technician"] {
+  return row === null
+    ? null
+    : { id: row.id, name: row.name, calendarColor: colorOf(row.calendarColor) };
+}
+
+/**
+ * A visit on the calendar (T19), from the list's columns. Only a job with both times is a visit: a
+ * row without them is skipped by the caller, so the shape never carries a null time.
+ */
+export function toCalendarItem(row: AdminListRow): CalendarItemDto | null {
+  if (row.scheduledStart === null || row.scheduledEnd === null) {
+    return null;
+  }
+  return {
+    id: row.id,
+    reference: row.reference,
+    status: row.status,
+    statusLabel: workOrderStatusLabel(row.status),
+    start: row.scheduledStart.toISOString(),
+    end: row.scheduledEnd.toISOString(),
+    technician: technicianRef(row.technician),
+    customerName: row.customer.user.name,
+    serviceName: row.serviceNameSnapshot,
+    city: row.addressCity,
+    availableActions: availableWorkOrderActions(row.status),
+  };
+}
+
+/** A job waiting for a time, as the calendar's side panel lists it. */
+export function toCalendarWaitingJob(row: AdminListRow): CalendarWaitingJobDto {
+  return {
+    id: row.id,
+    reference: row.reference,
+    status: row.status,
+    statusLabel: workOrderStatusLabel(row.status),
+    serviceName: row.serviceNameSnapshot,
+    customerName: row.customer.user.name,
+    city: row.addressCity,
+    scheduledStart: row.scheduledStart?.toISOString() ?? null,
+    scheduledEnd: row.scheduledEnd?.toISOString() ?? null,
+    technician: technicianRef(row.technician),
   };
 }
 

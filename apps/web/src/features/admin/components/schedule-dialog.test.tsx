@@ -751,6 +751,43 @@ describe("ScheduleDialog: rescheduling", () => {
     expect(within(dialog()).getByText(/not why/)).toBeVisible();
   });
 
+  it("states the move in words and keeps it up to date as the time and technician change", async () => {
+    serve({ technicians: () => [JORDAN, SAM] });
+    const user = userEvent.setup();
+    renderDialog({ job: SCHEDULED_JOB, rescheduling: true });
+    await screen.findByRole("option", { name: "Sam Ortiz" });
+    const summary = () => within(dialog()).queryByTestId("move-summary");
+
+    // Nothing changed yet: there is nothing to confirm.
+    expect(summary()).not.toBeInTheDocument();
+
+    fireEvent.change(date(), { target: { value: "2026-03-04" } });
+    fireEvent.change(startTime(), { target: { value: "14:00" } });
+    expect(summary()).toHaveTextContent(
+      "Move JOB-2026-00007 from Tue, Mar 3, 10:00 AM – 12:00 PM to Wed, Mar 4, 2:00 – 4:00 PM?",
+    );
+
+    await user.selectOptions(technician(), "Sam Ortiz");
+    expect(summary()).toHaveTextContent(
+      "Move JOB-2026-00007 from Tue, Mar 3, 10:00 AM – 12:00 PM to Wed, Mar 4, 2:00 – 4:00 PM, with Sam Ortiz?",
+    );
+
+    // Back to the original time: only the technician moves.
+    fireEvent.change(date(), { target: { value: "2026-03-03" } });
+    fireEvent.change(startTime(), { target: { value: "10:00" } });
+    expect(summary()).toHaveTextContent(
+      "Keep JOB-2026-00007 at Tue, Mar 3, 10:00 AM – 12:00 PM and give it to Sam Ortiz?",
+    );
+  });
+
+  it("states no move on a first booking", async () => {
+    serve();
+    const user = userEvent.setup();
+    renderDialog();
+    await fill(user);
+    expect(within(dialog()).queryByTestId("move-summary")).not.toBeInTheDocument();
+  });
+
   it("does not ask for a reason on a first booking", async () => {
     serve();
     renderDialog();

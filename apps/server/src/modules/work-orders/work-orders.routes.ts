@@ -4,9 +4,11 @@ import type { AppDeps } from "../../deps.js";
 import { rateLimitByName } from "../../middleware/rate-limit.js";
 import { validate } from "../../middleware/validate.js";
 import { authOf, createAuthMiddleware } from "../auth/auth.middleware.js";
+import { getCalendar } from "./work-orders.calendar.service.js";
 import { transitionWorkOrderStatus } from "./work-orders.lifecycle.service.js";
 import {
   adminWorkOrdersQuerySchema,
+  calendarQuerySchema,
   conflictsQuerySchema,
   quotationIdParamsSchema,
   scheduleWorkOrderBodySchema,
@@ -29,6 +31,7 @@ import {
  * - `GET /work-orders` lists jobs, `GET /work-orders/:id` reads one with its history;
  * - `GET /work-orders/conflicts` is the read-only pre-check the scheduling dialog runs;
  * - `PATCH /work-orders/:id/schedule` schedules or reschedules a job with a technician;
+ * - `GET /calendar` reads the visits in a range of business days, and the jobs waiting for a time (T19);
  * - `POST /work-orders/:id/transitions` starts, completes, cancels or marks a job as needing a new
  *   time (T18), with the notes and reasons each needs. The answer carries `meta.startedBeforeSchedule`.
  *
@@ -43,6 +46,11 @@ export function createAdminWorkOrdersRouter(deps: AppDeps): Router {
   // Each limit runs first, on its own registration: Express cannot type a validated body in a chain
   // that also holds an untyped handler.
   const write = [requireAdmin, rateLimitByName(deps, "adminWrite", byAdmin)];
+
+  router.get("/calendar", requireAdmin);
+  router.get("/calendar", validate({ query: calendarQuerySchema }), async (req, res) => {
+    res.json({ data: await getCalendar(deps, req.query) });
+  });
 
   router.post("/quotations/:id/work-order", ...write);
   router.post(

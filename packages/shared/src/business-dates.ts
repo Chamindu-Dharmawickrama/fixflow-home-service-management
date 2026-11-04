@@ -66,6 +66,22 @@ export function addDaysToDateOnly(value: string, days: number): string {
   return `${pad(moved.getUTCFullYear(), 4)}-${pad(moved.getUTCMonth() + 1, 2)}-${pad(moved.getUTCDate(), 2)}`;
 }
 
+/**
+ * How many calendar days `to` is after `from` (negative when it is before): `2026-03-02` to
+ * `2026-03-08` is 6. Calendar arithmetic, like {@link addDaysToDateOnly}, so a day on which the
+ * clocks change is still one day.
+ */
+export function daysBetweenDateOnly(from: string, to: string): number {
+  const a = parseDateOnly(from);
+  const b = parseDateOnly(to);
+  if (a === undefined || b === undefined) {
+    throw new RangeError(`"${a === undefined ? from : to}" is not a date written YYYY-MM-DD.`);
+  }
+  return Math.round(
+    (Date.UTC(b.year, b.month - 1, b.day) - Date.UTC(a.year, a.month - 1, a.day)) / 86_400_000,
+  );
+}
+
 export interface DateRange {
   /** The earliest date allowed, inclusive. */
   min: string;

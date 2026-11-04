@@ -1,6 +1,8 @@
 import {
   ADMIN_WORK_ORDER_SORT_FIELDS,
+  CALENDAR_RULES,
   CUSTOMER_WORK_ORDER_GROUPS,
+  daysBetweenDateOnly,
   isDateOnly,
   SCHEDULE_RULES,
   TRANSITION_RULES,
@@ -270,3 +272,41 @@ export const listMyWorkOrdersQuerySchema = createPaginationSchema({
 });
 
 export type ListMyWorkOrdersQuery = z.output<typeof listMyWorkOrdersQuerySchema>;
+
+// ---- The calendar (T19) -----------------------------------------------------------------------------
+
+const queryFlag = (name: string) =>
+  z
+    .enum(["true", "false"], { error: `${name} must be true or false.` })
+    .transform((value) => value === "true")
+    .optional();
+
+/**
+ * `GET /admin/calendar?from&to&technicianId&includeUnbooked` (FR-052). Both dates are days on the
+ * business's calendar and both are inclusive, so one day is `from = to`. The range is bounded
+ * ({@link CALENDAR_RULES.maxSpanDays} days) because the answer is not paged. `includeUnbooked` adds
+ * the cancelled jobs and the ones that need a new time, which hold no technician's time.
+ */
+export const calendarQuerySchema = z
+  .object({
+    from: dateOnly("from"),
+    to: dateOnly("to"),
+    technicianId: z.uuid({ error: "technicianId must be a valid id." }).optional(),
+    includeUnbooked: queryFlag("includeUnbooked"),
+  })
+  .superRefine((query, ctx) => {
+    // Both are real dates by now; if either is not, its own message is already reported.
+    if (!isDateOnly(query.from) || !isDateOnly(query.to)) return;
+    const days = daysBetweenDateOnly(query.from, query.to) + 1;
+    if (days < 1) {
+      ctx.addIssue({ code: "custom", path: ["to"], message: "to must not be before from." });
+    } else if (days > CALENDAR_RULES.maxSpanDays) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["to"],
+        message: `The range can be at most ${String(CALENDAR_RULES.maxSpanDays)} days.`,
+      });
+    }
+  });
+
+export type CalendarQuery = z.output<typeof calendarQuerySchema>;

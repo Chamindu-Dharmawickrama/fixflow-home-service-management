@@ -32,6 +32,7 @@ import {
   conflictSentence,
   dayRequest,
   describeJobTime,
+  describeMove,
   durationChoices,
   formatDuration,
   initialScheduleValues,
@@ -214,6 +215,21 @@ function ScheduleDialogContent({
       ? null
       : { technicianId, start: window.start, end: window.end, excludeId: job.id };
   const conflicts = useJobsInWindow(windowQuery(exact), CONFLICT_CHECK_DEBOUNCE_MS);
+
+  // Moving a visit states the change in words before it is saved: from where, to where, with whom.
+  const move =
+    rescheduling && window !== null && job.scheduledStart !== null && job.scheduledEnd !== null
+      ? describeMove(
+          {
+            reference: job.reference,
+            current: { start: job.scheduledStart, end: job.scheduledEnd },
+            next: window,
+            technicianChanged: technicianId !== "" && technicianId !== job.technicianId,
+            technicianName: technician?.name,
+          },
+          timeZone,
+        )
+      : null;
 
   const edit = (patch: Partial<ScheduleFormValues>) => {
     setValues((current) => ({ ...current, ...patch }));
@@ -472,6 +488,16 @@ function ScheduleDialogContent({
             </p>
           ) : null}
         </div>
+
+        {move === null ? null : (
+          <p
+            data-testid="move-summary"
+            aria-live="polite"
+            className="rounded-lg border border-border bg-surface-muted px-3 py-2 text-sm font-medium text-ink [overflow-wrap:anywhere]"
+          >
+            {move}
+          </p>
+        )}
 
         {rescheduling ? (
           <Field

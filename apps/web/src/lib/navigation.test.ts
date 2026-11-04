@@ -111,11 +111,12 @@ describe("central navigation config", () => {
     ]);
   });
 
-  it("lists the dashboard, the request queue, the jobs, the customers and the technicians, ahead of the settings (T12, T13, T16, T17)", () => {
+  it("lists the dashboard, the request queue, the jobs, the calendar, the customers and the technicians, ahead of the settings (T12, T13, T16, T17, T19)", () => {
     expect(flattenGroups(NAVIGATION.admin).map((item) => [item.label, item.href])).toEqual([
       ["Dashboard", "/app/dashboard"],
       ["Requests", "/app/requests"],
       ["Jobs", "/app/jobs"],
+      ["Calendar", "/app/calendar"],
       ["Customers", "/app/customers"],
       ["Technicians", "/app/technicians"],
       ["Business", "/app/settings/business"],

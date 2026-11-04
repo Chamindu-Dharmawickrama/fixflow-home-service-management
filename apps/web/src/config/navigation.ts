@@ -10,7 +10,7 @@ import type { NavGroup, NavItem } from "@/lib/navigation";
  *
  * - `public`: the public website header (Home, Services and the How it works and Contact anchors, T08).
  * - `admin`: the business dashboard sidebar, in groups (T05 has the dashboard; T12 adds Requests,
- *   T13 Customers, T14 Quotations, …). The admin's "Account" page lives in the user menu, not here.
+ *   T13 Customers, T14 Quotations, T19 Calendar, …). The admin's "Account" page lives in the user menu, not here.
  * - `portal`: the customer portal top bar (T05 has the overview; T10 adds Profile, T11 Requests,
  *   T18 Jobs, …).
  *
@@ -33,6 +33,7 @@ export const NAVIGATION = {
         { label: "Dashboard", href: "/app/dashboard", icon: "layout-dashboard" },
         { label: "Requests", href: "/app/requests", icon: "inbox" },
         { label: "Jobs", href: "/app/jobs", icon: "briefcase" },
+        { label: "Calendar", href: "/app/calendar", icon: "calendar" },
         { label: "Customers", href: "/app/customers", icon: "users" },
         { label: "Technicians", href: "/app/technicians", icon: "wrench" },
       ],

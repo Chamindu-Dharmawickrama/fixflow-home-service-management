@@ -8,6 +8,8 @@ import {
   DEFAULT_DURATION_MINUTES,
   DEFAULT_START_TIME,
   describeJobTime,
+  describeMove,
+  describeSlot,
   durationChoices,
   formatDuration,
   initialScheduleValues,
@@ -381,5 +383,124 @@ describe("how a conflict is worded", () => {
 
   it("says nothing for no conflicts", () => {
     expect(conflictSentence([], NEW_YORK)).toBe("");
+  });
+});
+
+describe("describeSlot and describeMove: stating a reschedule before it is saved", () => {
+  const current = { start: "2026-03-03T15:00:00.000Z", end: "2026-03-03T17:00:00.000Z" };
+  const window = (start: string, end: string) => ({ start: new Date(start), end: new Date(end) });
+
+  it("writes a slot with its weekday and date on the business's clocks", () => {
+    expect(describeSlot(current.start, current.end, NEW_YORK)).toBe(
+      "Tue, Mar 3, 10:00 AM – 12:00 PM",
+    );
+    // 02:00Z on the 4th is still the evening of the 3rd in New York.
+    expect(describeSlot("2026-03-04T02:00:00.000Z", "2026-03-04T03:00:00.000Z", NEW_YORK)).toBe(
+      "Tue, Mar 3, 9:00 – 10:00 PM",
+    );
+  });
+
+  it("states a move from one slot to another", () => {
+    expect(
+      describeMove(
+        {
+          reference: "JOB-2026-00031",
+          current,
+          next: window("2026-03-04T19:00:00.000Z", "2026-03-04T21:00:00.000Z"),
+          technicianChanged: false,
+          technicianName: "Jordan Lee",
+        },
+        NEW_YORK,
+      ),
+    ).toBe(
+      "Move JOB-2026-00031 from Tue, Mar 3, 10:00 AM – 12:00 PM to Wed, Mar 4, 2:00 – 4:00 PM?",
+    );
+  });
+
+  it("names the technician when the move changes them", () => {
+    expect(
+      describeMove(
+        {
+          reference: "JOB-2026-00031",
+          current,
+          next: window("2026-03-04T19:00:00.000Z", "2026-03-04T21:00:00.000Z"),
+          technicianChanged: true,
+          technicianName: "Sam Ortiz",
+        },
+        NEW_YORK,
+      ),
+    ).toBe(
+      "Move JOB-2026-00031 from Tue, Mar 3, 10:00 AM – 12:00 PM to Wed, Mar 4, 2:00 – 4:00 PM, with Sam Ortiz?",
+    );
+  });
+
+  it("states a change of technician alone as keeping the slot", () => {
+    expect(
+      describeMove(
+        {
+          reference: "JOB-2026-00031",
+          current,
+          next: window(current.start, current.end),
+          technicianChanged: true,
+          technicianName: "Sam Ortiz",
+        },
+        NEW_YORK,
+      ),
+    ).toBe("Keep JOB-2026-00031 at Tue, Mar 3, 10:00 AM – 12:00 PM and give it to Sam Ortiz?");
+  });
+
+  it("states a move when only the start changes and the end stays where it was", () => {
+    expect(
+      describeMove(
+        {
+          reference: "JOB-2026-00031",
+          current,
+          next: window("2026-03-03T16:00:00.000Z", current.end),
+          technicianChanged: false,
+          technicianName: "Jordan Lee",
+        },
+        NEW_YORK,
+      ),
+    ).toBe(
+      "Move JOB-2026-00031 from Tue, Mar 3, 10:00 AM – 12:00 PM to Tue, Mar 3, 11:00 AM – 12:00 PM?",
+    );
+  });
+
+  it("states a move when only the end changes and the start stays where it was", () => {
+    expect(
+      describeMove(
+        {
+          reference: "JOB-2026-00031",
+          current,
+          next: window(current.start, "2026-03-03T18:00:00.000Z"),
+          technicianChanged: false,
+          technicianName: undefined,
+        },
+        NEW_YORK,
+      ),
+    ).toBe(
+      "Move JOB-2026-00031 from Tue, Mar 3, 10:00 AM – 12:00 PM to Tue, Mar 3, 10:00 AM – 1:00 PM?",
+    );
+  });
+
+  it("has nothing to confirm when nothing changes", () => {
+    expect(
+      describeMove(
+        {
+          reference: "JOB-2026-00031",
+          current,
+          next: window(current.start, current.end),
+          technicianChanged: false,
+          technicianName: "Jordan Lee",
+        },
+        NEW_YORK,
+      ),
+    ).toBeNull();
+  });
+
+  it("reads the same whatever zone the browser is in, because the zone is given", () => {
+    const sentence = describeSlot(current.start, current.end, "Asia/Colombo");
+    expect(sentence).toBe("Tue, Mar 3, 8:30 – 10:30 PM");
+    expect(describeSlot(current.start, current.end, NEW_YORK)).not.toBe(sentence);
   });
 });

@@ -74,6 +74,7 @@ export {
   DATE_ONLY_PATTERN,
   dateOnlyInTimeZone,
   type DateRange,
+  daysBetweenDateOnly,
   isDateOnly,
   PREFERRED_DATE_INVALID_MESSAGE,
   PREFERRED_DATE_TOO_LATE_MESSAGE,
@@ -89,6 +90,13 @@ export {
   type WallClock,
   wallClockToInstant,
 } from "./business-time.js";
+export {
+  CALENDAR_RULES,
+  type CalendarDto,
+  type CalendarItemDto,
+  type CalendarResponse,
+  type CalendarWaitingJobDto,
+} from "./calendar.js";
 export { API_PREFIX } from "./constants.js";
 export {
   isSupportedCurrency,

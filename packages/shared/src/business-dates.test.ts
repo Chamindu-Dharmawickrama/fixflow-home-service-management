@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   addDaysToDateOnly,
   dateOnlyInTimeZone,
+  daysBetweenDateOnly,
   isDateOnly,
   PREFERRED_DATE_INVALID_MESSAGE,
   PREFERRED_DATE_TOO_LATE_MESSAGE,
@@ -185,5 +186,30 @@ describe("package entry point", () => {
     expect(shared.preferredDateRange).toBe(preferredDateRange);
     expect(shared.preferredDateProblem).toBe(preferredDateProblem);
     expect(shared.isDateOnly).toBe(isDateOnly);
+  });
+});
+
+describe("daysBetweenDateOnly", () => {
+  it("counts calendar days, forwards and backwards", () => {
+    expect(daysBetweenDateOnly("2026-03-02", "2026-03-02")).toBe(0);
+    expect(daysBetweenDateOnly("2026-03-02", "2026-03-08")).toBe(6);
+    expect(daysBetweenDateOnly("2026-03-08", "2026-03-02")).toBe(-6);
+  });
+
+  it("counts a day on which the clocks change as one day", () => {
+    // 8 March 2026 is 23 hours long in New York and 1 November 2026 is 25 hours long.
+    expect(daysBetweenDateOnly("2026-03-07", "2026-03-09")).toBe(2);
+    expect(daysBetweenDateOnly("2026-10-31", "2026-11-02")).toBe(2);
+  });
+
+  it("crosses month, year and leap-day boundaries", () => {
+    expect(daysBetweenDateOnly("2026-12-30", "2027-01-02")).toBe(3);
+    expect(daysBetweenDateOnly("2028-02-28", "2028-03-01")).toBe(2);
+    expect(daysBetweenDateOnly("2027-02-28", "2027-03-01")).toBe(1);
+  });
+
+  it("refuses a date that does not exist", () => {
+    expect(() => daysBetweenDateOnly("2026-02-30", "2026-03-01")).toThrow(RangeError);
+    expect(() => daysBetweenDateOnly("2026-03-01", "nope")).toThrow(RangeError);
   });
 });

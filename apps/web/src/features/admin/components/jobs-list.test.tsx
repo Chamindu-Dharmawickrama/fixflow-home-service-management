@@ -15,6 +15,7 @@ function renderTable(
     <JobsTable
       jobs={jobs}
       timeZone={NEW_YORK}
+      view="all"
       sort={sort}
       getSortHref={(field) => `/app/jobs?sort=${field}`}
     />,
@@ -167,6 +168,12 @@ describe("JobsEmpty", () => {
     ],
     ["upcoming", "No upcoming visits", "See jobs that need scheduling", "/app/jobs"],
     ["in-progress", "No jobs in progress", null, null],
+    [
+      "ready-to-invoice",
+      "Nothing is waiting to be invoiced",
+      "See jobs in progress",
+      "/app/jobs?view=in-progress",
+    ],
     ["completed", "No completed jobs yet", null, null],
     ["all", "No jobs yet", "Go to the requests", "/app/requests"],
   ] as const)("explains an empty %s tab and what to do next", (view, title, link, href) => {
@@ -180,9 +187,78 @@ describe("JobsEmpty", () => {
     }
   });
 
+  it("does not offer to create an invoice from the empty Ready to invoice tab: that arrives with invoices", () => {
+    render(<JobsEmpty {...base} view="ready-to-invoice" />);
+    expect(screen.queryByRole("link", { name: /invoice/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /invoice/i })).not.toBeInTheDocument();
+  });
+
   it("never suggests creating a job from the empty list: a job is made from an accepted quotation", () => {
     render(<JobsEmpty {...base} view="all" />);
     expect(screen.queryByRole("button", { name: /create job/i })).not.toBeInTheDocument();
     expect(screen.getByText(/accepted/)).toBeVisible();
+  });
+});
+
+describe("JobsTable: finished work and old appointments (T18)", () => {
+  function renderFor(
+    view: "ready-to-invoice" | "completed" | "all" | "upcoming",
+    jobs = [jobListItem()],
+  ) {
+    render(
+      <JobsTable
+        jobs={jobs}
+        timeZone={NEW_YORK}
+        view={view}
+        sort={{ field: "completedAt", order: "asc" }}
+        getSortHref={(field) => `/app/jobs?sort=${field}`}
+      />,
+    );
+  }
+
+  it.each(["ready-to-invoice", "completed"] as const)(
+    "adds a sortable 'Completed' column on the %s tab",
+    (view) => {
+      renderFor(view, [
+        jobListItem({
+          status: "COMPLETED",
+          statusLabel: "Completed",
+          // A day of its own, so the cell cannot be mistaken for the appointment's.
+          completedAt: "2026-03-04T16:40:00.000Z",
+        }),
+      ]);
+      const header = screen.getByRole("columnheader", { name: /Completed/ });
+      expect(within(header).getByRole("link")).toHaveAttribute(
+        "href",
+        "/app/jobs?sort=completedAt",
+      );
+      const row = within(screen.getByRole("table")).getAllByRole("row")[1] as HTMLElement;
+      expect(within(row).getByText("Mar 4, 2026", { selector: "time" })).toBeVisible();
+    },
+  );
+
+  it.each(["upcoming", "all"] as const)("has no 'Completed' column on the %s tab", (view) => {
+    renderFor(view);
+    expect(screen.queryByRole("columnheader", { name: /Completed/ })).not.toBeInTheDocument();
+  });
+
+  it("labels the old appointment of a job that needs a new time or was cancelled", () => {
+    renderFor("all", [
+      jobListItem({ status: "NEEDS_RESCHEDULING", statusLabel: "Needs rescheduling" }),
+      jobListItem({
+        id: "second",
+        reference: "JOB-2026-00008",
+        status: "CANCELLED",
+        statusLabel: "Cancelled",
+      }),
+      jobListItem({ id: "third", reference: "JOB-2026-00009" }),
+    ]);
+    const rows = within(screen.getByRole("table")).getAllByRole("row").slice(1);
+
+    expect(within(rows[0] as HTMLElement).getByText("Previously scheduled")).toBeVisible();
+    expect(within(rows[1] as HTMLElement).getByText("Previously scheduled")).toBeVisible();
+    expect(
+      within(rows[2] as HTMLElement).queryByText("Previously scheduled"),
+    ).not.toBeInTheDocument();
   });
 });

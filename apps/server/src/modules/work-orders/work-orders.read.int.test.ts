@@ -94,7 +94,14 @@ describe("GET /admin/work-orders: the tabs (FR-052)", () => {
       data: [],
       pagination: { page: 1, pageSize: 20, totalItems: 0, totalPages: 0 },
       meta: {
-        viewCounts: { "needs-scheduling": 0, upcoming: 0, "in-progress": 0, completed: 0, all: 0 },
+        viewCounts: {
+          "needs-scheduling": 0,
+          upcoming: 0,
+          "in-progress": 0,
+          "ready-to-invoice": 0,
+          completed: 0,
+          all: 0,
+        },
       },
     });
   });
@@ -118,7 +125,15 @@ describe("GET /admin/work-orders: the tabs (FR-052)", () => {
   it("counts every tab under the other filters, whichever tab and page is showing", async () => {
     const w = await workOrderWorld(prisma);
     await seedEveryStatus(w);
-    const everyone = { "needs-scheduling": 2, upcoming: 2, "in-progress": 1, completed: 1, all: 7 };
+    const everyone = {
+      "needs-scheduling": 2,
+      upcoming: 2,
+      "in-progress": 1,
+      // The one completed job has no invoice, so it is ready to invoice.
+      "ready-to-invoice": 1,
+      completed: 1,
+      all: 7,
+    };
 
     for (const query of [
       "",
@@ -138,6 +153,7 @@ describe("GET /admin/work-orders: the tabs (FR-052)", () => {
       "needs-scheduling": 0,
       upcoming: 1,
       "in-progress": 1,
+      "ready-to-invoice": 1,
       completed: 1,
       all: 3,
     });
@@ -369,6 +385,7 @@ describe("GET /admin/work-orders: the rows", () => {
       scheduledStart: "2026-03-03T15:00:00.000Z",
       scheduledEnd: "2026-03-03T17:00:00.000Z",
       technician: { id: w.jordan.id, name: "Jordan Lee", calendarColor: "blue" },
+      completedAt: null,
       createdAt: row?.createdAt,
     });
     expect(Number.isNaN(Date.parse(row?.createdAt ?? ""))).toBe(false);
@@ -419,11 +436,15 @@ describe("GET /admin/work-orders/:id (FR-051)", () => {
       [
         "address",
         "availableActions",
+        "cancelReason",
+        "cancelledAt",
         "completedAt",
+        "completionNote",
         "createdAt",
         "createdBy",
         "customer",
         "id",
+        "internalCompletionNote",
         "quotation",
         "reference",
         "request",

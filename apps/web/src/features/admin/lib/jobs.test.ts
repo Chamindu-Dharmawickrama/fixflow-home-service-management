@@ -35,6 +35,7 @@ describe("the tabs", () => {
       "needs-scheduling": "Needs scheduling",
       upcoming: "Upcoming",
       "in-progress": "In progress",
+      "ready-to-invoice": "Ready to invoice",
       completed: "Completed",
       all: "All",
     });

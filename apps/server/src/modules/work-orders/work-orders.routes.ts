@@ -4,11 +4,13 @@ import type { AppDeps } from "../../deps.js";
 import { rateLimitByName } from "../../middleware/rate-limit.js";
 import { validate } from "../../middleware/validate.js";
 import { authOf, createAuthMiddleware } from "../auth/auth.middleware.js";
+import { transitionWorkOrderStatus } from "./work-orders.lifecycle.service.js";
 import {
   adminWorkOrdersQuerySchema,
   conflictsQuerySchema,
   quotationIdParamsSchema,
   scheduleWorkOrderBodySchema,
+  transitionWorkOrderBodySchema,
   workOrderIdParamsSchema,
 } from "./work-orders.schemas.js";
 import {
@@ -26,11 +28,13 @@ import {
  *   job that already exists, so repeating it is safe);
  * - `GET /work-orders` lists jobs, `GET /work-orders/:id` reads one with its history;
  * - `GET /work-orders/conflicts` is the read-only pre-check the scheduling dialog runs;
- * - `PATCH /work-orders/:id/schedule` schedules or reschedules a job with a technician.
+ * - `PATCH /work-orders/:id/schedule` schedules or reschedules a job with a technician;
+ * - `POST /work-orders/:id/transitions` starts, completes, cancels or marks a job as needing a new
+ *   time (T18), with the notes and reasons each needs. The answer carries `meta.startedBeforeSchedule`.
  *
  * Every endpoint is admin-only (a customer gets `403`, and an admin who has left the allowlist too).
  * The role check is on each route and not on the router, because this router shares the `/admin`
- * prefix with other modules' routers. The customer's own view of a job comes with T18.
+ * prefix with other modules' routers. The customer's own view of a job is `work-orders.customer.routes.ts`.
  */
 export function createAdminWorkOrdersRouter(deps: AppDeps): Router {
   const router = Router();
@@ -80,6 +84,21 @@ export function createAdminWorkOrdersRouter(deps: AppDeps): Router {
     validate({ params: workOrderIdParamsSchema, body: scheduleWorkOrderBodySchema }),
     async (req, res) => {
       res.json({ data: await scheduleWorkOrder(deps, authOf(req), req.params.id, req.body) });
+    },
+  );
+
+  router.post("/work-orders/:id/transitions", ...write);
+  router.post(
+    "/work-orders/:id/transitions",
+    validate({ params: workOrderIdParamsSchema, body: transitionWorkOrderBodySchema }),
+    async (req, res) => {
+      const { workOrder, startedBeforeSchedule } = await transitionWorkOrderStatus(
+        deps,
+        authOf(req),
+        req.params.id,
+        req.body,
+      );
+      res.json({ data: workOrder, meta: { startedBeforeSchedule } });
     },
   );
 

@@ -14,9 +14,9 @@ import { availableWorkOrderActions, type ConflictingJob } from "./work-orders.do
 
 /**
  * Serializers for work orders (D-41, CLAUDE.md §7). Every shape here is the business's: it carries
- * the customer's contact details, the technician's, the access notes and the internal history. The
- * customer's own view of a job (T18) is built by its own function, field by field, and nothing here
- * is ever handed to a customer. Each is built from named fields, never by spreading a row, so a column
+ * the customer's contact details, the technician's, the access notes, the internal notes and the
+ * internal history. The customer's own view of a job is built by its own function in
+ * `work-orders.customer.dto.ts`, field by field, and nothing here is ever handed to a customer. Each is built from named fields, never by spreading a row, so a column
  * added to the table cannot reach a response by accident.
  */
 
@@ -31,6 +31,7 @@ export const ADMIN_LIST_SELECT = {
   addressCity: true,
   scheduledStart: true,
   scheduledEnd: true,
+  completedAt: true,
   createdAt: true,
   technician: { select: TECHNICIAN_REF_SELECT },
   customer: { select: { user: { select: { name: true } } } },
@@ -57,6 +58,7 @@ export function toAdminWorkOrderListItem(row: AdminListRow): AdminWorkOrderListI
             name: row.technician.name,
             calendarColor: colorOf(row.technician.calendarColor),
           },
+    completedAt: row.completedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -79,6 +81,10 @@ export const ADMIN_DETAIL_SELECT = {
   scheduledEnd: true,
   startedAt: true,
   completedAt: true,
+  completionNote: true,
+  internalCompletionNote: true,
+  cancelledAt: true,
+  cancelReason: true,
   createdAt: true,
   updatedAt: true,
   createdBy: { select: { name: true } },
@@ -173,6 +179,10 @@ export function toAdminWorkOrderDto(
     },
     startedAt: row.startedAt?.toISOString() ?? null,
     completedAt: row.completedAt?.toISOString() ?? null,
+    completionNote: row.completionNote,
+    internalCompletionNote: row.internalCompletionNote,
+    cancelledAt: row.cancelledAt?.toISOString() ?? null,
+    cancelReason: row.cancelReason,
     createdBy: { name: row.createdBy.name },
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),

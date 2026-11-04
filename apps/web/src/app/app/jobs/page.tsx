@@ -116,6 +116,7 @@ async function JobsContent({ searchParams }: { searchParams: Promise<SearchParam
           <JobsTable
             jobs={list.data}
             timeZone={timeZone}
+            view={query.view}
             sort={{ field: query.sort, order: query.order }}
             getSortHref={(field) => jobsSortHref(params, query, field)}
           />

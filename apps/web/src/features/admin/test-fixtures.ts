@@ -397,6 +397,7 @@ export function jobListItem(
     scheduledStart: "2026-03-03T15:00:00.000Z",
     scheduledEnd: "2026-03-03T17:00:00.000Z",
     technician: { id: TECHNICIAN_ID, name: "Jordan Lee", calendarColor: "blue" },
+    completedAt: null,
     createdAt: "2026-03-01T14:05:00.000Z",
     ...overrides,
   };
@@ -470,6 +471,10 @@ export function adminJob(overrides: Partial<AdminWorkOrderDto> = {}): AdminWorkO
     },
     startedAt: null,
     completedAt: null,
+    completionNote: null,
+    internalCompletionNote: null,
+    cancelledAt: null,
+    cancelReason: null,
     createdBy: { name: "Morgan Reyes" },
     createdAt: "2026-03-01T14:05:00.000Z",
     updatedAt: "2026-03-02T09:30:00.000Z",
@@ -488,6 +493,56 @@ export function unscheduledJob(overrides: Partial<AdminWorkOrderDto> = {}): Admi
     scheduledEnd: null,
     technician: null,
     availableActions: ["SCHEDULE", "CANCEL"],
+    ...overrides,
+  });
+}
+
+/** A job under way: started, so the page offers Complete job. */
+export function startedJob(overrides: Partial<AdminWorkOrderDto> = {}): AdminWorkOrderDto {
+  return adminJob({
+    status: "IN_PROGRESS",
+    statusLabel: "In progress",
+    startedAt: "2026-03-03T15:05:00.000Z",
+    availableActions: ["COMPLETE", "MARK_NEEDS_RESCHEDULING"],
+    ...overrides,
+  });
+}
+
+/** A finished job, with both notes: the summary the customer reads and the internal one. */
+export function completedJob(overrides: Partial<AdminWorkOrderDto> = {}): AdminWorkOrderDto {
+  return adminJob({
+    status: "COMPLETED",
+    statusLabel: "Completed",
+    startedAt: "2026-03-03T15:05:00.000Z",
+    completedAt: "2026-03-03T16:40:00.000Z",
+    completionNote:
+      "Replaced the run capacitor and checked the cooling. The unit now reaches 68 degrees.",
+    internalCompletionNote: "Offer a surge protector at the next visit.",
+    availableActions: [],
+    ...overrides,
+  });
+}
+
+/** A job that needs a new time: it keeps its old appointment, which the page labels as history. */
+export function needsReschedulingJob(
+  overrides: Partial<AdminWorkOrderDto> = {},
+): AdminWorkOrderDto {
+  return adminJob({
+    status: "NEEDS_RESCHEDULING",
+    statusLabel: "Needs rescheduling",
+    availableActions: ["SCHEDULE", "CANCEL"],
+    ...overrides,
+  });
+}
+
+/** A cancelled job, with the reason only the team reads. */
+export function cancelledJob(overrides: Partial<AdminWorkOrderDto> = {}): AdminWorkOrderDto {
+  return adminJob({
+    status: "CANCELLED",
+    statusLabel: "Cancelled",
+    cancelledAt: "2026-03-02T18:00:00.000Z",
+    cancelReason: "The customer moved away before the visit.",
+    availableActions: [],
     ...overrides,
   });
 }

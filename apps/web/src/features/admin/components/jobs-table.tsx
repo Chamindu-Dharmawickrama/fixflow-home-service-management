@@ -1,4 +1,8 @@
-import type { AdminWorkOrderListItemDto } from "@fixflow/shared";
+import {
+  type AdminWorkOrderListItemDto,
+  WorkOrderStatus,
+  type WorkOrderView,
+} from "@fixflow/shared";
 
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { DateTimeText } from "@/components/ui/date-time-text";
@@ -9,8 +13,18 @@ import { adminJobPath } from "../lib/jobs";
 import { JobScheduleText } from "./job-schedule-text";
 import { TechnicianName } from "./technicians-table";
 
-function columnsFor(timeZone: string): DataTableColumn<AdminWorkOrderListItemDto>[] {
-  return [
+/** A job that needs a new time or was cancelled keeps its old appointment for reference only. */
+function isFormerAppointment(job: AdminWorkOrderListItemDto): boolean {
+  return (
+    job.status === WorkOrderStatus.NEEDS_RESCHEDULING || job.status === WorkOrderStatus.CANCELLED
+  );
+}
+
+function columnsFor(
+  timeZone: string,
+  view: WorkOrderView,
+): DataTableColumn<AdminWorkOrderListItemDto>[] {
+  const columns: DataTableColumn<AdminWorkOrderListItemDto>[] = [
     {
       id: "reference",
       header: "Job",
@@ -43,7 +57,12 @@ function columnsFor(timeZone: string): DataTableColumn<AdminWorkOrderListItemDto
       header: "Scheduled",
       sortable: true,
       cell: (job) => (
-        <JobScheduleText start={job.scheduledStart} end={job.scheduledEnd} timeZone={timeZone} />
+        <JobScheduleText
+          start={job.scheduledStart}
+          end={job.scheduledEnd}
+          timeZone={timeZone}
+          former={isFormerAppointment(job)}
+        />
       ),
     },
     {
@@ -63,11 +82,28 @@ function columnsFor(timeZone: string): DataTableColumn<AdminWorkOrderListItemDto
       cell: (job) => <DateTimeText value={job.createdAt} timeZone={timeZone} display="date" />,
     },
   ];
+  // The tabs of finished work show when it was finished, which is what decides what to invoice first.
+  if (view === "ready-to-invoice" || view === "completed") {
+    columns.splice(5, 0, {
+      id: "completedAt",
+      header: "Completed",
+      sortable: true,
+      cell: (job) =>
+        job.completedAt === null ? (
+          <span className="text-ink-secondary">Not completed</span>
+        ) : (
+          <DateTimeText value={job.completedAt} timeZone={timeZone} display="date" />
+        ),
+    });
+  }
+  return columns;
 }
 
 export interface JobsTableProps {
   jobs: readonly AdminWorkOrderListItemDto[];
   timeZone: string;
+  /** The tab that is open: the tabs of finished work add a "Completed" column. */
+  view: WorkOrderView;
   sort: { field: string; order: "asc" | "desc" };
   /** The link a sortable column header goes to. */
   getSortHref: (field: string) => string;
@@ -77,7 +113,7 @@ export interface JobsTableProps {
  * The jobs as a table, or as cards below 1024 px where seven columns do not fit. The reference is
  * the link to the job. Times are shown in the business's time zone, from its settings.
  */
-export function JobsTable({ jobs, timeZone, sort, getSortHref }: JobsTableProps) {
+export function JobsTable({ jobs, timeZone, view, sort, getSortHref }: JobsTableProps) {
   return (
     <DataTable<AdminWorkOrderListItemDto>
       caption="Jobs"
@@ -86,7 +122,7 @@ export function JobsTable({ jobs, timeZone, sort, getSortHref }: JobsTableProps)
       rowHref={(job) => adminJobPath(job.id)}
       sort={sort}
       getSortHref={getSortHref}
-      columns={columnsFor(timeZone)}
+      columns={columnsFor(timeZone, view)}
       breakpoint="lg"
     />
   );

@@ -1,7 +1,10 @@
-import type {
-  CustomerQuotationDto,
-  CustomerQuotationListItemDto,
-  CustomerQuotationSummaryDto,
+import {
+  type CustomerQuotationDto,
+  type CustomerQuotationListItemDto,
+  type CustomerQuotationSummaryDto,
+  type CustomerWorkOrderDto,
+  type CustomerWorkOrderListItemDto,
+  workOrderCustomerExplanation,
 } from "@fixflow/shared";
 
 /** Shared test data for the customer's quotation screens (T15). All of it is fictional. */
@@ -122,4 +125,126 @@ export function quotationListItem(
     serviceName: "AC Repair",
     ...overrides,
   };
+}
+
+// ---- Jobs (T18) ---------------------------------------------------------------------------------
+
+export const PORTAL_JOB_ID = "b4a1f5c2-3d6e-4c7a-9b8d-2e1f0a9b8c7d";
+
+/** A scheduled job on the customer's list: 3 March 2026, 10:00 to 12:00 in New York, with Jordan. */
+export function customerJobListItem(
+  overrides: Partial<CustomerWorkOrderListItemDto> = {},
+): CustomerWorkOrderListItemDto {
+  return {
+    id: PORTAL_JOB_ID,
+    reference: "JOB-2026-00007",
+    status: "SCHEDULED",
+    statusLabel: "Scheduled",
+    serviceName: "AC Repair",
+    scheduledStart: "2026-03-03T15:00:00.000Z",
+    scheduledEnd: "2026-03-03T17:00:00.000Z",
+    technician: { displayName: "Jordan" },
+    completedAt: null,
+    ...overrides,
+  };
+}
+
+/** A job in full, as its customer sees it. Scheduled by default. */
+export function customerJob(overrides: Partial<CustomerWorkOrderDto> = {}): CustomerWorkOrderDto {
+  const status = overrides.status ?? "SCHEDULED";
+  return {
+    ...customerJobListItem(),
+    statusExplanation: workOrderCustomerExplanation(status),
+    timeZone: PORTAL_TIME_ZONE,
+    scopeDescription:
+      "The outdoor unit hums and the house does not cool.\n\nAgreed work:\n- Diagnostic visit\n- Replace run capacitor",
+    address: {
+      line1: "214 Larkspur Lane",
+      line2: "Unit 4",
+      city: "Harbor City",
+      region: "NY",
+      postalCode: "10001",
+      accessNotes: "Side gate code is 4471.",
+    },
+    previouslyScheduled: null,
+    startedAt: null,
+    cancelledAt: null,
+    completionNote: null,
+    request: { id: PORTAL_REQUEST_ID, reference: "FF-2026-00012" },
+    quotation: { id: PORTAL_QUOTATION_ID, reference: "QT-2026-00004" },
+    invoice: null,
+    timeline: [
+      {
+        id: "event-1",
+        publicSummary: "We created job JOB-2026-00007 for your request.",
+        toStatus: "PENDING_SCHEDULING",
+        actor: "CoolBreeze Home Services",
+        createdAt: "2026-03-01T14:05:00.000Z",
+      },
+      {
+        id: "event-2",
+        publicSummary: "We scheduled your visit for Tue, Mar 3, 2026, 10:00 AM – 12:00 PM EST.",
+        toStatus: "SCHEDULED",
+        actor: "CoolBreeze Home Services",
+        createdAt: "2026-03-01T15:00:00.000Z",
+      },
+    ],
+    ...overrides,
+  };
+}
+
+/** A job under way. */
+export function startedCustomerJob(overrides: Partial<CustomerWorkOrderDto> = {}) {
+  return customerJob({
+    status: "IN_PROGRESS",
+    statusLabel: "In progress",
+    startedAt: "2026-03-03T15:05:00.000Z",
+    ...overrides,
+  });
+}
+
+/** A finished job, with the summary written for the customer. */
+export function completedCustomerJob(overrides: Partial<CustomerWorkOrderDto> = {}) {
+  return customerJob({
+    status: "COMPLETED",
+    statusLabel: "Completed",
+    startedAt: "2026-03-03T15:05:00.000Z",
+    completedAt: "2026-03-03T16:40:00.000Z",
+    completionNote:
+      "Replaced the run capacitor and checked the cooling.\nThe unit now reaches 68 degrees.",
+    ...overrides,
+  });
+}
+
+/** A job that needs a new time: no booked visit, the old one shown as history. */
+export function needsTimeCustomerJob(overrides: Partial<CustomerWorkOrderDto> = {}) {
+  return customerJob({
+    status: "NEEDS_RESCHEDULING",
+    statusLabel: "Needs rescheduling",
+    scheduledStart: null,
+    scheduledEnd: null,
+    technician: null,
+    previouslyScheduled: {
+      start: "2026-03-03T15:00:00.000Z",
+      end: "2026-03-03T17:00:00.000Z",
+    },
+    ...overrides,
+  });
+}
+
+/** A cancelled job. */
+export function cancelledCustomerJob(overrides: Partial<CustomerWorkOrderDto> = {}) {
+  return customerJob({
+    status: "CANCELLED",
+    statusLabel: "Cancelled",
+    scheduledStart: null,
+    scheduledEnd: null,
+    technician: null,
+    cancelledAt: "2026-03-02T18:00:00.000Z",
+    previouslyScheduled: {
+      start: "2026-03-03T15:00:00.000Z",
+      end: "2026-03-03T17:00:00.000Z",
+    },
+    ...overrides,
+  });
 }

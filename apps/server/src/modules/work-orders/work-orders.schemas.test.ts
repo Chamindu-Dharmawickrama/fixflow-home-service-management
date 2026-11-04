@@ -6,8 +6,10 @@ import { fieldErrorsFromZod } from "../../lib/zod-errors.js";
 import {
   adminWorkOrdersQuerySchema,
   conflictsQuerySchema,
+  listMyWorkOrdersQuerySchema,
   quotationIdParamsSchema,
   scheduleWorkOrderBodySchema,
+  transitionWorkOrderBodySchema,
   workOrderIdParamsSchema,
 } from "./work-orders.schemas.js";
 
@@ -234,5 +236,208 @@ describe("the id parameters", () => {
     expect(quotationIdParamsSchema.safeParse({ id: ID }).success).toBe(true);
     expect(workOrderIdParamsSchema.safeParse({ id: "JOB-2026-00001" }).success).toBe(false);
     expect(quotationIdParamsSchema.safeParse({ id: "QT-2026-00001" }).success).toBe(false);
+  });
+});
+
+describe("transitionWorkOrderBodySchema (T18)", () => {
+  const NOTE = "Replaced the run capacitor and checked the cooling.";
+  const REASON = "The part will not arrive this week.";
+
+  const start = { action: "START", expectedStatus: "SCHEDULED" };
+  const complete = { action: "COMPLETE", expectedStatus: "IN_PROGRESS", completionNote: NOTE };
+  const needs = { action: "MARK_NEEDS_RESCHEDULING", expectedStatus: "SCHEDULED", reason: REASON };
+  const cancel = { action: "CANCEL", expectedStatus: "SCHEDULED", reason: REASON };
+
+  it("accepts each action with the fields it needs", () => {
+    for (const body of [start, complete, needs, cancel]) {
+      expect(errorsOf(transitionWorkOrderBodySchema, body)).toEqual({});
+    }
+  });
+
+  it("accepts the optional fields each action may carry", () => {
+    expect(
+      errorsOf(transitionWorkOrderBodySchema, { ...complete, internalNote: "Quote the filter." }),
+    ).toEqual({});
+    expect(
+      errorsOf(transitionWorkOrderBodySchema, {
+        ...needs,
+        customerMessage: "Sorry, new time soon.",
+      }),
+    ).toEqual({});
+    expect(
+      errorsOf(transitionWorkOrderBodySchema, { ...cancel, customerMessage: "Sorry about this." }),
+    ).toEqual({});
+  });
+
+  it("trims the text and turns a blank optional one into null", () => {
+    const body = transitionWorkOrderBodySchema.parse({
+      ...complete,
+      completionNote: `   ${NOTE}  `,
+      internalNote: "   ",
+    });
+    expect(body.completionNote).toBe(NOTE);
+    expect(body.internalNote).toBeNull();
+  });
+
+  it("requires a completion summary of 10 to 2000 characters to complete", () => {
+    const { completionNote: _omitted, ...without } = complete;
+    expect(errorsOf(transitionWorkOrderBodySchema, without).completionNote).toMatch(
+      /completion summary of 10 to 2000 characters/,
+    );
+    expect(
+      errorsOf(transitionWorkOrderBodySchema, { ...complete, completionNote: "Done." })
+        .completionNote,
+    ).toMatch(/at least 10 characters/);
+    expect(
+      errorsOf(transitionWorkOrderBodySchema, { ...complete, completionNote: "         " })
+        .completionNote,
+    ).toBeDefined();
+    expect(
+      errorsOf(transitionWorkOrderBodySchema, { ...complete, completionNote: "a".repeat(10) }),
+    ).toEqual({});
+    expect(
+      errorsOf(transitionWorkOrderBodySchema, { ...complete, completionNote: "a".repeat(2000) }),
+    ).toEqual({});
+    expect(
+      errorsOf(transitionWorkOrderBodySchema, { ...complete, completionNote: "a".repeat(2001) })
+        .completionNote,
+    ).toMatch(/2000 characters or fewer/);
+  });
+
+  it("limits the internal note to 2000 characters", () => {
+    expect(
+      errorsOf(transitionWorkOrderBodySchema, { ...complete, internalNote: "a".repeat(2000) }),
+    ).toEqual({});
+    expect(
+      errorsOf(transitionWorkOrderBodySchema, { ...complete, internalNote: "a".repeat(2001) })
+        .internalNote,
+    ).toMatch(/2000 characters or fewer/);
+  });
+
+  it.each(["MARK_NEEDS_RESCHEDULING", "CANCEL"])("requires a reason to %s", (action) => {
+    const body = { action, expectedStatus: "SCHEDULED" };
+    expect(errorsOf(transitionWorkOrderBodySchema, body).reason).toMatch(/Enter a reason/);
+    expect(errorsOf(transitionWorkOrderBodySchema, { ...body, reason: "no" }).reason).toMatch(
+      /at least 5 characters/,
+    );
+    expect(errorsOf(transitionWorkOrderBodySchema, { ...body, reason: "  " }).reason).toBeDefined();
+    expect(errorsOf(transitionWorkOrderBodySchema, { ...body, reason: "fives" })).toEqual({});
+  });
+
+  it("allows a cancellation reason of 500 characters and a new-time reason of 200", () => {
+    expect(errorsOf(transitionWorkOrderBodySchema, { ...cancel, reason: "r".repeat(500) })).toEqual(
+      {},
+    );
+    expect(
+      errorsOf(transitionWorkOrderBodySchema, { ...cancel, reason: "r".repeat(501) }).reason,
+    ).toMatch(/500 characters or fewer/);
+    expect(errorsOf(transitionWorkOrderBodySchema, { ...needs, reason: "r".repeat(200) })).toEqual(
+      {},
+    );
+    expect(
+      errorsOf(transitionWorkOrderBodySchema, { ...needs, reason: "r".repeat(201) }).reason,
+    ).toMatch(/200 characters or fewer/);
+  });
+
+  it("limits the message for the customer to 500 characters", () => {
+    expect(
+      errorsOf(transitionWorkOrderBodySchema, { ...cancel, customerMessage: "m".repeat(500) }),
+    ).toEqual({});
+    expect(
+      errorsOf(transitionWorkOrderBodySchema, { ...cancel, customerMessage: "m".repeat(501) })
+        .customerMessage,
+    ).toMatch(/500 characters or fewer/);
+  });
+
+  it("refuses a field that does not belong to the action", () => {
+    const refused = (body: object) => errorsOf(transitionWorkOrderBodySchema, body);
+    // Starting takes nothing.
+    for (const field of ["completionNote", "internalNote", "reason", "customerMessage"]) {
+      expect(refused({ ...start, [field]: "Some words here." })[field]).toMatch(/does not take/);
+    }
+    // Completing takes no reason and no message for the customer.
+    expect(refused({ ...complete, reason: REASON }).reason).toMatch(/does not take a reason/);
+    expect(refused({ ...complete, customerMessage: "Hello there." }).customerMessage).toMatch(
+      /does not take a message for the customer/,
+    );
+    // Cancelling and rescheduling take no completion summary and no internal note.
+    for (const body of [needs, cancel]) {
+      expect(refused({ ...body, completionNote: NOTE }).completionNote).toMatch(
+        /does not take a completion summary/,
+      );
+      expect(refused({ ...body, internalNote: "Some note." }).internalNote).toMatch(
+        /does not take an internal note/,
+      );
+    }
+  });
+
+  it("does not count a blank optional text as present", () => {
+    expect(errorsOf(transitionWorkOrderBodySchema, { ...start, internalNote: "" })).toEqual({});
+    expect(errorsOf(transitionWorkOrderBodySchema, { ...complete, customerMessage: "  " })).toEqual(
+      {},
+    );
+  });
+
+  it("names the action and the status, and only the four actions exist", () => {
+    expect(errorsOf(transitionWorkOrderBodySchema, { expectedStatus: "SCHEDULED" }).action).toMatch(
+      /action must be one of: START, MARK_NEEDS_RESCHEDULING, COMPLETE, CANCEL/,
+    );
+    for (const action of ["SCHEDULE", "RESCHEDULE", "start", "COMPLETED", ""]) {
+      expect(errorsOf(transitionWorkOrderBodySchema, { ...start, action }).action).toBeDefined();
+    }
+    expect(errorsOf(transitionWorkOrderBodySchema, { action: "START" }).expectedStatus).toMatch(
+      /expectedStatus must be the status/,
+    );
+    expect(
+      errorsOf(transitionWorkOrderBodySchema, { ...start, expectedStatus: "DONE" }).expectedStatus,
+    ).toBeDefined();
+  });
+
+  it("refuses a status, a timestamp or any other key the client should not send", () => {
+    for (const extra of [
+      { status: "COMPLETED" },
+      { completedAt: "2026-03-03T15:00:00Z" },
+      { startedAt: "2026-03-03T15:00:00Z" },
+      { cancelReason: "Hidden." },
+      { internalCompletionNote: "Hidden." },
+      { technicianId: ID },
+    ]) {
+      expect(
+        transitionWorkOrderBodySchema.safeParse({ ...start, ...extra }).success,
+        JSON.stringify(extra),
+      ).toBe(false);
+    }
+  });
+});
+
+describe("listMyWorkOrdersQuerySchema (T18)", () => {
+  it("defaults to the first page of the whole list", () => {
+    const query = listMyWorkOrdersQuerySchema.parse({});
+    expect(query).toMatchObject({ page: 1, pageSize: 20 });
+    expect(query.group).toBeUndefined();
+  });
+
+  it("takes one section, and refuses another word", () => {
+    expect(listMyWorkOrdersQuerySchema.parse({ group: "upcoming" }).group).toBe("upcoming");
+    expect(listMyWorkOrdersQuerySchema.parse({ group: "past" }).group).toBe("past");
+    expect(errorsOf(listMyWorkOrdersQuerySchema, { group: "soon" }).group).toMatch(
+      /group must be one of: upcoming, past/,
+    );
+  });
+
+  it("bounds the page size at 100 and refuses a sort that is not offered", () => {
+    expect(errorsOf(listMyWorkOrdersQuerySchema, { pageSize: "101" }).pageSize).toBeDefined();
+    expect(errorsOf(listMyWorkOrdersQuerySchema, { sort: "customerId" }).sort).toBeDefined();
+  });
+});
+
+describe("the admin list's new view and sort (T18)", () => {
+  it("accepts the ready-to-invoice view and sorting by completion", () => {
+    const query = adminWorkOrdersQuerySchema.parse({
+      view: "ready-to-invoice",
+      sort: "completedAt",
+    });
+    expect(query.view).toBe("ready-to-invoice");
+    expect(query.sort).toBe("completedAt");
   });
 });

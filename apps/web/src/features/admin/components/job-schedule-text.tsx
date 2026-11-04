@@ -12,12 +12,18 @@ export function JobScheduleText({
   end,
   timeZone,
   empty = "Not scheduled yet",
+  former = false,
   className,
 }: {
   start: string | null;
   end: string | null;
   timeZone: string;
   empty?: string | undefined;
+  /**
+   * The appointment is history: the job needs a new time, or was cancelled, and the old time is
+   * kept for reference. It is labelled so it is never read as a booking.
+   */
+  former?: boolean | undefined;
   className?: string | undefined;
 }) {
   if (start === null || end === null) {
@@ -25,6 +31,9 @@ export function JobScheduleText({
   }
   return (
     <span className={cn("flex flex-col", className)}>
+      {former ? (
+        <span className="text-xs font-medium text-ink-secondary">Previously scheduled</span>
+      ) : null}
       <DateTimeText value={start} timeZone={timeZone} display="date" />
       <span className="text-ink-secondary">
         {formatTimeRange(start, end, timeZone)} {formatTimeZoneName(start, timeZone)}

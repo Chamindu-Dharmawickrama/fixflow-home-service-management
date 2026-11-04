@@ -31,6 +31,7 @@ function row(overrides: Partial<RequestDetailRow> = {}): RequestDetailRow {
     cancelledAt: null,
     cancelCustomerMessage: null,
     customer: { userId: OWNER_USER_ID },
+    workOrder: null,
     quotations: [],
     notes: [],
     ...overrides,
@@ -187,6 +188,7 @@ describe("toCustomerRequestDto", () => {
         "preferredEnd",
         "cancellation",
         "quotations",
+        "job",
         "notes",
         "timeline",
       ].sort(),
@@ -194,6 +196,31 @@ describe("toCustomerRequestDto", () => {
     expect(Object.keys(dto.address).sort()).toEqual(
       ["accessNotes", "city", "line1", "line2", "postalCode", "region"].sort(),
     );
+  });
+
+  it("has no job until the business has made one", () => {
+    expect(toCustomerRequestDto({ row: row(), timeline: [], viewer: VIEWER }).job).toBeNull();
+  });
+
+  it("links the job made from the request, with its reference and status and nothing else", () => {
+    const dto = toCustomerRequestDto({
+      row: row({
+        status: "CONVERTED_TO_JOB",
+        workOrder: {
+          id: "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+          reference: "JOB-2026-00042",
+          status: "SCHEDULED",
+        },
+      }),
+      timeline: [],
+      viewer: VIEWER,
+    });
+    expect(dto.job).toEqual({
+      id: "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+      reference: "JOB-2026-00042",
+      status: "SCHEDULED",
+      statusLabel: "Scheduled",
+    });
   });
 
   it("does not expose the owner's ids", () => {

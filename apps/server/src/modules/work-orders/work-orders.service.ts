@@ -3,6 +3,7 @@ import {
   type AdminWorkOrderDto,
   type AdminWorkOrderListResponse,
   ErrorCode,
+  InvoiceStatus,
   NotificationType,
   QuotationStatus,
   ReferenceType,
@@ -128,6 +129,17 @@ function filtersWhere(query: AdminWorkOrdersQuery, timeZone: string): Prisma.Wor
   };
 }
 
+const READY_TO_INVOICE: WorkOrderView = "ready-to-invoice";
+
+/**
+ * A completed job is ready to invoice until it has an invoice that is not void (workflow 7.5): a
+ * void invoice is a withdrawn bill, so the job is waiting for a new one. No invoice exists before
+ * T20, so every completed job qualifies.
+ */
+const READY_TO_INVOICE_WHERE: Prisma.WorkOrderWhereInput = {
+  invoices: { none: { status: { not: InvoiceStatus.VOID } } },
+};
+
 /** The statuses the list shows: those of the view, narrowed by `status` when both are given. */
 function statusesOf(query: AdminWorkOrdersQuery): WorkOrderStatus[] | undefined {
   const inView = query.view === undefined ? undefined : WORK_ORDER_VIEW_STATUSES[query.view];
@@ -153,21 +165,27 @@ export async function listAdminWorkOrders(
   const where: Prisma.WorkOrderWhereInput = {
     ...base,
     ...(statuses !== undefined && { status: { in: statuses } }),
+    ...(query.view === READY_TO_INVOICE && READY_TO_INVOICE_WHERE),
   };
 
-  const [rows, totalItems, groups] = await Promise.all([
+  const [rows, totalItems, groups, readyToInvoice] = await Promise.all([
     prisma.workOrder.findMany({
       where,
       select: ADMIN_LIST_SELECT,
       ...toPrismaPage(query, (sort, order) =>
-        // A job that has no appointment yet sorts after the ones that have, in either direction.
-        sort === "scheduledStart"
-          ? { scheduledStart: { sort: order, nulls: "last" as const } }
+        // A job that has no appointment yet (or is not completed, for `completedAt`) sorts after
+        // the ones that have, in either direction.
+        sort === "scheduledStart" || sort === "completedAt"
+          ? { [sort]: { sort: order, nulls: "last" as const } }
           : { [sort]: order },
       ),
     }),
     prisma.workOrder.count({ where }),
     prisma.workOrder.groupBy({ by: ["status"], where: base, _count: { _all: true } }),
+    // The one tab a status cannot count: completed jobs that nobody has invoiced.
+    prisma.workOrder.count({
+      where: { ...base, status: WorkOrderStatus.COMPLETED, ...READY_TO_INVOICE_WHERE },
+    }),
   ]);
 
   const countOf = (status: WorkOrderStatus) =>
@@ -175,7 +193,9 @@ export async function listAdminWorkOrders(
   const viewCounts = Object.fromEntries(
     WORK_ORDER_VIEWS.map((view) => [
       view,
-      WORK_ORDER_VIEW_STATUSES[view].reduce((sum, status) => sum + countOf(status), 0),
+      view === READY_TO_INVOICE
+        ? readyToInvoice
+        : WORK_ORDER_VIEW_STATUSES[view].reduce((sum, status) => sum + countOf(status), 0),
     ]),
   ) as Record<WorkOrderView, number>;
 
@@ -603,7 +623,7 @@ export async function scheduleWorkOrder(
       return;
     }
     const rescheduled = kind === "rescheduled";
-    const linkPath = `/portal/requests/${job.requestId}`;
+    const linkPath = `/portal/jobs/${id}`;
     const notification = await notify(tx, {
       recipientUserId: customer.id,
       type: rescheduled ? NotificationType.JOB_RESCHEDULED : NotificationType.JOB_SCHEDULED,

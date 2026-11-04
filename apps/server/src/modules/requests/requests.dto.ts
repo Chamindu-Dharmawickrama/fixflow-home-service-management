@@ -7,6 +7,7 @@ import {
   requestNextStep,
   requestStatusLabel,
   ServiceRequestStatus,
+  workOrderStatusLabel,
 } from "@fixflow/shared";
 
 import type { Prisma } from "../../generated/prisma/client.js";
@@ -60,6 +61,8 @@ export const REQUEST_DETAIL_SELECT = {
   cancelledAt: true,
   cancelCustomerMessage: true,
   customer: { select: { userId: true } },
+  // The job made from the request (T18): its reference and status, and nothing else of it.
+  workOrder: { select: { id: true, reference: true, status: true } },
   // Only what the customer was sent (T15): a draft has no `sentAt` and is never selected.
   quotations: {
     where: { sentAt: { not: null } },
@@ -142,6 +145,15 @@ export function toCustomerRequestDto(input: {
     quotations: row.quotations.map((quotation) =>
       toCustomerQuotationSummary(quotation, { now: viewer.now, timeZone: viewer.timeZone }),
     ),
+    job:
+      row.workOrder === null
+        ? null
+        : {
+            id: row.workOrder.id,
+            reference: row.workOrder.reference,
+            status: row.workOrder.status,
+            statusLabel: workOrderStatusLabel(row.workOrder.status),
+          },
     notes: row.notes.map((note) => toCustomerNote(note, row.customer.userId, viewer)),
     timeline,
   };

@@ -6,6 +6,7 @@ import {
   WORK_ORDER_STATUS_LABELS,
   WorkOrderAction,
   WorkOrderStatus,
+  type WorkOrderTransitionAction,
 } from "@fixflow/shared";
 
 import { startOfBusinessDay } from "../../lib/business-day.js";
@@ -374,6 +375,115 @@ export function scheduleNotification(input: {
         title: `Visit for ${input.reference} scheduled`,
         message: `Your visit is scheduled for ${window}.`,
       };
+}
+
+// ---- Starting, finishing, cancelling (T18, D-24) ------------------------------------------------------
+
+/**
+ * Whether a job is being started before its scheduled start. That is allowed (the technician may
+ * arrive early, or the visit may be brought forward), but the admin is told, because it is more
+ * often a slip of the finger than a plan. A job with no appointment cannot be early.
+ */
+export function startsBeforeSchedule(scheduledStart: Date | null, now: Date): boolean {
+  return scheduledStart !== null && now.getTime() < scheduledStart.getTime();
+}
+
+/** The `ActivityEvent.action` each transition records. */
+export const TRANSITION_EVENT_ACTIONS: Readonly<Record<WorkOrderTransitionAction, string>> = {
+  [A.START]: "work_order.started",
+  [A.MARK_NEEDS_RESCHEDULING]: "work_order.needs_rescheduling",
+  [A.COMPLETE]: "work_order.completed",
+  [A.CANCEL]: "work_order.cancelled",
+};
+
+export interface TransitionTexts {
+  /** The staff phrase (behind the admin's name) and the customer's phrase (behind "We"). */
+  staff: string;
+  customer: string;
+}
+
+/**
+ * The history line of a start, a "needs a new time", a completion or a cancellation. Staff read what
+ * happened and, where there is one, the internal reason; **the customer reads one fixed sentence**:
+ * no reason, no note and no technician can be in it, because none is an input of the customer's
+ * part. The completion note is not in the history line either: the customer reads it on the job.
+ */
+export function transitionTexts(input: {
+  action: WorkOrderTransitionAction;
+  reference: string;
+  timeZone: string;
+  /** Start: it was before the scheduled start. */
+  early?: boolean;
+  /** Needs a new time: the appointment it had. */
+  previous?: TimeInterval | null;
+  /** The internal reason (needs a new time, cancel). */
+  reason?: string | null;
+  /** The business wrote the customer a message. */
+  messageSent?: boolean;
+}): TransitionTexts {
+  const reason = input.reason == null ? "" : ` Reason: ${shorten(input.reason, 200)}.`;
+  const message = input.messageSent === true ? " The customer was sent a message." : "";
+
+  switch (input.action) {
+    case A.START:
+      return {
+        staff: `started job ${input.reference}${input.early === true ? " before its scheduled start" : ""}`,
+        customer: "started work on your job",
+      };
+    case A.MARK_NEEDS_RESCHEDULING: {
+      const was =
+        input.previous == null
+          ? ""
+          : ` (it was ${formatEmailWindow(input.previous.start, input.previous.end, input.timeZone)})`;
+      return {
+        staff: fit(`marked job ${input.reference} as needing a new time${was}.${message}${reason}`),
+        customer: "need to find a new time for your visit",
+      };
+    }
+    case A.COMPLETE:
+      return { staff: `completed job ${input.reference}`, customer: "marked your job as complete" };
+    case A.CANCEL:
+      return {
+        staff: fit(`cancelled job ${input.reference}.${message}${reason}`),
+        customer: "cancelled your job",
+      };
+  }
+}
+
+export interface TransitionNotificationTexts {
+  title: string;
+  message: string;
+}
+
+/**
+ * The in-app notification for a job that needs a new time, is finished or is cancelled (D-38). It
+ * names the job and the service and says what happened, nothing else. `START` has none: the
+ * business can turn it on later, and it is off because a customer does not need to be told that a
+ * technician has arrived.
+ */
+export function transitionNotification(input: {
+  action: Exclude<WorkOrderTransitionAction, "START">;
+  reference: string;
+  serviceName: string;
+}): TransitionNotificationTexts {
+  const service = shorten(input.serviceName, 100);
+  switch (input.action) {
+    case A.MARK_NEEDS_RESCHEDULING:
+      return {
+        title: `Visit for ${input.reference} needs a new time`,
+        message: `We need to find a new time for your ${service} visit. We will let you know when it is booked.`,
+      };
+    case A.COMPLETE:
+      return {
+        title: `Job ${input.reference} is complete`,
+        message: `Your ${service} job is complete. Open it to read what was done.`,
+      };
+    case A.CANCEL:
+      return {
+        title: `Job ${input.reference} was cancelled`,
+        message: `Your ${service} job was cancelled, so no visit will take place.`,
+      };
+  }
 }
 
 // ---- The list's date filter ------------------------------------------------------------------------

@@ -102,10 +102,11 @@ describe("central navigation config", () => {
     expect(navigationForRole(Role.CUSTOMER)).toBe(NAVIGATION.portal);
   });
 
-  it("lists the customer's pages in the order they are used (T10, T11)", () => {
+  it("lists the customer's pages in the order they are used (T10, T11, T18)", () => {
     expect(NAVIGATION.portal.map((item) => [item.label, item.href])).toEqual([
       ["Overview", "/portal"],
       ["Requests", "/portal/requests"],
+      ["Jobs", "/portal/jobs"],
       ["Profile", "/portal/profile"],
     ]);
   });

@@ -160,7 +160,7 @@ describe("PATCH /admin/work-orders/:id/schedule (G.2)", () => {
       type: "JOB_SCHEDULED",
       title: `Visit for ${job.reference} scheduled`,
       message: "Your visit is scheduled for Tue, Mar 3, 2026, 10:00 AM – 12:00 PM EST.",
-      linkPath: `/portal/requests/${job.request.id}`,
+      linkPath: `/portal/jobs/${job.id}`,
       entityType: "WORK_ORDER",
       entityId: job.id,
       readAt: null,
@@ -184,7 +184,7 @@ describe("PATCH /admin/work-orders/:id/schedule (G.2)", () => {
     });
     expect(sent[0]?.text).toContain("Tue, Mar 3, 2026, 10:00 AM – 12:00 PM EST");
     expect(sent[0]?.text).toContain(job.reference);
-    expect(sent[0]?.text).toContain(`/portal/requests/${job.request.id}`);
+    expect(sent[0]?.text).toContain(`/portal/jobs/${job.id}`);
   });
 
   it("keeps the technician and the staff's notes out of every customer-facing place", async () => {

@@ -15,9 +15,11 @@ import {
   JobCustomerCard,
   JobHistoryCard,
   JobLinksCard,
+  JobOutcomeCard,
   JobScheduleCard,
   JobScopeCard,
 } from "@/features/admin/components/job-detail-cards";
+import { JobProgress } from "@/features/admin/components/job-progress";
 import { adminCustomerPath } from "@/features/admin/lib/customers";
 import { adminJobPath, JOBS_PATH, SCHEDULE_PARAM } from "@/features/admin/lib/jobs";
 import { PageSkeleton } from "@/features/auth/components/area-skeleton";
@@ -116,9 +118,12 @@ async function JobContent({ params, searchParams }: JobPageProps) {
         actions={<JobActions job={job} timeZone={timeZone} openSchedule={openSchedule} />}
       />
 
+      <JobProgress job={job} />
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="flex min-w-0 flex-col gap-6">
           <JobScheduleCard job={job} timeZone={timeZone} />
+          <JobOutcomeCard job={job} timeZone={timeZone} />
           <JobScopeCard job={job} />
           <JobHistoryCard job={job} timeZone={timeZone} />
         </div>

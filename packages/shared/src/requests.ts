@@ -1,6 +1,6 @@
 import type { CustomerTimelineEventDto } from "./activity.js";
 import type { PaginatedResponse } from "./api.js";
-import { PreferredWindow, ServiceRequestStatus } from "./enums.js";
+import { PreferredWindow, ServiceRequestStatus, type WorkOrderStatus } from "./enums.js";
 import type { CustomerQuotationSummaryDto } from "./quotations.js";
 
 /**
@@ -174,6 +174,15 @@ export interface CustomerRequestCancellationDto {
  * `GET /api/v1/requests/:id` and the answer to `POST /api/v1/requests`: a request in full, as its
  * owner sees it. An admin who opens the same URL gets this same shape (D-41).
  */
+/** The job made from a request once its quotation was accepted and the business set the work up (T18). */
+export interface CustomerRequestJobDto {
+  id: string;
+  /** `JOB-YYYY-NNNNN`. */
+  reference: string;
+  status: WorkOrderStatus;
+  statusLabel: string;
+}
+
 export interface CustomerRequestDto extends CustomerRequestListItemDto {
   description: string;
   address: RequestAddressDto;
@@ -187,6 +196,8 @@ export interface CustomerRequestDto extends CustomerRequestListItemDto {
    * current one. A draft is never in the list.
    */
   quotations: CustomerQuotationSummaryDto[];
+  /** The job made from this request; `null` until there is one. The customer opens it for the schedule. */
+  job: CustomerRequestJobDto | null;
   notes: CustomerRequestNoteDto[];
   timeline: CustomerTimelineEventDto[];
 }

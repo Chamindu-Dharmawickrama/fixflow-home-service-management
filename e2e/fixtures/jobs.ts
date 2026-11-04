@@ -129,13 +129,22 @@ export async function requestStatusOf(requestId: string): Promise<string> {
   });
 }
 
-/** The customer's notifications about their jobs, newest first. */
-export async function jobNotificationsFor(customerUserId: string) {
+/** The customer's notifications about their jobs, newest first. By default the scheduling ones (T17). */
+export async function jobNotificationsFor(
+  customerUserId: string,
+  types: Array<
+    | "JOB_SCHEDULED"
+    | "JOB_RESCHEDULED"
+    | "JOB_NEEDS_RESCHEDULING"
+    | "JOB_COMPLETED"
+    | "JOB_CANCELLED"
+  > = ["JOB_SCHEDULED", "JOB_RESCHEDULED"],
+) {
   return withDatabase((prisma) =>
     prisma.notification.findMany({
       where: {
         recipientUserId: customerUserId,
-        type: { in: ["JOB_SCHEDULED", "JOB_RESCHEDULED"] },
+        type: { in: types },
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       select: { type: true, title: true, message: true, linkPath: true },

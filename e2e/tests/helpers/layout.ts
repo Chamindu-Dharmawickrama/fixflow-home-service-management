@@ -71,3 +71,30 @@ export async function expectHydrated(locator: Locator): Promise<void> {
 export async function isFocusWithin(container: Locator): Promise<boolean> {
   return container.evaluate((element) => element.contains(document.activeElement));
 }
+
+/**
+ * The box of a dialog, sheet or menu lies inside the viewport, with nothing cut off at either side.
+ * It waits for the animations that end first (a sheet slides in, a dialog fades in): measured
+ * mid-way, its box is not where it will rest.
+ */
+export async function expectInsideScreen(
+  page: Page,
+  dialog: Locator,
+  label: string,
+): Promise<void> {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  );
+  const box = await dialog.boundingBox();
+  const viewport = page.viewportSize();
+  expect(box, `${label} has a box`).not.toBeNull();
+  expect(box?.x ?? -1, `${label} starts inside the screen`).toBeGreaterThanOrEqual(0);
+  expect((box?.x ?? 0) + (box?.width ?? 0), `${label} ends inside the screen`).toBeLessThanOrEqual(
+    (viewport?.width ?? 0) + 0.5,
+  );
+}

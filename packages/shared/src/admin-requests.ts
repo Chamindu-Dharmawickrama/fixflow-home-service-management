@@ -138,7 +138,7 @@ export interface AdminRequestCancellationDto {
  */
 export interface AdminRequestDto extends Omit<
   CustomerRequestDto,
-  "notes" | "timeline" | "cancellation" | "quotations"
+  "notes" | "timeline" | "cancellation" | "quotations" | "job"
 > {
   /** The service as it is now (`serviceName` is what it was called when the request was made). */
   serviceId: string;

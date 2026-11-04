@@ -39,6 +39,7 @@ export const VIEW_LABELS: Readonly<Record<WorkOrderView, string>> = {
   "needs-scheduling": "Needs scheduling",
   upcoming: "Upcoming",
   "in-progress": "In progress",
+  "ready-to-invoice": "Ready to invoice",
   completed: "Completed",
   all: "All",
 };
@@ -55,6 +56,8 @@ export const VIEW_DEFAULT_SORT: Readonly<
   "needs-scheduling": { sort: "createdAt", order: "asc" },
   upcoming: { sort: "scheduledStart", order: "asc" },
   "in-progress": { sort: "scheduledStart", order: "asc" },
+  // The job that has waited longest for its invoice comes first.
+  "ready-to-invoice": { sort: "completedAt", order: "asc" },
   completed: { sort: "scheduledStart", order: "desc" },
   all: { sort: "createdAt", order: "desc" },
 };

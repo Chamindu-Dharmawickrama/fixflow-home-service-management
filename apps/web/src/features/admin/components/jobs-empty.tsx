@@ -1,5 +1,13 @@
 import type { WorkOrderView } from "@fixflow/shared";
-import { Briefcase, CalendarCheck, FileSearch, Hammer, SearchX, Wrench } from "lucide-react";
+import {
+  Briefcase,
+  CalendarCheck,
+  FileSearch,
+  Hammer,
+  Receipt,
+  SearchX,
+  Wrench,
+} from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -89,12 +97,21 @@ export function JobsEmpty({
           description="A job is listed here from the moment work starts until it is completed."
         />
       );
+    case "ready-to-invoice":
+      return (
+        <EmptyState
+          icon={Receipt}
+          title="Nothing is waiting to be invoiced"
+          description="A completed job is listed here until it has an invoice. Jobs still being worked on are under In progress."
+          action={link(jobsTabHref({}, "in-progress"), "See jobs in progress")}
+        />
+      );
     case "completed":
       return (
         <EmptyState
           icon={Wrench}
           title="No completed jobs yet"
-          description="Finished jobs are kept here, ready to be invoiced."
+          description="Finished jobs are kept here, whether or not they have been invoiced."
         />
       );
     case "all":

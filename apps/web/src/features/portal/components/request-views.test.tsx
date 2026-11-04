@@ -53,6 +53,7 @@ function request(overrides: Partial<CustomerRequestDto> = {}): CustomerRequestDt
     preferredEnd: "2026-11-10T17:00:00.000Z",
     cancellation: null,
     quotations: [],
+    job: null,
     notes: [],
     timeline: [],
     ...overrides,

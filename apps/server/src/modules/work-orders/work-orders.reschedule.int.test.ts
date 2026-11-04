@@ -197,7 +197,7 @@ describe("rescheduling a scheduled job (G.4)", () => {
       recipientUserId: w.alex.user.id,
       title: `Visit for ${job.reference} rescheduled`,
       message: "Your visit has moved to Wed, Mar 4, 2026, 2:00 – 4:00 PM EST.",
-      linkPath: `/portal/requests/${job.request.id}`,
+      linkPath: `/portal/jobs/${job.id}`,
       entityType: "WORK_ORDER",
       entityId: job.id,
     });

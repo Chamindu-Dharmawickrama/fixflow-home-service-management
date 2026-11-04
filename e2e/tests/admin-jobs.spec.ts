@@ -157,7 +157,7 @@ test("an admin creates a job from an accepted quotation, schedules it with Jorda
   expect(notice).toMatchObject({
     type: "JOB_SCHEDULED",
     title: `Visit for ${job.reference} scheduled`,
-    linkPath: `/portal/requests/${request.id}`,
+    linkPath: `/portal/jobs/${job.id}`,
   });
   expect(notice?.message).toContain("10:00 AM – 12:00 PM");
   const email = await waitForEmailTo(customer.email);
@@ -375,7 +375,12 @@ test("sends a visitor to sign in, turns a customer away from the pages and the A
   await page.waitForURL(/\/login\?returnTo=%2Fapp%2Fjobs/, { timeout: NAVIGATION_TIMEOUT });
 
   await loginAs(page, customer);
-  await expect(page.getByRole("link", { name: "Jobs", exact: true })).toHaveCount(0);
+  // A customer has a "Jobs" of their own since T18 (the portal's); the business's list is never offered.
+  await expect(page.locator('a[href="/app/jobs"]')).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Jobs", exact: true }).first()).toHaveAttribute(
+    "href",
+    "/portal/jobs",
+  );
   await page.goto("/app/jobs");
   await expect(
     page.getByRole("heading", { level: 1, name: "This area is for the business team" }),

@@ -359,18 +359,25 @@ export function renderJobRescheduledEmail(input: Branded<JobRescheduledEmailInpu
   });
 }
 
-export type JobNeedsReschedulingEmailInput = JobEmailBase;
+export interface JobNeedsReschedulingEmailInput extends JobEmailBase {
+  /**
+   * What the business chose to tell the customer. There is deliberately **no field for the internal
+   * reason**: it cannot be passed in, so it cannot reach a customer (BR-19).
+   */
+  customerMessage?: string | undefined;
+}
 
 export function renderJobNeedsReschedulingEmail(
   input: Branded<JobNeedsReschedulingEmailInput>,
 ): RenderedEmail {
-  const { customerName, serviceName, jobUrl } = input;
+  const { businessName, customerName, serviceName, jobUrl, customerMessage } = input;
   return renderEmail(input, {
     subject: `We need to find a new time for your ${serviceName} visit`,
     heading: "We need to reschedule your visit",
     intro: [
       greeting(customerName),
       `We can no longer keep the time we had for your ${serviceName} visit, and we are arranging a new one. You will be notified as soon as it is scheduled.`,
+      ...customerMessageParagraphs(businessName, customerMessage),
     ],
     details: jobDetails(input),
     action: { label: "View job details", url: jobUrl },
@@ -395,16 +402,23 @@ export function renderJobCompletedEmail(input: Branded<JobCompletedEmailInput>):
   });
 }
 
-export type JobCancelledEmailInput = JobEmailBase;
+export interface JobCancelledEmailInput extends JobEmailBase {
+  /**
+   * What the business chose to tell the customer. There is deliberately **no field for the internal
+   * cancellation reason** (BR-19).
+   */
+  customerMessage?: string | undefined;
+}
 
 export function renderJobCancelledEmail(input: Branded<JobCancelledEmailInput>): RenderedEmail {
-  const { customerName, serviceName, jobUrl } = input;
+  const { businessName, customerName, serviceName, jobUrl, customerMessage } = input;
   return renderEmail(input, {
     subject: `Your ${serviceName} job was cancelled`,
     heading: "Your job was cancelled",
     intro: [
       greeting(customerName),
       `Your ${serviceName} job has been cancelled, so no visit will take place.`,
+      ...customerMessageParagraphs(businessName, customerMessage),
     ],
     details: jobDetails(input),
     action: { label: "View job details", url: jobUrl },

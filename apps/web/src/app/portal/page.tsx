@@ -2,6 +2,7 @@ import type {
   CustomerProfileDto,
   CustomerQuotationListResponse,
   CustomerRequestListResponse,
+  CustomerWorkOrderListResponse,
 } from "@fixflow/shared";
 import { Plus } from "lucide-react";
 import type { Metadata } from "next";
@@ -16,6 +17,8 @@ import { REQUEST_SERVICE_PATH } from "@/features/marketing/lib/request-service";
 import { AwaitingDecision } from "@/features/portal/components/awaiting-decision";
 import { ProfileSummaryCard } from "@/features/portal/components/profile-summary-card";
 import { RecentRequests } from "@/features/portal/components/recent-requests";
+import { UpcomingVisits } from "@/features/portal/components/upcoming-visits";
+import { homeUpcomingQuery } from "@/features/portal/lib/jobs";
 import { AWAITING_DECISION_COUNT } from "@/features/portal/lib/quotations";
 import { RECENT_REQUESTS_COUNT, toApiQueryString } from "@/features/portal/lib/requests-list";
 import { serverApiGet, serverApiGetEnvelope } from "@/lib/api/server";
@@ -32,9 +35,9 @@ export const metadata: Metadata = { title: "Overview" };
 export const instant = false;
 
 /**
- * The customer's home (T05, T10, T11, T15): a greeting, the way to send a request, the quotations
- * awaiting their decision, the latest requests and a summary of their profile. Jobs and invoices
- * are added as they are built; nothing here pretends otherwise.
+ * The customer's home (T05, T10, T11, T15, T18): a greeting, the way to send a request, the
+ * quotations awaiting their decision, their upcoming visits, the latest requests and a summary of
+ * their profile. Invoices are added as they are built; nothing here pretends otherwise.
  */
 export default function PortalHomePage() {
   return (
@@ -53,9 +56,10 @@ async function PortalHomeContent() {
   let profile: CustomerProfileDto;
   let recent: CustomerRequestListResponse;
   let awaiting: CustomerQuotationListResponse;
+  let upcoming: CustomerWorkOrderListResponse;
   let timeZone: string;
   try {
-    [profile, recent, awaiting, { timeZone }] = await Promise.all([
+    [profile, recent, awaiting, upcoming, { timeZone }] = await Promise.all([
       serverApiGet<CustomerProfileDto>("/customers/me"),
       serverApiGetEnvelope<CustomerRequestListResponse>(
         `/requests/me?${toApiQueryString({ status: undefined, page: 1 }, RECENT_REQUESTS_COUNT)}`,
@@ -64,6 +68,8 @@ async function PortalHomeContent() {
       serverApiGetEnvelope<CustomerQuotationListResponse>(
         `/quotations/me?status=SENT&pageSize=${AWAITING_DECISION_COUNT}`,
       ),
+      // The first few jobs with something still to happen: a booked visit, then a job awaiting a time.
+      serverApiGetEnvelope<CustomerWorkOrderListResponse>(`/work-orders/me?${homeUpcomingQuery()}`),
       getPublicSettings(),
     ]);
   } catch (error) {
@@ -92,6 +98,11 @@ async function PortalHomeContent() {
         }
       />
       <AwaitingDecision quotations={awaiting.data} timeZone={timeZone} now={new Date()} />
+      <UpcomingVisits
+        jobs={upcoming.data}
+        totalItems={upcoming.pagination.totalItems}
+        timeZone={timeZone}
+      />
       <RecentRequests
         requests={recent.data}
         totalItems={recent.pagination.totalItems}

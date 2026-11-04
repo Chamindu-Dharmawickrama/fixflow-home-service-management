@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 import { createCustomerAccount } from "../fixtures/accounts.js";
 import { createJobFor } from "../fixtures/customers.js";
@@ -18,6 +18,7 @@ import { loginAs } from "../support/auth.js";
 import { dialogReady, fillSchedule, scheduleDialog } from "./helpers/jobs.js";
 import {
   expectHydrated,
+  expectInsideScreen,
   expectNoHorizontalOverflow,
   NAVIGATION_TIMEOUT,
   useViewport,
@@ -50,26 +51,6 @@ function longNameFor(tag: string): string {
 async function toastsGone(page: Page): Promise<void> {
   await page.mouse.move(1, 1);
   await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, { timeout: 15_000 });
-}
-
-/** The box of a dialog lies inside the viewport, with nothing cut off at either side. */
-async function expectInsideScreen(page: Page, dialog: Locator, label: string): Promise<void> {
-  // A dialog fades in: measured mid-way, its box is not where it will rest.
-  await page.evaluate(() =>
-    Promise.all(
-      document
-        .getAnimations()
-        .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
-        .map((animation) => animation.finished.catch(() => undefined)),
-    ),
-  );
-  const box = await dialog.boundingBox();
-  const viewport = page.viewportSize();
-  expect(box, `${label} has a box`).not.toBeNull();
-  expect(box?.x ?? -1, `${label} starts inside the screen`).toBeGreaterThanOrEqual(0);
-  expect((box?.x ?? 0) + (box?.width ?? 0), `${label} ends inside the screen`).toBeLessThanOrEqual(
-    (viewport?.width ?? 0) + 0.5,
-  );
 }
 
 /** A world with a job in each interesting state, every name as long as it may be. */

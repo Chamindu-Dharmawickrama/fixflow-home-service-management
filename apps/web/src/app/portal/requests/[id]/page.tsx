@@ -19,6 +19,7 @@ import {
   RequestHistoryCard,
   RequestNotesCard,
 } from "@/features/portal/components/request-details";
+import { RequestJobCard } from "@/features/portal/components/request-job-card";
 import { RequestQuotationsCard } from "@/features/portal/components/request-quotations-card";
 import { requestPath, REQUESTS_PATH } from "@/features/portal/lib/requests-list";
 import { isApiError } from "@/lib/api";
@@ -123,6 +124,7 @@ async function RequestContent({ params, searchParams }: RequestPageProps) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="flex flex-col gap-6">
           <NextStepCard request={request} />
+          <RequestJobCard job={request.job} />
           <RequestQuotationsCard
             quotations={request.quotations}
             timeZone={timeZone}

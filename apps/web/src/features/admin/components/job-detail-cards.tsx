@@ -1,5 +1,5 @@
-import type { AdminWorkOrderDto } from "@fixflow/shared";
-import { ArrowRight, CalendarClock, Mail, Phone } from "lucide-react";
+import { type AdminWorkOrderDto, WorkOrderStatus } from "@fixflow/shared";
+import { ArrowRight, CalendarClock, Eye, Lock, Mail, Phone } from "lucide-react";
 import Link from "next/link";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,10 +25,79 @@ interface CardProps {
   timeZone: string;
 }
 
+/** The statuses in which the job's appointment stands or took place; in any other it is history at most. */
+const STANDING_APPOINTMENT: readonly WorkOrderStatus[] = [
+  WorkOrderStatus.SCHEDULED,
+  WorkOrderStatus.IN_PROGRESS,
+  WorkOrderStatus.COMPLETED,
+];
+
+/**
+ * What the appointment card says when no appointment stands: a job that has not been given a time, one
+ * that needs a new time, one that was cancelled. A job that needs a new time keeps the appointment it
+ * had, shown as "Previously scheduled" so it is never read as a booking.
+ */
+function NoAppointment({ job, timeZone }: CardProps) {
+  const former = job.scheduledStart !== null && job.scheduledEnd !== null;
+  const { heading, guidance } = ((): { heading: string; guidance: string } => {
+    switch (job.status) {
+      case WorkOrderStatus.NEEDS_RESCHEDULING:
+        return {
+          heading: "Needs a new time",
+          guidance:
+            "Choose a new day, a time and a technician with Schedule. The customer has been told we need to find a new time.",
+        };
+      case WorkOrderStatus.CANCELLED:
+        return {
+          heading: "Cancelled",
+          guidance: "This job was cancelled, so no visit will take place.",
+        };
+      default:
+        return {
+          heading: "Not scheduled yet",
+          guidance: job.availableActions.includes("SCHEDULE")
+            ? "Choose a day, a time and a technician. The customer is told the date and time as soon as you save."
+            : "This job has no appointment.",
+        };
+    }
+  })();
+
+  return (
+    <div className="flex flex-col items-start gap-4">
+      <div className="flex flex-col items-start gap-2">
+        <p className="flex items-center gap-2 text-base font-semibold text-ink">
+          <CalendarClock aria-hidden="true" className="size-5 shrink-0 text-ink-muted" />
+          {heading}
+        </p>
+        <p className="text-sm text-ink-secondary">{guidance}</p>
+      </div>
+      {former ? (
+        <DescriptionList>
+          <DescriptionItem term="Previously scheduled">
+            <JobScheduleText
+              start={job.scheduledStart}
+              end={job.scheduledEnd}
+              timeZone={timeZone}
+            />
+          </DescriptionItem>
+          {job.technician === null ? null : (
+            <DescriptionItem term="Technician then">
+              <TechnicianName name={job.technician.name} color={job.technician.calendarColor} />
+            </DescriptionItem>
+          )}
+        </DescriptionList>
+      ) : null}
+    </div>
+  );
+}
+
 /** When the visit is and who is going, or a plain "not scheduled yet" that says what to do next. */
 export function JobScheduleCard({ job, timeZone }: CardProps) {
   const { technician } = job;
-  const scheduled = job.scheduledStart !== null && job.scheduledEnd !== null;
+  const scheduled =
+    job.scheduledStart !== null &&
+    job.scheduledEnd !== null &&
+    STANDING_APPOINTMENT.includes(job.status);
 
   return (
     <Card>
@@ -102,21 +171,91 @@ export function JobScheduleCard({ job, timeZone }: CardProps) {
             )}
           </DescriptionList>
         ) : (
-          <div className="flex flex-col items-start gap-2">
-            <p className="flex items-center gap-2 text-base font-semibold text-ink">
-              <CalendarClock aria-hidden="true" className="size-5 shrink-0 text-ink-muted" />
-              Not scheduled yet
-            </p>
-            <p className="text-sm text-ink-secondary">
-              {job.availableActions.includes("SCHEDULE")
-                ? "Choose a day, a time and a technician. The customer is told the date and time as soon as you save."
-                : "This job has no appointment."}
-            </p>
-          </div>
+          <NoAppointment job={job} timeZone={timeZone} />
         )}
       </CardContent>
     </Card>
   );
+}
+
+/** Who may read a piece of text, said in words and with an icon (never by colour alone). */
+function Audience({ customer }: { customer: boolean }) {
+  const Icon = customer ? Eye : Lock;
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-secondary">
+      <Icon aria-hidden="true" className="size-3.5 shrink-0" />
+      {customer ? "Shown to the customer" : "Team only"}
+    </span>
+  );
+}
+
+/**
+ * How a job ended, with every note labelled by who can read it (BR-19): a completed job's summary
+ * (the customer reads it) and internal note (the team only), or a cancelled job's reason (the team
+ * only). A job that has not ended has nothing to show.
+ */
+export function JobOutcomeCard({ job, timeZone }: CardProps) {
+  if (job.status === WorkOrderStatus.COMPLETED) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">Completion details</CardTitle>
+          <CardDescription>What was recorded when the work was finished.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-5">
+          <section aria-labelledby="completion-summary-heading" className="flex flex-col gap-1.5">
+            <h3 id="completion-summary-heading" className="text-sm font-semibold text-ink">
+              Completion summary
+            </h3>
+            <Audience customer />
+            <p className="whitespace-pre-line break-words text-sm text-ink">
+              {job.completionNote ?? "No summary was recorded."}
+            </p>
+          </section>
+          <section aria-labelledby="completion-internal-heading" className="flex flex-col gap-1.5">
+            <h3 id="completion-internal-heading" className="text-sm font-semibold text-ink">
+              Internal note
+            </h3>
+            <Audience customer={false} />
+            {job.internalCompletionNote === null ? (
+              <p className="text-sm text-ink-secondary">No internal note was recorded.</p>
+            ) : (
+              <p className="whitespace-pre-line break-words text-sm text-ink">
+                {job.internalCompletionNote}
+              </p>
+            )}
+          </section>
+        </CardContent>
+      </Card>
+    );
+  }
+  if (job.status === WorkOrderStatus.CANCELLED) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">Cancellation</CardTitle>
+          <CardDescription>
+            {job.cancelledAt === null ? (
+              "This job was cancelled."
+            ) : (
+              <>
+                Cancelled <DateTimeText value={job.cancelledAt} timeZone={timeZone} />{" "}
+                {formatTimeZoneName(job.cancelledAt, timeZone)}.
+              </>
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-1.5">
+          <h3 className="text-sm font-semibold text-ink">Reason</h3>
+          <Audience customer={false} />
+          <p className="whitespace-pre-line break-words text-sm text-ink">
+            {job.cancelReason ?? "No reason was recorded."}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+  return null;
 }
 
 /** What the job is for, and the work and prices the customer agreed to. */

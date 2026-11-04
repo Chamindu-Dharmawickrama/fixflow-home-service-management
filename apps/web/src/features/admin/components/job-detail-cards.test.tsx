@@ -1,12 +1,23 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { adminJob, CUSTOMER_ID, QUOTATION_ID, REQUEST_ID, unscheduledJob } from "../test-fixtures";
+import {
+  adminJob,
+  cancelledJob,
+  completedJob,
+  CUSTOMER_ID,
+  needsReschedulingJob,
+  QUOTATION_ID,
+  REQUEST_ID,
+  startedJob,
+  unscheduledJob,
+} from "../test-fixtures";
 import {
   JobAddressCard,
   JobCustomerCard,
   JobHistoryCard,
   JobLinksCard,
+  JobOutcomeCard,
   JobScheduleCard,
   JobScopeCard,
 } from "./job-detail-cards";
@@ -67,7 +78,9 @@ describe("JobScheduleCard", () => {
         timeZone={NEW_YORK}
       />,
     );
-    expect(screen.getByText("This job has no appointment.")).toBeVisible();
+    expect(screen.getByText("Cancelled")).toBeVisible();
+    expect(screen.getByText(/so no visit will take place/)).toBeVisible();
+    expect(screen.queryByText(/Choose a day, a time and a technician/)).not.toBeInTheDocument();
   });
 
   it("shows when the work started and finished once it has", () => {
@@ -202,5 +215,92 @@ describe("JobHistoryCard", () => {
   it("says nothing has happened rather than showing an empty box", () => {
     render(<JobHistoryCard job={adminJob({ timeline: [] })} timeZone={NEW_YORK} />);
     expect(screen.getByText("Nothing has happened yet.")).toBeVisible();
+  });
+});
+
+describe("JobScheduleCard: a job that gave up its time (T18)", () => {
+  it("shows the old appointment of a job that needs a new time as history, never as a booking", () => {
+    render(<JobScheduleCard job={needsReschedulingJob()} timeZone={NEW_YORK} />);
+
+    expect(screen.getByText("Needs a new time")).toBeVisible();
+    expect(
+      screen.getByText(/Choose a new day, a time and a technician with Schedule/),
+    ).toBeVisible();
+    expect(screen.getByText("Previously scheduled")).toBeVisible();
+    expect(screen.getByText("Technician then")).toBeVisible();
+    // It is not read as a live appointment.
+    expect(screen.queryByText("When")).not.toBeInTheDocument();
+    expect(screen.queryByText("Length")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Inactive/)).not.toBeInTheDocument();
+  });
+
+  it("says a cancelled job is cancelled and keeps its old time as history", () => {
+    render(<JobScheduleCard job={cancelledJob()} timeZone={NEW_YORK} />);
+
+    expect(screen.getByText("Cancelled")).toBeVisible();
+    expect(screen.getByText(/so no visit will take place/)).toBeVisible();
+    expect(screen.getByText("Previously scheduled")).toBeVisible();
+    expect(screen.queryByText(/Choose a/)).not.toBeInTheDocument();
+  });
+
+  it("says nothing of a previous time for a job that was never scheduled", () => {
+    render(
+      <JobScheduleCard
+        job={cancelledJob({ scheduledStart: null, scheduledEnd: null, technician: null })}
+        timeZone={NEW_YORK}
+      />,
+    );
+    expect(screen.queryByText("Previously scheduled")).not.toBeInTheDocument();
+  });
+
+  it("shows the start of a job that is under way", () => {
+    render(<JobScheduleCard job={startedJob()} timeZone={NEW_YORK} />);
+    expect(screen.getByText("Started")).toBeVisible();
+    expect(screen.getByText("When")).toBeVisible();
+  });
+});
+
+describe("JobOutcomeCard (T18)", () => {
+  it("labels the completion summary as shown to the customer and the internal note as team only", () => {
+    render(<JobOutcomeCard job={completedJob()} timeZone={NEW_YORK} />);
+
+    const summary = screen.getByRole("region", { name: "Completion summary" });
+    expect(within(summary).getByText("Shown to the customer")).toBeVisible();
+    expect(within(summary).getByText(/Replaced the run capacitor/)).toBeVisible();
+
+    const internal = screen.getByRole("region", { name: "Internal note" });
+    expect(within(internal).getByText("Team only")).toBeVisible();
+    expect(within(internal).getByText("Offer a surge protector at the next visit.")).toBeVisible();
+  });
+
+  it("says plainly when a note was not recorded", () => {
+    render(
+      <JobOutcomeCard
+        job={completedJob({ completionNote: null, internalCompletionNote: null })}
+        timeZone={NEW_YORK}
+      />,
+    );
+    expect(screen.getByText("No summary was recorded.")).toBeVisible();
+    expect(screen.getByText("No internal note was recorded.")).toBeVisible();
+  });
+
+  it("shows a cancelled job's reason as team only, with when it was cancelled", () => {
+    render(<JobOutcomeCard job={cancelledJob()} timeZone={NEW_YORK} />);
+
+    expect(screen.getByRole("heading", { name: "Cancellation" })).toBeVisible();
+    expect(screen.getByText(/^Cancelled/, { selector: "p" })).toHaveTextContent(
+      "Cancelled Mar 2, 2026, 1:00 PM EST.",
+    );
+    expect(screen.getByText("Team only")).toBeVisible();
+    expect(screen.getByText("The customer moved away before the visit.")).toBeVisible();
+    expect(screen.queryByText("Shown to the customer")).not.toBeInTheDocument();
+  });
+
+  it("draws nothing for a job that has not ended", () => {
+    for (const job of [unscheduledJob(), adminJob(), startedJob(), needsReschedulingJob()]) {
+      const { container, unmount } = render(<JobOutcomeCard job={job} timeZone={NEW_YORK} />);
+      expect(container).toBeEmptyDOMElement();
+      unmount();
+    }
   });
 });

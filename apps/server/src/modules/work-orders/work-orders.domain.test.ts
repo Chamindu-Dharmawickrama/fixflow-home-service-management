@@ -21,7 +21,10 @@ import {
   scheduleTexts,
   schedulingConflictError,
   staleWorkOrderError,
+  startsBeforeSchedule,
   technicianInactiveError,
+  transitionNotification,
+  transitionTexts,
   validateSchedule,
   WORK_ORDER_ACTION_TARGET,
   WORK_ORDER_TRANSITIONS,
@@ -529,5 +532,215 @@ describe("scheduledRange (the list's date filter)", () => {
     expect(scheduledRange(undefined, "2026-03-03", NEW_YORK)).toEqual({
       before: new Date("2026-03-04T05:00:00.000Z"),
     });
+  });
+});
+
+describe("every status against every action (D-24, the whole table)", () => {
+  // The rows are the statuses, the columns the actions. Anything not listed is refused with 409.
+  const MATRIX: Record<WorkOrderStatus, readonly WorkOrderAction[]> = {
+    [S.PENDING_SCHEDULING]: [A.SCHEDULE, A.CANCEL],
+    [S.NEEDS_RESCHEDULING]: [A.SCHEDULE, A.CANCEL],
+    [S.SCHEDULED]: [A.RESCHEDULE, A.START, A.MARK_NEEDS_RESCHEDULING, A.CANCEL],
+    [S.IN_PROGRESS]: [A.COMPLETE, A.MARK_NEEDS_RESCHEDULING],
+    [S.COMPLETED]: [],
+    [S.CANCELLED]: [],
+  };
+
+  const pairs = Object.values(S).flatMap((status) =>
+    Object.values(A).map((action) => ({
+      status,
+      action,
+      allowed: MATRIX[status].includes(action),
+    })),
+  );
+
+  it("covers all 36 pairs, ten of them allowed", () => {
+    expect(pairs).toHaveLength(36);
+    expect(pairs.filter((pair) => pair.allowed)).toHaveLength(10);
+  });
+
+  it.each(pairs)("$action from $status is allowed: $allowed", ({ status, action, allowed }) => {
+    expect(canPerformWorkOrderAction(status, action)).toBe(allowed);
+    expect(availableWorkOrderActions(status).includes(action)).toBe(allowed);
+    if (allowed) {
+      expect(() => assertWorkOrderAction(status, action)).not.toThrow();
+    } else {
+      try {
+        assertWorkOrderAction(status, action);
+        expect.unreachable();
+      } catch (error) {
+        expect(isAppError(error) && error.status).toBe(409);
+        expect(isAppError(error) && error.code).toBe(ErrorCode.INVALID_STATE_TRANSITION);
+      }
+    }
+  });
+
+  it("never lets a job jump to completed without being started (spec 6.4)", () => {
+    expect(canPerformWorkOrderAction(S.PENDING_SCHEDULING, A.COMPLETE)).toBe(false);
+    expect(canPerformWorkOrderAction(S.SCHEDULED, A.COMPLETE)).toBe(false);
+    expect(canPerformWorkOrderAction(S.NEEDS_RESCHEDULING, A.COMPLETE)).toBe(false);
+  });
+
+  it("only lets a job be started from scheduled, and completed from in progress", () => {
+    const startable = Object.values(S).filter((status) =>
+      canPerformWorkOrderAction(status, A.START),
+    );
+    const completable = Object.values(S).filter((status) =>
+      canPerformWorkOrderAction(status, A.COMPLETE),
+    );
+    expect(startable).toEqual([S.SCHEDULED]);
+    expect(completable).toEqual([S.IN_PROGRESS]);
+  });
+});
+
+describe("startsBeforeSchedule", () => {
+  const start = new Date("2026-03-03T15:00:00.000Z");
+
+  it("is true before the scheduled start and false from that moment on", () => {
+    expect(startsBeforeSchedule(start, new Date("2026-03-03T14:59:59.999Z"))).toBe(true);
+    expect(startsBeforeSchedule(start, new Date("2026-03-03T15:00:00.000Z"))).toBe(false);
+    expect(startsBeforeSchedule(start, new Date("2026-03-03T15:30:00.000Z"))).toBe(false);
+  });
+
+  it("is false for a job with no appointment, which cannot be early", () => {
+    expect(startsBeforeSchedule(null, new Date("2026-03-03T10:00:00.000Z"))).toBe(false);
+  });
+});
+
+describe("transitionTexts", () => {
+  const previous = at("15:00", "17:00");
+  const REASON = "The part will not arrive before Friday, so the visit cannot go ahead.";
+  const lifecycleActions = [A.START, A.MARK_NEEDS_RESCHEDULING, A.COMPLETE, A.CANCEL] as const;
+
+  it("tells the customer one fixed sentence per action, with no reason in it", () => {
+    for (const action of lifecycleActions) {
+      const texts = transitionTexts({
+        action,
+        reference: "JOB-2026-00042",
+        timeZone: NEW_YORK,
+        previous,
+        reason: REASON,
+        messageSent: true,
+      });
+      expect(texts.customer).not.toContain("part");
+      expect(texts.customer).not.toContain("Friday");
+      expect(texts.customer).not.toContain("JOB-");
+      expect(texts.customer.length).toBeGreaterThan(10);
+    }
+  });
+
+  it("builds the sentences the customer's timeline reads", () => {
+    const customerLine = (action: (typeof lifecycleActions)[number]) =>
+      buildActivitySummaries({
+        actor: { kind: "staff", name: "Morgan Reyes" },
+        ...transitionTexts({ action, reference: "JOB-2026-00042", timeZone: NEW_YORK }),
+      }).publicSummary;
+    expect(customerLine(A.START)).toBe("We started work on your job.");
+    expect(customerLine(A.MARK_NEEDS_RESCHEDULING)).toBe(
+      "We need to find a new time for your visit.",
+    );
+    expect(customerLine(A.COMPLETE)).toBe("We marked your job as complete.");
+    expect(customerLine(A.CANCEL)).toBe("We cancelled your job.");
+  });
+
+  it("gives staff the reason, the old time and that a message was sent", () => {
+    const needs = transitionTexts({
+      action: A.MARK_NEEDS_RESCHEDULING,
+      reference: "JOB-2026-00042",
+      timeZone: NEW_YORK,
+      previous,
+      reason: REASON,
+      messageSent: true,
+    }).staff;
+    expect(needs).toContain("marked job JOB-2026-00042 as needing a new time");
+    expect(needs).toContain("it was Tue, Mar 3, 2026, 10:00 AM – 12:00 PM EST");
+    expect(needs).toContain(`Reason: ${REASON}`);
+    expect(needs).toContain("The customer was sent a message.");
+
+    const cancelled = transitionTexts({
+      action: A.CANCEL,
+      reference: "JOB-2026-00042",
+      timeZone: NEW_YORK,
+      reason: REASON,
+    }).staff;
+    expect(cancelled).toBe(`cancelled job JOB-2026-00042. Reason: ${REASON}.`);
+  });
+
+  it("says a job was started early only when it was", () => {
+    const base = { action: A.START, reference: "JOB-2026-00042", timeZone: NEW_YORK } as const;
+    expect(transitionTexts({ ...base, early: true }).staff).toBe(
+      "started job JOB-2026-00042 before its scheduled start",
+    );
+    expect(transitionTexts({ ...base, early: false }).staff).toBe("started job JOB-2026-00042");
+  });
+
+  it("does not put the completion note anywhere in the history line", () => {
+    expect(
+      transitionTexts({ action: A.COMPLETE, reference: "JOB-2026-00042", timeZone: NEW_YORK }),
+    ).toEqual({
+      staff: "completed job JOB-2026-00042",
+      customer: "marked your job as complete",
+    });
+  });
+
+  it("always fits the activity limits, whatever the reason and the times", () => {
+    const long = "x".repeat(500);
+    for (const action of lifecycleActions) {
+      const { summary, publicSummary } = buildActivitySummaries({
+        actor: { kind: "staff", name: "N".repeat(100) },
+        ...transitionTexts({
+          action,
+          reference: "JOB-2026-00042",
+          timeZone: NEW_YORK,
+          previous,
+          reason: long,
+          messageSent: true,
+          early: true,
+        }),
+      });
+      expect(summary.length).toBeLessThanOrEqual(MAX_SUMMARY_LENGTH);
+      expect(publicSummary?.length ?? 0).toBeLessThanOrEqual(MAX_PUBLIC_SUMMARY_LENGTH);
+    }
+  });
+});
+
+describe("transitionNotification", () => {
+  const notifiable = [A.MARK_NEEDS_RESCHEDULING, A.COMPLETE, A.CANCEL] as const;
+
+  it.each([
+    [A.MARK_NEEDS_RESCHEDULING, "Visit for JOB-2026-00042 needs a new time"],
+    [A.COMPLETE, "Job JOB-2026-00042 is complete"],
+    [A.CANCEL, "Job JOB-2026-00042 was cancelled"],
+  ] as const)("says what happened for %s, naming the job and the service", (action, title) => {
+    const note = transitionNotification({
+      action,
+      reference: "JOB-2026-00042",
+      serviceName: "AC Repair",
+    });
+    expect(note.title).toBe(title);
+    expect(note.message).toContain("AC Repair");
+  });
+
+  it("carries nothing but the job and the service: no reason, no technician, no address", () => {
+    for (const action of notifiable) {
+      const note = transitionNotification({
+        action,
+        reference: "JOB-2026-00042",
+        serviceName: "AC Repair",
+      });
+      expect(`${note.title} ${note.message}`).not.toMatch(/reason|technician|jordan|street|lane/i);
+    }
+  });
+
+  it("stays inside the notification limits (120 and 300 characters), even for a long service name", () => {
+    for (const action of notifiable) {
+      const note = transitionNotification({
+        action,
+        reference: "JOB-2026-00042",
+        serviceName: "S".repeat(300),
+      });
+      expect(note.title.length).toBeLessThanOrEqual(120);
+      expect(note.message.length).toBeLessThanOrEqual(300);
+    }
   });
 });

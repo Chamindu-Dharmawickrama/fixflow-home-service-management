@@ -20,6 +20,7 @@ export const JOB_ACTION_LABELS: Readonly<Record<WorkOrderAction, string>> = {
   [WorkOrderAction.COMPLETE]: "Complete job",
   [WorkOrderAction.MARK_NEEDS_RESCHEDULING]: "Needs rescheduling",
   [WorkOrderAction.CANCEL]: "Cancel job",
+  [WorkOrderAction.CREATE_INVOICE]: "Create invoice",
 };
 
 /** The actions the main button can be, in the order of preference: the one that moves the job on. */

@@ -10,6 +10,7 @@ import { ReferenceText } from "@/components/ui/reference-text";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 import { adminJobPath } from "../lib/jobs";
+import { CreateInvoiceButton } from "./create-invoice-button";
 import { JobScheduleText } from "./job-schedule-text";
 import { TechnicianName } from "./technicians-table";
 
@@ -94,6 +95,24 @@ function columnsFor(
         ) : (
           <DateTimeText value={job.completedAt} timeZone={timeZone} display="date" />
         ),
+    });
+  }
+  // Every job on this tab is completed and has no live invoice, so the next step is always the same.
+  if (view === "ready-to-invoice") {
+    columns.push({
+      id: "invoice",
+      header: "Invoice",
+      // Above the row's link overlay, so the button is pressed and the row is not opened.
+      cell: (job) => (
+        <span className="relative z-10 inline-flex">
+          <CreateInvoiceButton
+            jobId={job.id}
+            jobReference={job.reference}
+            size="sm"
+            variant="outline"
+          />
+        </span>
+      ),
     });
   }
   return columns;

@@ -14,6 +14,7 @@ import { formatTimeZoneName } from "@/lib/formatting/datetime";
 import { documentTotalRows } from "@/lib/formatting/document-totals";
 
 import { adminCustomerPath } from "../lib/customers";
+import { adminInvoicePath } from "../lib/invoices";
 import { adminQuotationPath } from "../lib/quotations";
 import { adminRequestPath } from "../lib/requests-queue";
 import { formatDuration } from "../lib/schedule-form";
@@ -403,6 +404,22 @@ export function JobLinksCard({ job }: Pick<CardProps, "job">) {
               <ReferenceText reference={job.quotation.reference} />
             </Link>
           </li>
+          {job.invoice === null ? null : (
+            <li className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="text-ink-secondary">Invoice</span>
+              <Link
+                href={adminInvoicePath(job.invoice.id)}
+                className="font-medium text-brand underline-offset-4 hover:underline"
+              >
+                {job.invoice.invoiceNumber === null ? (
+                  "Draft invoice"
+                ) : (
+                  <ReferenceText reference={job.invoice.invoiceNumber} />
+                )}
+              </Link>
+              <StatusBadge kind="invoice" status={job.invoice.status} />
+            </li>
+          )}
         </ul>
       </CardContent>
     </Card>

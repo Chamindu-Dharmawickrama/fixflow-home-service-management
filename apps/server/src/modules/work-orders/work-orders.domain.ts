@@ -6,6 +6,7 @@ import {
   WORK_ORDER_STATUS_LABELS,
   WorkOrderAction,
   WorkOrderStatus,
+  type WorkOrderStatusAction,
   type WorkOrderTransitionAction,
 } from "@fixflow/shared";
 
@@ -26,7 +27,7 @@ export interface WorkOrderTransition {
   from: WorkOrderStatus;
   to: WorkOrderStatus;
   /** The admin action that makes it. */
-  action: WorkOrderAction;
+  action: WorkOrderStatusAction;
 }
 
 const S = WorkOrderStatus;
@@ -53,7 +54,7 @@ export const WORK_ORDER_TRANSITIONS: readonly WorkOrderTransition[] = [
 ];
 
 /** The status each admin action leads to. */
-export const WORK_ORDER_ACTION_TARGET: Readonly<Record<WorkOrderAction, WorkOrderStatus>> = {
+export const WORK_ORDER_ACTION_TARGET: Readonly<Record<WorkOrderStatusAction, WorkOrderStatus>> = {
   [A.SCHEDULE]: S.SCHEDULED,
   [A.RESCHEDULE]: S.SCHEDULED,
   [A.START]: S.IN_PROGRESS,
@@ -63,7 +64,7 @@ export const WORK_ORDER_ACTION_TARGET: Readonly<Record<WorkOrderAction, WorkOrde
 };
 
 /** The most likely next step first, the destructive one last. */
-const ACTION_ORDER: readonly WorkOrderAction[] = [
+const ACTION_ORDER: readonly WorkOrderStatusAction[] = [
   A.SCHEDULE,
   A.RESCHEDULE,
   A.START,
@@ -75,11 +76,16 @@ const ACTION_ORDER: readonly WorkOrderAction[] = [
 /** Whether the admin action is allowed in this status (it looks at the action, not only the target). */
 export function canPerformWorkOrderAction(
   status: WorkOrderStatus,
-  action: WorkOrderAction,
+  action: WorkOrderStatusAction,
 ): boolean {
   return WORK_ORDER_TRANSITIONS.some(
     (transition) => transition.from === status && transition.action === action,
   );
+}
+
+export interface WorkOrderActionContext {
+  /** The job has an invoice that is not void. Leave out where it is not known. */
+  hasLiveInvoice?: boolean;
 }
 
 /**
@@ -87,8 +93,19 @@ export function canPerformWorkOrderAction(
  * the screen and the endpoints cannot disagree. A job that has an appointment can be rescheduled; one
  * that needs a time is scheduled.
  */
-export function availableWorkOrderActions(status: WorkOrderStatus): WorkOrderAction[] {
-  return ACTION_ORDER.filter((action) => canPerformWorkOrderAction(status, action));
+export function availableWorkOrderActions(
+  status: WorkOrderStatus,
+  context: WorkOrderActionContext = {},
+): WorkOrderAction[] {
+  const actions: WorkOrderAction[] = ACTION_ORDER.filter((action) =>
+    canPerformWorkOrderAction(status, action),
+  );
+  // A completed job with no invoice that is still live is ready for one (D-26). Without the
+  // answer (the calendar does not ask) the action is not listed.
+  if (status === S.COMPLETED && context.hasLiveInvoice === false) {
+    actions.push(A.CREATE_INVOICE);
+  }
+  return actions;
 }
 
 /**
@@ -96,11 +113,11 @@ export function availableWorkOrderActions(status: WorkOrderStatus): WorkOrderAct
  * one that needs a new time) and `RESCHEDULE` for one that already has one. `undefined` when the job
  * cannot be given a time at all (under way, done or cancelled).
  */
-export function scheduleActionFor(status: WorkOrderStatus): WorkOrderAction | undefined {
+export function scheduleActionFor(status: WorkOrderStatus): WorkOrderStatusAction | undefined {
   return [A.SCHEDULE, A.RESCHEDULE].find((action) => canPerformWorkOrderAction(status, action));
 }
 
-const ACTION_PHRASES: Readonly<Record<WorkOrderAction, string>> = {
+const ACTION_PHRASES: Readonly<Record<WorkOrderStatusAction, string>> = {
   [A.SCHEDULE]: "scheduled",
   [A.RESCHEDULE]: "rescheduled",
   [A.START]: "started",
@@ -110,7 +127,10 @@ const ACTION_PHRASES: Readonly<Record<WorkOrderAction, string>> = {
 };
 
 /** `409 INVALID_STATE_TRANSITION`: the action is not allowed in the job's current status. */
-export function invalidWorkOrderAction(status: WorkOrderStatus, action: WorkOrderAction): AppError {
+export function invalidWorkOrderAction(
+  status: WorkOrderStatus,
+  action: WorkOrderStatusAction,
+): AppError {
   const label = WORK_ORDER_STATUS_LABELS[status].toLowerCase();
   const hasOutgoing = WORK_ORDER_TRANSITIONS.some((transition) => transition.from === status);
   const message = hasOutgoing
@@ -123,7 +143,10 @@ export function invalidWorkOrderAction(status: WorkOrderStatus, action: WorkOrde
 }
 
 /** `409 INVALID_STATE_TRANSITION` unless the admin action is allowed in this status. */
-export function assertWorkOrderAction(status: WorkOrderStatus, action: WorkOrderAction): void {
+export function assertWorkOrderAction(
+  status: WorkOrderStatus,
+  action: WorkOrderStatusAction,
+): void {
   if (!canPerformWorkOrderAction(status, action)) {
     throw invalidWorkOrderAction(status, action);
   }

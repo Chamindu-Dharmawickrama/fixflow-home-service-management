@@ -1,4 +1,4 @@
-import type { WorkOrderAction, WorkOrderStatus } from "@fixflow/shared";
+import type { WorkOrderStatus, WorkOrderStatusAction } from "@fixflow/shared";
 
 import type { Prisma } from "../../generated/prisma/client.js";
 import type { DbClient } from "../../lib/db.js";
@@ -64,7 +64,7 @@ export async function lockTechnician(tx: DbClient, id: string): Promise<LockedTe
 export interface WorkOrderTransitionInput {
   workOrderId: string;
   /** The admin action being taken, checked against the current status as well as the target. */
-  action: WorkOrderAction;
+  action: WorkOrderStatusAction;
   /**
    * The status the caller saw (D-46). A different current status is `409 STALE_STATE`, before the
    * change is judged: the caller's view is out of date.

@@ -1,6 +1,8 @@
 import {
   type AdminCustomerDto,
   type AdminCustomerListItemDto,
+  type AdminInvoiceDto,
+  type AdminInvoiceListItemDto,
   type AdminQuotationDto,
   type AdminRequestDto,
   type AdminRequestListItemDto,
@@ -469,6 +471,7 @@ export function adminJob(overrides: Partial<AdminWorkOrderDto> = {}): AdminWorkO
         },
       ],
     },
+    invoice: null,
     startedAt: null,
     completedAt: null,
     completionNote: null,
@@ -545,4 +548,149 @@ export function cancelledJob(overrides: Partial<AdminWorkOrderDto> = {}): AdminW
     availableActions: [],
     ...overrides,
   });
+}
+
+// ---- Invoices (T20) -------------------------------------------------------------------------
+
+export const INVOICE_ID = "c8d2e4f6-1a3b-4c5d-8e7f-9a0b1c2d3e4f";
+
+/**
+ * A draft invoice in full: the lines of the accepted quotation (subtotal 252.00, only the 45.50 line
+ * taxed at 8 %, total 255.64), a due date and no number. Pass overrides for an issued, overdue, paid
+ * or void one.
+ */
+export function adminInvoice(overrides: Partial<AdminInvoiceDto> = {}): AdminInvoiceDto {
+  return {
+    id: INVOICE_ID,
+    invoiceNumber: null,
+    status: "DRAFT",
+    statusLabel: "Draft",
+    currencyCode: "USD",
+    taxRate: "8.00",
+    lines: [
+      {
+        id: "line-1",
+        position: 1,
+        description: "Diagnostic visit",
+        quantity: "1.00",
+        unitPrice: "79.00",
+        taxable: false,
+        lineTotal: "79.00",
+      },
+      {
+        id: "line-2",
+        position: 2,
+        description: "Run capacitor",
+        quantity: "1.00",
+        unitPrice: "45.50",
+        taxable: true,
+        lineTotal: "45.50",
+      },
+      {
+        id: "line-3",
+        position: 3,
+        description: "Labour",
+        quantity: "1.50",
+        unitPrice: "85.00",
+        taxable: false,
+        lineTotal: "127.50",
+      },
+    ],
+    subtotal: "252.00",
+    discountAmount: "0.00",
+    taxableBase: "45.50",
+    taxAmount: "3.64",
+    totalAmount: "255.64",
+    amountPaid: "0.00",
+    balanceDue: "255.64",
+    issueDate: null,
+    dueDate: "2026-03-16",
+    daysOverdue: 0,
+    customerNote: null,
+    isSnapshot: false,
+    business: {
+      name: "CoolBreeze Home Services",
+      tagline: "Home comfort and repairs, done properly the first time.",
+      logoKey: null,
+      logoUrl: null,
+      email: "hello@coolbreeze.test",
+      phone: "(212) 555-0142",
+      address: {
+        line1: "48 Harbor Point Road",
+        line2: "Unit 3",
+        city: "Harbor City",
+        region: "NY",
+        postalCode: "10999",
+      },
+    },
+    customer: {
+      name: "Amara Okafor",
+      email: "amara.okafor@example.test",
+      address: {
+        line1: "214 Larkspur Lane",
+        line2: "Unit 4",
+        city: "Harbor City",
+        region: "NY",
+        postalCode: "10001",
+      },
+    },
+    paymentInstructions: "Pay by bank transfer, quoting the invoice number as your reference.",
+    footer: "Thank you for choosing CoolBreeze Home Services.",
+    serviceName: "AC Repair",
+    customerId: CUSTOMER_ID,
+    job: { id: JOB_ID, reference: "JOB-2026-00007" },
+    request: { id: REQUEST_ID, reference: "FF-2026-00012" },
+    quotation: { id: QUOTATION_ID, reference: "QT-2026-00009" },
+    payments: [],
+    createdAt: "2026-03-02T14:05:00.000Z",
+    updatedAt: "2026-03-02T14:05:00.000Z",
+    issuedAt: null,
+    createdBy: { name: "Morgan Reyes" },
+    issuedBy: null,
+    voided: null,
+    timeZone: "America/New_York",
+    timeline: [],
+    availableActions: ["EDIT", "ISSUE", "VOID"],
+    ...overrides,
+  };
+}
+
+/** An issued invoice: numbered, dated, snapshot, and voidable. */
+export function issuedInvoice(overrides: Partial<AdminInvoiceDto> = {}): AdminInvoiceDto {
+  return adminInvoice({
+    invoiceNumber: "INV-2026-00004",
+    status: "ISSUED",
+    statusLabel: "Issued",
+    issueDate: "2026-03-02",
+    issuedAt: "2026-03-02T15:00:00.000Z",
+    issuedBy: { name: "Morgan Reyes" },
+    isSnapshot: true,
+    availableActions: ["VOID"],
+    ...overrides,
+  });
+}
+
+/** A row of the invoice list. */
+export function invoiceListItem(
+  overrides: Partial<AdminInvoiceListItemDto> = {},
+): AdminInvoiceListItemDto {
+  return {
+    id: INVOICE_ID,
+    invoiceNumber: "INV-2026-00004",
+    status: "ISSUED",
+    statusLabel: "Issued",
+    customerId: CUSTOMER_ID,
+    customerName: "Amara Okafor",
+    workOrderId: JOB_ID,
+    jobReference: "JOB-2026-00007",
+    issueDate: "2026-03-02",
+    dueDate: "2026-03-16",
+    currencyCode: "USD",
+    totalAmount: "255.64",
+    amountPaid: "0.00",
+    balanceDue: "255.64",
+    daysOverdue: 0,
+    createdAt: "2026-03-02T14:05:00.000Z",
+    ...overrides,
+  };
 }

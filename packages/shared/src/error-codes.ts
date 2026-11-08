@@ -93,6 +93,14 @@ export const ErrorCode = {
   SCHEDULING_CONFLICT: "SCHEDULING_CONFLICT",
   /** 422 — the technician chosen for a job is inactive, so they cannot be given new work (FR-061). */
   TECHNICIAN_INACTIVE: "TECHNICIAN_INACTIVE",
+
+  // Invoices (T20)
+  /** 409 — the job already has an invoice that is not void; `details.invoiceId` is that invoice (D-26). */
+  INVOICE_EXISTS: "INVOICE_EXISTS",
+  /** 409 — only a draft invoice can be edited; an issued one is fixed (BR-13). */
+  INVOICE_NOT_EDITABLE: "INVOICE_NOT_EDITABLE",
+  /** 409 — an invoice with active payments cannot be voided; void the payments first (D-26). */
+  INVOICE_HAS_PAYMENTS: "INVOICE_HAS_PAYMENTS",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

@@ -1,6 +1,7 @@
 import type { AdminTimelineEventDto, CustomerTimelineEventDto } from "./activity.js";
 import type { PaginatedResponse } from "./api.js";
 import { WorkOrderStatus } from "./enums.js";
+import type { JobInvoiceLinkDto } from "./invoices.js";
 import { LIMITS } from "./limits.js";
 import type { QuotationLineDto } from "./quotations.js";
 import type { RequestAddressDto } from "./requests.js";
@@ -68,8 +69,16 @@ export const WorkOrderAction = {
   MARK_NEEDS_RESCHEDULING: "MARK_NEEDS_RESCHEDULING",
   COMPLETE: "COMPLETE",
   CANCEL: "CANCEL",
+  /**
+   * Start the invoice for a completed job (T20, D-26). Listed only while the job has no invoice that
+   * is not void. It changes no status: `POST /admin/work-orders/:id/invoice` performs it.
+   */
+  CREATE_INVOICE: "CREATE_INVOICE",
 } as const;
 export type WorkOrderAction = (typeof WorkOrderAction)[keyof typeof WorkOrderAction];
+
+/** The actions that move a job from one status to another: every action except `CREATE_INVOICE`. */
+export type WorkOrderStatusAction = Exclude<WorkOrderAction, typeof WorkOrderAction.CREATE_INVOICE>;
 
 /** The actions the transitions endpoint performs: the four that change a job's status (D-24). */
 export const WORK_ORDER_TRANSITION_ACTIONS = [
@@ -256,6 +265,8 @@ export interface AdminWorkOrderDto {
   address: RequestAddressDto;
   request: AdminWorkOrderSourceDto;
   quotation: AdminWorkOrderQuotationDto;
+  /** The job's invoice that is not void, or `null` when there is none (T20). */
+  invoice: JobInvoiceLinkDto | null;
   startedAt: string | null;
   completedAt: string | null;
   /** What the customer reads when the job is done (null until then). */

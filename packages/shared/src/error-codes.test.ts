@@ -51,6 +51,10 @@ describe("ErrorCode", () => {
         // T17 — scheduling
         "SCHEDULING_CONFLICT",
         "TECHNICIAN_INACTIVE",
+        // T20 — invoices
+        "INVOICE_EXISTS",
+        "INVOICE_NOT_EDITABLE",
+        "INVOICE_HAS_PAYMENTS",
       ].sort(),
     );
   });

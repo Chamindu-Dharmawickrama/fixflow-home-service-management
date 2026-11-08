@@ -10,6 +10,12 @@ import {
 } from "@fixflow/shared";
 
 import type { Prisma } from "../../generated/prisma/client.js";
+import {
+  type InvoiceViewContext,
+  JOB_INVOICE_SELECT,
+  type JobInvoiceRow,
+  toJobInvoiceLink,
+} from "../invoices/invoices.dto.js";
 import { toQuotationLines } from "../quotations/quotations.dto.js";
 import { colorOf } from "../technicians/technicians.dto.js";
 import { availableWorkOrderActions, type ConflictingJob } from "./work-orders.domain.js";
@@ -140,6 +146,8 @@ export const ADMIN_DETAIL_SELECT = {
   },
   customer: { select: { id: true, phone: true, user: { select: { name: true, email: true } } } },
   request: { select: { id: true, reference: true } },
+  // The invoice that is not void: at most one (a partial unique index), so the job's link is this row.
+  invoices: { where: { status: { not: "VOID" } }, select: JOB_INVOICE_SELECT, take: 1 },
   quotation: {
     select: {
       id: true,
@@ -182,8 +190,10 @@ function toAddress(row: AdminDetailRow): RequestAddressDto {
 export function toAdminWorkOrderDto(
   row: AdminDetailRow,
   timeline: AdminTimelineEventDto[],
+  invoiceContext: InvoiceViewContext,
 ): AdminWorkOrderDto {
   const { quotation, technician, customer } = row;
+  const liveInvoice: JobInvoiceRow | undefined = row.invoices[0];
   return {
     id: row.id,
     reference: row.reference,
@@ -224,6 +234,7 @@ export function toAdminWorkOrderDto(
       totalAmount: quotation.totalAmount.toFixed(2),
       lines: toQuotationLines(quotation.lineItems),
     },
+    invoice: liveInvoice === undefined ? null : toJobInvoiceLink(liveInvoice, invoiceContext),
     startedAt: row.startedAt?.toISOString() ?? null,
     completedAt: row.completedAt?.toISOString() ?? null,
     completionNote: row.completionNote,
@@ -234,7 +245,9 @@ export function toAdminWorkOrderDto(
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     timeline,
-    availableActions: availableWorkOrderActions(row.status),
+    availableActions: availableWorkOrderActions(row.status, {
+      hasLiveInvoice: liveInvoice !== undefined,
+    }),
   };
 }
 

@@ -15,12 +15,15 @@ import {
   ChevronDown,
   CircleCheck,
   Play,
+  Receipt,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { MAIN_CONTENT_ID } from "@/components/layout/skip-link";
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DropdownMenu,
@@ -32,6 +35,7 @@ import { toast } from "@/components/ui/sonner";
 import { apiFetchEnvelope, describeApiError, isApiError } from "@/lib/api";
 import { formatDateTime, formatTimeRange, formatTimeZoneName } from "@/lib/formatting/datetime";
 
+import { adminInvoicePath } from "../lib/invoices";
 import {
   JOB_ACTION_LABELS,
   layoutJobActions,
@@ -40,6 +44,7 @@ import {
   startsEarly,
 } from "../lib/job-lifecycle";
 import { adminJobPath } from "../lib/jobs";
+import { CreateInvoiceButton } from "./create-invoice-button";
 import { ScheduleDialog } from "./schedule-dialog";
 
 export interface JobActionsProps {
@@ -52,6 +57,7 @@ export interface JobActionsProps {
     | "scheduledEnd"
     | "technician"
     | "customer"
+    | "invoice"
     | "availableActions"
   >;
   /** The business time zone (IANA), from the settings. */
@@ -77,6 +83,7 @@ const ACTION_ICONS = {
   [WorkOrderAction.COMPLETE]: CircleCheck,
   [WorkOrderAction.MARK_NEEDS_RESCHEDULING]: CalendarX,
   [WorkOrderAction.CANCEL]: Ban,
+  [WorkOrderAction.CREATE_INVOICE]: Receipt,
 } as const;
 
 /**
@@ -174,7 +181,11 @@ export function JobActions({ job, timeZone, openSchedule }: JobActionsProps) {
     setDialog(action);
   };
 
-  if (primary === undefined && menu.length === 0) {
+  // A completed job is invoiced (T20): the one action it has, or a way to the invoice it already has.
+  const canCreateInvoice = job.availableActions.includes(WorkOrderAction.CREATE_INVOICE);
+  const invoiceLink = canCreateInvoice ? null : job.invoice;
+
+  if (primary === undefined && menu.length === 0 && !canCreateInvoice && invoiceLink === null) {
     return null;
   }
 
@@ -192,6 +203,21 @@ export function JobActions({ job, timeZone, openSchedule }: JobActionsProps) {
 
   return (
     <>
+      {canCreateInvoice ? (
+        <CreateInvoiceButton jobId={job.id} jobReference={job.reference} />
+      ) : null}
+
+      {invoiceLink === null ? null : (
+        <Link
+          href={adminInvoicePath(invoiceLink.id)}
+          className={buttonVariants({ variant: "outline" })}
+        >
+          {invoiceLink.invoiceNumber === null
+            ? "View draft invoice"
+            : `View invoice ${invoiceLink.invoiceNumber}`}
+        </Link>
+      )}
+
       {primary === undefined || PrimaryIcon === null ? null : (
         <Button
           ref={

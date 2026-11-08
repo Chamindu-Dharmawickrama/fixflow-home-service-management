@@ -1,9 +1,12 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { JOB_ID, jobListItem, TECHNICIAN_ID } from "../test-fixtures";
 import { JobsEmpty } from "./jobs-empty";
 import { JobsTable } from "./jobs-table";
+
+// The Ready to invoice tab has a button in each row (T20), and a button navigates.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 
 const NEW_YORK = "America/New_York";
 
@@ -197,6 +200,34 @@ describe("JobsEmpty", () => {
     render(<JobsEmpty {...base} view="all" />);
     expect(screen.queryByRole("button", { name: /create job/i })).not.toBeInTheDocument();
     expect(screen.getByText(/accepted/)).toBeVisible();
+  });
+});
+
+describe("JobsTable: the Ready to invoice tab offers the next step (T20)", () => {
+  function renderFor(view: "ready-to-invoice" | "completed" | "all") {
+    render(
+      <JobsTable
+        jobs={[jobListItem({ status: "COMPLETED", statusLabel: "Completed" })]}
+        timeZone={NEW_YORK}
+        view={view}
+        sort={{ field: "completedAt", order: "asc" }}
+        getSortHref={(field) => `/app/jobs?sort=${field}`}
+      />,
+    );
+  }
+
+  it("puts a Create invoice button in each row, named for its job", () => {
+    renderFor("ready-to-invoice");
+    const table = screen.getByRole("table", { name: "Jobs" });
+    expect(
+      within(table).getByRole("button", { name: "Create invoice for JOB-2026-00007" }),
+    ).toBeEnabled();
+    expect(within(table).getByRole("columnheader", { name: "Invoice" })).toBeVisible();
+  });
+
+  it.each(["completed", "all"] as const)("has no such button on the %s tab", (view) => {
+    renderFor(view);
+    expect(screen.queryByRole("button", { name: /create invoice/i })).not.toBeInTheDocument();
   });
 });
 

@@ -434,7 +434,9 @@ describe("POST /admin/work-orders/:id/transitions: COMPLETE (G.2)", () => {
       completedAt: "2026-03-03T16:45:00.000Z",
       completionNote: COMPLETION_NOTE,
       internalCompletionNote: INTERNAL_NOTE,
-      availableActions: [],
+      // A completed job is ready for its invoice (T20); it has none yet.
+      availableActions: [A.CREATE_INVOICE],
+      invoice: null,
     });
     expect(await storedJob(job.id)).toMatchObject({
       status: S.COMPLETED,

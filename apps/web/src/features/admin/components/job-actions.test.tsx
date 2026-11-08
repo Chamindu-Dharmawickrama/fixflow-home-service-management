@@ -514,3 +514,64 @@ describe("JobActions: Needs rescheduling and Cancel job", () => {
     expect(button("More actions")).toHaveFocus();
   });
 });
+
+describe("JobActions: invoicing a completed job (T20)", () => {
+  it("offers Create invoice as the one action of a completed job with no invoice", () => {
+    render(
+      <JobActions
+        job={completedJob({ availableActions: ["CREATE_INVOICE"] })}
+        timeZone={TIME_ZONE}
+        openSchedule={false}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Create invoice for JOB-2026-00007" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: /More actions/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /invoice/i })).not.toBeInTheDocument();
+  });
+
+  it("links to the invoice instead once the job has one, and offers no second one", () => {
+    render(
+      <JobActions
+        job={completedJob({
+          invoice: {
+            id: "c8d2e4f6-1a3b-4c5d-8e7f-9a0b1c2d3e4f",
+            invoiceNumber: "INV-2026-00004",
+            status: "ISSUED",
+            statusLabel: "Issued",
+          },
+        })}
+        timeZone={TIME_ZONE}
+        openSchedule={false}
+      />,
+    );
+    expect(screen.getByRole("link", { name: "View invoice INV-2026-00004" })).toHaveAttribute(
+      "href",
+      "/app/invoices/c8d2e4f6-1a3b-4c5d-8e7f-9a0b1c2d3e4f",
+    );
+    expect(screen.queryByRole("button", { name: /create invoice/i })).not.toBeInTheDocument();
+  });
+
+  it("links to a draft invoice as the draft", () => {
+    render(
+      <JobActions
+        job={completedJob({
+          invoice: {
+            id: "c8d2e4f6-1a3b-4c5d-8e7f-9a0b1c2d3e4f",
+            invoiceNumber: null,
+            status: "DRAFT",
+            statusLabel: "Draft",
+          },
+        })}
+        timeZone={TIME_ZONE}
+        openSchedule={false}
+      />,
+    );
+    expect(screen.getByRole("link", { name: "View draft invoice" })).toBeVisible();
+  });
+
+  it("offers nothing invoice-related on a job that is not completed", () => {
+    render(<JobActions job={startedJob()} timeZone={TIME_ZONE} openSchedule={false} />);
+    expect(screen.queryByRole("button", { name: /invoice/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /invoice/i })).not.toBeInTheDocument();
+  });
+});

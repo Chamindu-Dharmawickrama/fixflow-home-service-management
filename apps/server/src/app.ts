@@ -14,6 +14,7 @@ import { createAuthRouter } from "./modules/auth/auth.routes.js";
 import { createAdminCustomersRouter } from "./modules/customers/customers.admin.routes.js";
 import { createCustomersRouter } from "./modules/customers/customers.routes.js";
 import { createHealthRouter } from "./modules/health/health.routes.js";
+import { createAdminInvoicesRouter } from "./modules/invoices/invoices.routes.js";
 import { createNotificationsRouter } from "./modules/notifications/notifications.routes.js";
 import { createAdminQuotationsRouter } from "./modules/quotations/quotations.admin.routes.js";
 import { createQuotationsRouter } from "./modules/quotations/quotations.routes.js";
@@ -86,6 +87,8 @@ export function createApp(deps: AppDeps, options: CreateAppOptions = {}): Expres
   app.use(`${API_PREFIX}/admin`, createAdminQuotationsRouter(deps));
   // The same for jobs: `/admin/quotations/:id/work-order` and `/admin/work-orders/...`, role-checked per route.
   app.use(`${API_PREFIX}/admin`, createAdminWorkOrdersRouter(deps));
+  // And for invoices: `/admin/work-orders/:id/invoice` and `/admin/invoices/...`, role-checked per route.
+  app.use(`${API_PREFIX}/admin`, createAdminInvoicesRouter(deps));
   app.use(`${API_PREFIX}/work-orders`, createWorkOrdersRouter(deps));
   // These two serve both the public and the admin paths of their module (`/settings/public` and
   // `/admin/settings`, `/services` and `/admin/services`), so they are mounted on the prefix itself.

@@ -445,6 +445,7 @@ describe("GET /admin/work-orders/:id (FR-051)", () => {
         "customer",
         "id",
         "internalCompletionNote",
+        "invoice",
         "quotation",
         "reference",
         "request",
@@ -528,7 +529,8 @@ describe("GET /admin/work-orders/:id (FR-051)", () => {
       where: { id: job.id },
       data: { status: "COMPLETED", completedAt: new Date("2026-03-03T18:00:00.000Z") },
     });
-    expect(await read()).toEqual([]);
+    // A completed job with no invoice is ready for one (T20).
+    expect(await read()).toEqual(["CREATE_INVOICE"]);
   });
 
   it("answers an unknown job with 404 and a malformed id with 422", async () => {

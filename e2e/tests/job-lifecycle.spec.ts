@@ -193,7 +193,7 @@ test("an admin starts and completes a scheduled job with two notes, and the cust
     expect(email.text).not.toContain(secret);
   }
 
-  // ---- The job is ready to invoice, and there is no way to invoice it yet ---------------------------
+  // ---- The job is ready to invoice, and its row offers Create invoice (T20) ------------------------
   await page.goto(`/app/jobs?view=ready-to-invoice&q=${job.jobReference}`);
   const row = page.getByRole("table", { name: "Jobs" }).getByRole("row", {
     name: new RegExp(job.jobReference),
@@ -203,7 +203,9 @@ test("an admin starts and completes a scheduled job with two notes, and the cust
     "aria-current",
     "page",
   );
-  await expect(page.getByText(/create invoice/i)).toHaveCount(0);
+  await expect(
+    row.getByRole("button", { name: `Create invoice for ${job.jobReference}` }),
+  ).toBeVisible();
 
   // ---- The customer: the summary, never the internal note; the first name, never the contact ----
   const portal = await customerPage(browser, customer);

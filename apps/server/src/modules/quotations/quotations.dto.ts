@@ -56,7 +56,13 @@ export type QuotationSettingsRow = Prisma.BusinessSettingsGetPayload<{
   select: typeof QUOTATION_SETTINGS_SELECT;
 }>;
 
-export function toQuotationBusiness(settings: QuotationSettingsRow): QuotationBusinessDto {
+/** The business as a document prints it. Takes only the columns it reads, so invoices can use it too. */
+export function toQuotationBusiness(
+  settings: Omit<
+    QuotationSettingsRow,
+    "defaultTaxRate" | "quotationValidityDays" | "defaultQuotationTerms"
+  >,
+): QuotationBusinessDto {
   return {
     name: settings.businessName,
     tagline: settings.tagline,

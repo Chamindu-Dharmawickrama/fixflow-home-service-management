@@ -263,3 +263,12 @@ export function formatTaxRate(rate: string): string {
 export function isPositiveAmount(amount: string): boolean {
   return DECIMAL_TEXT.test(amount.trim()) && new Dec(amount.trim()).gt(0);
 }
+
+/**
+ * What is still owed on an invoice: `totalAmount − amountPaid`, a decimal string with two places
+ * (D-26). Recorded payments can never exceed the total (a database check), so it is never negative
+ * for a stored invoice; the function does not hide a negative result if it is ever handed one.
+ */
+export function balanceDue(totalAmount: string, amountPaid: string): string {
+  return new Dec(totalAmount.trim()).minus(new Dec(amountPaid.trim())).toFixed(MONEY_PLACES);
+}

@@ -130,8 +130,28 @@ export {
   WorkOrderStatus,
 } from "./enums.js";
 export { ErrorCode } from "./error-codes.js";
+export {
+  ADMIN_INVOICE_SORT_FIELDS,
+  type AdminInvoiceDto,
+  type AdminInvoiceListItemDto,
+  type AdminInvoiceListMeta,
+  type AdminInvoiceListResponse,
+  type AdminInvoiceSortField,
+  INVOICE_STATUS_LABELS,
+  InvoiceAction,
+  type InvoiceCustomerDto,
+  type InvoiceLineBody,
+  type InvoiceLinkDto,
+  type InvoicePaymentDto,
+  invoiceStatusLabel,
+  type IssueInvoiceBody,
+  type JobInvoiceLinkDto,
+  type UpdateInvoiceBody,
+  type VoidInvoiceBody,
+} from "./invoices.js";
 export { LIMITS } from "./limits.js";
 export {
+  balanceDue,
   calculateDocumentTotals,
   type DocumentLineInput,
   DocumentTotalsError,
@@ -264,6 +284,7 @@ export {
   WORK_ORDER_VIEWS,
   WorkOrderAction,
   workOrderCustomerExplanation,
+  type WorkOrderStatusAction,
   workOrderStatusLabel,
   type WorkOrderTechnicianRefDto,
   type WorkOrderTransitionAction,

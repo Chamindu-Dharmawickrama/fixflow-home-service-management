@@ -1,4 +1,10 @@
-import { ErrorCode, SCHEDULE_RULES, WorkOrderAction, WorkOrderStatus } from "@fixflow/shared";
+import {
+  ErrorCode,
+  SCHEDULE_RULES,
+  WorkOrderAction,
+  WorkOrderStatus,
+  type WorkOrderStatusAction,
+} from "@fixflow/shared";
 import { describe, expect, it } from "vitest";
 
 import { isAppError } from "../../lib/errors.js";
@@ -32,6 +38,10 @@ import {
 
 const S = WorkOrderStatus;
 const A = WorkOrderAction;
+/** The six actions that change a status; `CREATE_INVOICE` is the seventh and changes none (T20). */
+const STATUS_ACTIONS: WorkOrderStatusAction[] = Object.values(A).filter(
+  (action): action is WorkOrderStatusAction => action !== A.CREATE_INVOICE,
+);
 const NEW_YORK = "America/New_York";
 
 /** An interval from "HH:mm" to "HH:mm" on 3 March 2026, UTC (the date does not matter to the rule). */
@@ -218,7 +228,7 @@ describe("availableWorkOrderActions (D-43)", () => {
 
   it("agrees with canPerformWorkOrderAction for every status and action", () => {
     for (const status of Object.values(S)) {
-      for (const action of Object.values(A)) {
+      for (const action of STATUS_ACTIONS) {
         expect(availableWorkOrderActions(status).includes(action)).toBe(
           canPerformWorkOrderAction(status, action),
         );
@@ -547,7 +557,7 @@ describe("every status against every action (D-24, the whole table)", () => {
   };
 
   const pairs = Object.values(S).flatMap((status) =>
-    Object.values(A).map((action) => ({
+    STATUS_ACTIONS.map((action) => ({
       status,
       action,
       allowed: MATRIX[status].includes(action),

@@ -18,8 +18,8 @@ import {
 
 import type { AppDeps } from "../../deps.js";
 import type { Prisma } from "../../generated/prisma/client.js";
-import { type DbClient, isUniqueViolation } from "../../lib/db.js";
-import { conflict, notFound, validation } from "../../lib/errors.js";
+import { BUSINESS_SETTINGS_ID, type DbClient, isUniqueViolation } from "../../lib/db.js";
+import { conflict, notFound, serviceUnavailable, validation } from "../../lib/errors.js";
 import { paginated, toPrismaPage } from "../../lib/pagination.js";
 import { nextReference } from "../../lib/references.js";
 import { escapeLikePattern } from "../../lib/sql-like.js";
@@ -29,6 +29,7 @@ import { getTimeline, recordActivity } from "../activity/activity.service.js";
 import type { AuthContext } from "../auth/auth.types.js";
 import { absoluteAppUrl } from "../email/email.domain.js";
 import { emailJob } from "../email/email.jobs.js";
+import { syncOverdueInvoicesIfDue } from "../invoices/invoices.service.js";
 import { notify } from "../notifications/notifications.service.js";
 import { lockRequest } from "../quotations/quotations.transitions.js";
 import { loadBusiness } from "../requests/requests.service.js";
@@ -80,10 +81,12 @@ type WorkOrderDeps = Pick<AppDeps, "prisma" | "clock" | "config" | "emailDispatc
  * that were agreed, its history, and what the admin may do next (D-43).
  */
 export async function getAdminWorkOrder(
-  deps: Pick<AppDeps, "prisma">,
+  deps: Pick<AppDeps, "prisma" | "clock">,
   id: string,
 ): Promise<AdminWorkOrderDto> {
-  const { prisma } = deps;
+  const { prisma, clock } = deps;
+  // The job's invoice link says whether it is overdue (D-23), so any overdue invoice is saved first.
+  await syncOverdueInvoicesIfDue(deps);
   const row = await prisma.workOrder.findUnique({ where: { id }, select: ADMIN_DETAIL_SELECT });
   if (row === null) {
     throw notFound();
@@ -93,7 +96,14 @@ export async function getAdminWorkOrder(
     { entityType: ActivityEntityType.WORK_ORDER, entityId: id },
     "admin",
   );
-  return toAdminWorkOrderDto(row, timeline);
+  const settings = await prisma.businessSettings.findUnique({
+    where: { id: BUSINESS_SETTINGS_ID },
+    select: { timeZone: true },
+  });
+  if (settings === null) {
+    throw serviceUnavailable("The business settings have not been set up yet.");
+  }
+  return toAdminWorkOrderDto(row, timeline, { now: clock.now(), timeZone: settings.timeZone });
 }
 
 // ---- The list (FR-052) ------------------------------------------------------------------------------

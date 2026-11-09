@@ -57,7 +57,7 @@ describe("POST /admin/invoices/:id/issue (FR-071, D-17, D-26)", () => {
     expect(invoice.totalAmount).toBe(draft.totalAmount);
     expect(invoice.amountPaid).toBe("0.00");
     expect(invoice.balanceDue).toBe(draft.totalAmount);
-    expect(invoice.availableActions).toEqual([InvoiceAction.VOID]);
+    expect(invoice.availableActions).toEqual([InvoiceAction.RECORD_PAYMENT, InvoiceAction.VOID]);
   });
 
   it("numbers are sequential and unique across invoices", async () => {

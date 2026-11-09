@@ -146,8 +146,12 @@ export {
   invoiceStatusLabel,
   type IssueInvoiceBody,
   type JobInvoiceLinkDto,
+  PAYMENT_METHOD_LABELS,
+  paymentMethodLabel,
+  type RecordPaymentBody,
   type UpdateInvoiceBody,
   type VoidInvoiceBody,
+  type VoidPaymentBody,
 } from "./invoices.js";
 export { LIMITS } from "./limits.js";
 export {
@@ -158,7 +162,13 @@ export {
   type DocumentTotalsInput,
   type DocumentTotalsResult,
   formatTaxRate,
+  isAmountAbove,
   isPositiveAmount,
+  parsePaymentAmount,
+  PAYMENT_AMOUNT_NOT_A_NUMBER,
+  PAYMENT_AMOUNT_NOT_POSITIVE,
+  PAYMENT_AMOUNT_TOO_PRECISE,
+  sumAmounts,
   tryCalculateDocumentTotals,
 } from "./money.js";
 export type {

@@ -6,7 +6,10 @@ import {
   type DocumentLineInput,
   DocumentTotalsError,
   formatTaxRate,
+  isAmountAbove,
   isPositiveAmount,
+  parsePaymentAmount,
+  sumAmounts,
   tryCalculateDocumentTotals,
 } from "./money.js";
 
@@ -452,5 +455,59 @@ describe("helpers", () => {
     expect(isPositiveAmount("0.00")).toBe(false);
     expect(isPositiveAmount("")).toBe(false);
     expect(isPositiveAmount("-5")).toBe(false);
+  });
+});
+
+describe("parsePaymentAmount (D-27, FR-073)", () => {
+  it("reads a positive amount with at most two places and gives it two", () => {
+    expect(parsePaymentAmount("120")).toEqual({ ok: true, amount: "120.00" });
+    expect(parsePaymentAmount("120.5")).toEqual({ ok: true, amount: "120.50" });
+    expect(parsePaymentAmount(" 0.01 ")).toEqual({ ok: true, amount: "0.01" });
+    expect(parsePaymentAmount("9999999999.99")).toEqual({ ok: true, amount: "9999999999.99" });
+  });
+
+  it.each(["", " ", "abc", "-5", "+5", "1e3", "1,000", "1 000", ".5", "5.", "NaN", "Infinity"])(
+    "refuses %j as not a number",
+    (raw) => {
+      const result = parsePaymentAmount(raw);
+      expect(result.ok).toBe(false);
+    },
+  );
+
+  it("refuses anything that is not text", () => {
+    for (const raw of [5, null, undefined, {}, [], true]) {
+      expect(parsePaymentAmount(raw).ok).toBe(false);
+    }
+  });
+
+  it("says zero is not an amount, and more than two places is too precise", () => {
+    expect(parsePaymentAmount("0")).toEqual({
+      ok: false,
+      message: "The amount must be more than zero.",
+    });
+    expect(parsePaymentAmount("0.00")).toMatchObject({ ok: false });
+    expect(parsePaymentAmount("10.001")).toEqual({
+      ok: false,
+      message: "Use at most 2 decimal places.",
+    });
+  });
+
+  it("refuses an amount too large to store", () => {
+    expect(parsePaymentAmount("10000000000.00")).toMatchObject({ ok: false });
+  });
+});
+
+describe("sumAmounts and isAmountAbove", () => {
+  it("adds decimal strings exactly, with no float error", () => {
+    expect(sumAmounts([])).toBe("0.00");
+    expect(sumAmounts(["0.10", "0.20"])).toBe("0.30");
+    expect(sumAmounts(["100.10", "200.20", "0.01"])).toBe("300.31");
+  });
+
+  it("compares decimal strings exactly", () => {
+    expect(isAmountAbove("200.00", "100.00")).toBe(true);
+    expect(isAmountAbove("100.00", "100.00")).toBe(false);
+    expect(isAmountAbove("0.30", "0.30")).toBe(false);
+    expect(isAmountAbove("0.31", "0.30")).toBe(true);
   });
 });

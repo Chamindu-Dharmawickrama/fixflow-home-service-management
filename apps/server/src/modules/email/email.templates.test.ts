@@ -193,6 +193,7 @@ const SAMPLE_INPUTS: { [Name in EmailTemplateName]: EmailTemplateInput<Name> } =
     paymentAmount: "500.00",
     currencyCode: "USD",
     paymentDate: "2026-11-02",
+    paymentMethod: "Bank transfer",
     balance: "784.50",
     invoiceUrl: INVOICE_URL,
   },

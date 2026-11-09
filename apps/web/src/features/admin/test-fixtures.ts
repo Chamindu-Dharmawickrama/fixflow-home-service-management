@@ -10,12 +10,16 @@ import {
   type AdminTechnicianListItemDto,
   type AdminWorkOrderDto,
   type AdminWorkOrderListItemDto,
+  balanceDue,
   type CustomerHistoryInvoiceDto,
   type CustomerHistoryJobDto,
   type CustomerHistoryQuotationDto,
   type CustomerHistoryRequestDto,
+  type InvoicePaymentDto,
+  isPositiveAmount,
   REQUEST_NEXT_STEPS,
   RequestAction,
+  sumAmounts,
 } from "@fixflow/shared";
 
 /** Fictional records for the admin request screens' tests. */
@@ -665,7 +669,53 @@ export function issuedInvoice(overrides: Partial<AdminInvoiceDto> = {}): AdminIn
     issuedAt: "2026-03-02T15:00:00.000Z",
     issuedBy: { name: "Morgan Reyes" },
     isSnapshot: true,
-    availableActions: ["VOID"],
+    availableActions: ["RECORD_PAYMENT", "VOID"],
+    ...overrides,
+  });
+}
+
+/** A payment record as the invoice page lists it: recorded by Morgan Reyes, not voided. */
+export function paymentRecord(overrides: Partial<InvoicePaymentDto> = {}): InvoicePaymentDto {
+  return {
+    id: "6f1b1d55-0a9b-4a2c-9a52-0f2f5a3d9c11",
+    amount: "100.00",
+    paymentDate: "2026-03-05",
+    method: "BANK_TRANSFER",
+    methodLabel: "Bank transfer",
+    reference: null,
+    notes: null,
+    recordedBy: { name: "Morgan Reyes" },
+    createdAt: "2026-03-05T15:00:00.000Z",
+    voided: null,
+    ...overrides,
+  };
+}
+
+/**
+ * An issued invoice that has had payments recorded: the totals, the status and the actions follow
+ * from `payments` the way the server's do (total 255.64 unless asked).
+ */
+export function invoiceWithPayments(
+  payments: InvoicePaymentDto[],
+  overrides: Partial<AdminInvoiceDto> = {},
+): AdminInvoiceDto {
+  const amountPaid = sumAmounts(
+    payments.filter((payment) => payment.voided === null).map((payment) => payment.amount),
+  );
+  const owed = balanceDue(overrides.totalAmount ?? "255.64", amountPaid);
+  const settled = !isPositiveAmount(owed);
+  const paid = isPositiveAmount(amountPaid);
+  return issuedInvoice({
+    payments,
+    amountPaid,
+    balanceDue: owed,
+    status: settled ? "PAID" : paid ? "PARTIALLY_PAID" : "ISSUED",
+    statusLabel: settled ? "Paid" : paid ? "Partially paid" : "Issued",
+    availableActions: settled
+      ? ["VOID_PAYMENT"]
+      : paid
+        ? ["RECORD_PAYMENT", "VOID_PAYMENT"]
+        : ["RECORD_PAYMENT", "VOID"],
     ...overrides,
   });
 }

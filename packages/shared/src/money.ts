@@ -272,3 +272,53 @@ export function isPositiveAmount(amount: string): boolean {
 export function balanceDue(totalAmount: string, amountPaid: string): string {
   return new Dec(totalAmount.trim()).minus(new Dec(amountPaid.trim())).toFixed(MONEY_PLACES);
 }
+
+// ---- Payments (D-27, FR-073, FR-075) -----------------------------------------------------------------
+
+export const PAYMENT_AMOUNT_NOT_A_NUMBER =
+  "Enter the amount as a number above zero, for example 120 or 120.50.";
+export const PAYMENT_AMOUNT_NOT_POSITIVE = "The amount must be more than zero.";
+export const PAYMENT_AMOUNT_TOO_PRECISE = "Use at most 2 decimal places.";
+
+/**
+ * Reads an amount typed for a payment: digits with at most two places after the point, above zero,
+ * and small enough to be stored. Returns it with exactly two places (`"120"` → `"120.00"`). A sign, an
+ * exponent, a thousands separator, spaces inside the number and anything that is not text are refused
+ * with a message for the field. Whether it fits the invoice's balance is a separate question
+ * ({@link isAmountAbove}), because it depends on the invoice.
+ */
+export function parsePaymentAmount(
+  raw: unknown,
+): { ok: true; amount: string } | { ok: false; message: string } {
+  if (typeof raw !== "string" || !DECIMAL_TEXT.test(raw.trim())) {
+    return { ok: false, message: PAYMENT_AMOUNT_NOT_A_NUMBER };
+  }
+  const text = raw.trim();
+  const fraction = text.split(".")[1];
+  if (fraction !== undefined && fraction.length > MONEY_PLACES) {
+    return { ok: false, message: PAYMENT_AMOUNT_TOO_PRECISE };
+  }
+  const value = new Dec(text);
+  if (!value.gte(LIMITS.paymentAmount.min)) {
+    return { ok: false, message: PAYMENT_AMOUNT_NOT_POSITIVE };
+  }
+  if (value.gt(MAX_AMOUNT)) {
+    return {
+      ok: false,
+      message: `Enter an amount up to ${groupedLimit(LIMITS.documentAmount.max)}.`,
+    };
+  }
+  return { ok: true, amount: value.toFixed(MONEY_PLACES) };
+}
+
+/** The sum of decimal strings, with two places (`"0.00"` for none): never a float. */
+export function sumAmounts(amounts: readonly string[]): string {
+  return amounts
+    .reduce((sum, amount) => sum.plus(new Dec(amount.trim())), new Dec(0))
+    .toFixed(MONEY_PLACES);
+}
+
+/** True when `amount` is greater than `limit`: whether a payment is more than the balance. */
+export function isAmountAbove(amount: string, limit: string): boolean {
+  return new Dec(amount.trim()).gt(new Dec(limit.trim()));
+}

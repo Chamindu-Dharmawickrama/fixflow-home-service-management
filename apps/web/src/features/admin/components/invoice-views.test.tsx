@@ -18,7 +18,6 @@ import { InvoiceDocument } from "./invoice-document";
 import {
   InvoiceDetailsCard,
   InvoiceHistoryCard,
-  InvoicePaymentsCard,
   InvoiceStatusBanner,
 } from "./invoice-readonly-cards";
 import { InvoiceStatusChips } from "./invoice-status-chips";
@@ -198,60 +197,6 @@ describe("InvoiceStatusBanner", () => {
   it("draws nothing for a draft", () => {
     banner(adminInvoice());
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
-  });
-});
-
-describe("InvoicePaymentsCard: issued is kept apart from received", () => {
-  it("says no payment is recorded and that recording comes in the next step, with no button", () => {
-    render(<InvoicePaymentsCard invoice={issuedInvoice()} timeZone={TIME_ZONE} />);
-    const card = within(screen.getByTestId("invoice-payments"));
-    expect(card.getByRole("heading", { name: "Payments received" })).toBeVisible();
-    expect(card.getByText(/No payments have been recorded/)).toBeVisible();
-    expect(card.getByText(/Payments are recorded in the next step/)).toBeVisible();
-    expect(card.queryByRole("button")).not.toBeInTheDocument();
-  });
-
-  it("lists the payments that exist, a voided one struck through with its reason", () => {
-    render(
-      <InvoicePaymentsCard
-        invoice={issuedInvoice({
-          payments: [
-            {
-              id: "p1",
-              amount: "100.00",
-              paymentDate: "2026-03-05",
-              method: "BANK_TRANSFER",
-              reference: null,
-              notes: null,
-              recordedBy: { name: "Morgan Reyes" },
-              createdAt: "2026-03-05T15:00:00.000Z",
-              voided: null,
-            },
-            {
-              id: "p2",
-              amount: "20.00",
-              paymentDate: "2026-03-06",
-              method: "CASH",
-              reference: null,
-              notes: null,
-              recordedBy: { name: "Morgan Reyes" },
-              createdAt: "2026-03-06T15:00:00.000Z",
-              voided: {
-                at: "2026-03-06T16:00:00.000Z",
-                by: { name: "Morgan Reyes" },
-                reason: "Wrong invoice.",
-              },
-            },
-          ],
-        })}
-        timeZone={TIME_ZONE}
-      />,
-    );
-    const card = within(screen.getByTestId("invoice-payments"));
-    expect(card.getByText("$100.00")).toBeVisible();
-    expect(card.getByText("$20.00")).toHaveClass("line-through");
-    expect(card.getByText("Voided: Wrong invoice.")).toBeVisible();
-    expect(card.queryByText(/No payments have been recorded/)).not.toBeInTheDocument();
   });
 });
 

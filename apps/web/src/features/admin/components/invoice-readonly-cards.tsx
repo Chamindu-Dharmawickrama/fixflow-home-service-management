@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DateTimeText } from "@/components/ui/date-time-text";
 import { DescriptionItem, DescriptionList } from "@/components/ui/description-list";
-import { MoneyText } from "@/components/ui/money-text";
 import { ActivityTimeline } from "@/features/activity/components/activity-timeline";
 import { cn } from "@/lib/utils";
 
@@ -123,54 +122,6 @@ export function InvoiceStatusBanner({ invoice, timeZone }: CardProps) {
     default:
       return null;
   }
-}
-
-/**
- * The money received, kept clearly apart from the invoice that was issued (UX-QB-INV). Recording a
- * payment arrives in the next step, so for now the panel says so rather than offering a button that
- * does nothing; any payment that exists is listed.
- */
-export function InvoicePaymentsCard({ invoice, timeZone }: CardProps) {
-  const payments = invoice.payments;
-  return (
-    <Card className="print:hidden" data-testid="invoice-payments">
-      <CardHeader>
-        <CardTitle as="h2">Payments received</CardTitle>
-        <CardDescription>
-          Money received against this invoice, separate from the invoice itself.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {payments.length === 0 ? (
-          <p className="text-sm text-ink-secondary">
-            No payments have been recorded. Payments are recorded in the next step.
-          </p>
-        ) : (
-          <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
-            {payments.map((payment) => (
-              <li key={payment.id} className="flex flex-col gap-1 p-3 text-sm">
-                <span className="flex flex-wrap items-baseline justify-between gap-2">
-                  <MoneyText
-                    amount={payment.amount}
-                    currencyCode={invoice.currencyCode}
-                    className={cn("font-medium", payment.voided !== null && "line-through")}
-                  />
-                  <span className="text-ink-secondary">
-                    <DateTimeText value={payment.paymentDate} timeZone={timeZone} />
-                  </span>
-                </span>
-                {payment.voided === null ? null : (
-                  <span className="text-danger [overflow-wrap:anywhere]">
-                    Voided: {payment.voided.reason}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
-  );
 }
 
 /** Who did what and when, for the team, and where the invoice came from. */

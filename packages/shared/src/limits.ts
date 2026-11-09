@@ -25,6 +25,8 @@ export const LIMITS = {
   taxRate: { min: "0", max: "100" },
   discount: { min: "0.00" },
   paymentAmount: { min: "0.01" },
+  /** What staff may type beside a payment. Internal only; never card or bank credentials (BR-14). */
+  payment: { reference: { maxLength: 100 }, notes: { maxLength: 500 } },
   requestDescription: { minLength: 20, maxLength: 2000 },
   /** How far ahead a customer may ask for a visit, counted in business-time-zone days from today (D-35). */
   preferredDate: { minDaysAhead: 1, maxDaysAhead: 90 },

@@ -7,6 +7,7 @@ import {
   type InvoicePaymentDto,
   invoiceStatusLabel,
   type JobInvoiceLinkDto,
+  paymentMethodLabel,
   type QuotationAddressDto,
   type QuotationBusinessDto,
 } from "@fixflow/shared";
@@ -194,6 +195,7 @@ function toPayments(rows: InvoiceDetailRow["payments"]): InvoicePaymentDto[] {
     amount: payment.amount.toFixed(2),
     paymentDate: toDateOnly(payment.paymentDate),
     method: payment.method,
+    methodLabel: paymentMethodLabel(payment.method),
     reference: payment.reference,
     notes: payment.notes,
     recordedBy: { name: payment.recordedBy.name },

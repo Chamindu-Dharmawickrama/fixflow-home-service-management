@@ -195,8 +195,11 @@ describe("daysOverdue", () => {
 });
 
 describe("status transitions (D-26)", () => {
-  it("lists exactly the six allowed changes", () => {
-    expect(INVOICE_TRANSITIONS).toHaveLength(6);
+  it("lists exactly the sixteen allowed changes: six by an admin or the system, ten by a payment", () => {
+    expect(INVOICE_TRANSITIONS).toHaveLength(16);
+    expect(
+      INVOICE_TRANSITIONS.filter((transition) => transition.trigger === InvoiceTrigger.PAYMENT),
+    ).toHaveLength(10);
   });
 
   const pairs = Object.values(I).flatMap((from) =>
@@ -205,11 +208,11 @@ describe("status transitions (D-26)", () => {
     ),
   );
 
-  it("covers every status pair for both triggers (72)", () => {
-    expect(pairs).toHaveLength(72);
+  it("covers every status pair for the three triggers (108)", () => {
+    expect(pairs).toHaveLength(108);
     expect(
       pairs.filter((pair) => canTransitionInvoice(pair.from, pair.to, pair.trigger)),
-    ).toHaveLength(6);
+    ).toHaveLength(16);
   });
 
   it.each([
@@ -219,6 +222,16 @@ describe("status transitions (D-26)", () => {
     [I.OVERDUE, I.VOID, InvoiceTrigger.ADMIN],
     [I.ISSUED, I.OVERDUE, InvoiceTrigger.SYSTEM],
     [I.PARTIALLY_PAID, I.OVERDUE, InvoiceTrigger.SYSTEM],
+    [I.ISSUED, I.PARTIALLY_PAID, InvoiceTrigger.PAYMENT],
+    [I.ISSUED, I.PAID, InvoiceTrigger.PAYMENT],
+    [I.ISSUED, I.OVERDUE, InvoiceTrigger.PAYMENT],
+    [I.PARTIALLY_PAID, I.PAID, InvoiceTrigger.PAYMENT],
+    [I.PARTIALLY_PAID, I.OVERDUE, InvoiceTrigger.PAYMENT],
+    [I.OVERDUE, I.PAID, InvoiceTrigger.PAYMENT],
+    [I.PAID, I.PARTIALLY_PAID, InvoiceTrigger.PAYMENT],
+    [I.PAID, I.ISSUED, InvoiceTrigger.PAYMENT],
+    [I.PAID, I.OVERDUE, InvoiceTrigger.PAYMENT],
+    [I.PARTIALLY_PAID, I.ISSUED, InvoiceTrigger.PAYMENT],
   ] as const)("allows %s → %s by %s", (from, to, trigger) => {
     expect(canTransitionInvoice(from, to, trigger)).toBe(true);
     expect(() => assertInvoiceTransition(from, to, trigger)).not.toThrow();
@@ -243,14 +256,25 @@ describe("status transitions (D-26)", () => {
     }
   });
 
-  it("an admin cannot make the system's change, and nobody leaves VOID or PAID", () => {
+  it("an admin cannot make the system's change, and nobody leaves VOID", () => {
     expect(canTransitionInvoice(I.ISSUED, I.OVERDUE, InvoiceTrigger.ADMIN)).toBe(false);
     for (const to of Object.values(I)) {
       for (const trigger of Object.values(InvoiceTrigger)) {
         expect(canTransitionInvoice(I.VOID, to, trigger)).toBe(false);
-        expect(canTransitionInvoice(I.PAID, to, trigger)).toBe(false);
       }
     }
+  });
+
+  it("only a voided payment takes a paid invoice back, and a payment never reaches VOID or DRAFT", () => {
+    for (const to of Object.values(I)) {
+      expect(canTransitionInvoice(I.PAID, to, InvoiceTrigger.ADMIN)).toBe(false);
+      expect(canTransitionInvoice(I.PAID, to, InvoiceTrigger.SYSTEM)).toBe(false);
+    }
+    for (const from of Object.values(I)) {
+      expect(canTransitionInvoice(from, I.VOID, InvoiceTrigger.PAYMENT)).toBe(false);
+      expect(canTransitionInvoice(from, I.DRAFT, InvoiceTrigger.PAYMENT)).toBe(false);
+    }
+    expect(canTransitionInvoice(I.DRAFT, I.PAID, InvoiceTrigger.PAYMENT)).toBe(false);
   });
 
   it("says in words why, for a voided invoice and for a no-op", () => {
@@ -319,23 +343,28 @@ describe("availableInvoiceActions (D-43)", () => {
     ]);
   });
 
-  it("an issued or overdue invoice with no payments can be voided", () => {
-    expect(availableInvoiceActions(I.ISSUED)).toEqual([InvoiceAction.VOID]);
-    expect(availableInvoiceActions(I.OVERDUE)).toEqual([InvoiceAction.VOID]);
-    expect(availableInvoiceActions(I.OVERDUE, { hasActivePayments: false })).toEqual([
-      InvoiceAction.VOID,
+  it("an issued or overdue invoice with no payments can take a payment or be voided", () => {
+    const both = [InvoiceAction.RECORD_PAYMENT, InvoiceAction.VOID];
+    expect(availableInvoiceActions(I.ISSUED)).toEqual(both);
+    expect(availableInvoiceActions(I.OVERDUE)).toEqual(both);
+    expect(availableInvoiceActions(I.OVERDUE, { hasActivePayments: false })).toEqual(both);
+  });
+
+  it("an invoice with a payment on it offers to record another or to void a payment, not to void the invoice", () => {
+    const withPayments = { hasActivePayments: true };
+    const expected = [InvoiceAction.RECORD_PAYMENT, InvoiceAction.VOID_PAYMENT];
+    expect(availableInvoiceActions(I.OVERDUE, withPayments)).toEqual(expected);
+    expect(availableInvoiceActions(I.ISSUED, withPayments)).toEqual(expected);
+    expect(availableInvoiceActions(I.PARTIALLY_PAID, withPayments)).toEqual(expected);
+  });
+
+  it("a paid invoice offers only the voiding of a payment; a void invoice nothing", () => {
+    expect(availableInvoiceActions(I.PAID, { hasActivePayments: true })).toEqual([
+      InvoiceAction.VOID_PAYMENT,
     ]);
-  });
-
-  it("an overdue invoice with a payment on it cannot be voided", () => {
-    expect(availableInvoiceActions(I.OVERDUE, { hasActivePayments: true })).toEqual([]);
-    expect(availableInvoiceActions(I.ISSUED, { hasActivePayments: true })).toEqual([]);
-  });
-
-  it("partly paid, paid and void invoices offer nothing in this task", () => {
-    expect(availableInvoiceActions(I.PARTIALLY_PAID)).toEqual([]);
     expect(availableInvoiceActions(I.PAID)).toEqual([]);
     expect(availableInvoiceActions(I.VOID)).toEqual([]);
+    expect(availableInvoiceActions(I.VOID, { hasActivePayments: true })).toEqual([]);
   });
 
   it("agrees with the transition table: an action is offered only where its transition exists", () => {
@@ -344,8 +373,13 @@ describe("availableInvoiceActions (D-43)", () => {
         const allowed = INVOICE_TRANSITIONS.some(
           (transition) => transition.from === status && transition.action === action,
         );
-        // EDIT changes no status, so it has no row of its own.
-        expect(action === InvoiceAction.EDIT || allowed).toBe(true);
+        // EDIT changes no status and the payment actions are the PAYMENT trigger's, so they have no row of their own.
+        expect(
+          action === InvoiceAction.EDIT ||
+            action === InvoiceAction.RECORD_PAYMENT ||
+            action === InvoiceAction.VOID_PAYMENT ||
+            allowed,
+        ).toBe(true);
       }
     }
   });

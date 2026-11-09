@@ -242,7 +242,9 @@ describe("POST /admin/invoices/:id/void (FR-076, BR-16, D-26)", () => {
       const { invoice } = await issuedInvoice(w);
       await insertPayment(prisma, { invoiceId: invoice.id, recordedByUserId: w.admin.id });
       const read = dataOf<AdminInvoiceDto>(await getInvoiceRequest(w, invoice.id));
-      expect(read.availableActions).toEqual([]);
+      // The invoice cannot be voided while the payment stands; the payment can be (T21).
+      expect(read.availableActions).not.toContain("VOID");
+      expect(read.availableActions).toEqual(["RECORD_PAYMENT", "VOID_PAYMENT"]);
       expect(read.payments).toHaveLength(1);
     });
   });

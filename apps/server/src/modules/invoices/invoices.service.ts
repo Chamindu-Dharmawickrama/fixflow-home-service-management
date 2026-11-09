@@ -66,11 +66,13 @@ import type {
 } from "./invoices.schemas.js";
 import { lockInvoice, syncOverdueInvoices, transitionInvoice } from "./invoices.transitions.js";
 
-type InvoiceDeps = Pick<AppDeps, "prisma" | "clock" | "config" | "emailDispatcher">;
+export type InvoiceDeps = Pick<AppDeps, "prisma" | "clock" | "config" | "emailDispatcher">;
 
 const NOT_SET_UP = "The business settings have not been set up yet.";
 
-async function loadSettings(db: Pick<DbClient, "businessSettings">): Promise<InvoiceSettingsRow> {
+export async function loadSettings(
+  db: Pick<DbClient, "businessSettings">,
+): Promise<InvoiceSettingsRow> {
   const settings = await db.businessSettings.findUnique({
     where: { id: BUSINESS_SETTINGS_ID },
     select: INVOICE_SETTINGS_SELECT,
@@ -158,7 +160,11 @@ export async function syncOverdueInvoicesIfDue(
 // ---- Reading one (FR-074) ------------------------------------------------------------------------
 
 /** The invoice for the business, as it is now. No sync: callers that read after a write have just made it right. */
-async function readAdminInvoice(db: DbClient, now: Date, id: string): Promise<AdminInvoiceDto> {
+export async function readAdminInvoice(
+  db: DbClient,
+  now: Date,
+  id: string,
+): Promise<AdminInvoiceDto> {
   const [row, settings] = await Promise.all([
     db.invoice.findUnique({ where: { id }, select: INVOICE_DETAIL_SELECT }),
     loadSettings(db),

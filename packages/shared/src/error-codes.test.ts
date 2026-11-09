@@ -55,6 +55,10 @@ describe("ErrorCode", () => {
         "INVOICE_EXISTS",
         "INVOICE_NOT_EDITABLE",
         "INVOICE_HAS_PAYMENTS",
+        // T21 — payments
+        "INVOICE_NOT_PAYABLE",
+        "PAYMENT_EXCEEDS_BALANCE",
+        "PAYMENT_ALREADY_VOIDED",
       ].sort(),
     );
   });

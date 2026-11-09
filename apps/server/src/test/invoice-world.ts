@@ -2,11 +2,15 @@ import {
   type AdminInvoiceDto,
   calculateDocumentTotals,
   type InvoiceStatus,
+  sumAmounts,
   type UpdateInvoiceBody,
   WorkOrderStatus,
 } from "@fixflow/shared";
+import { expect } from "vitest";
 
+import { toDateOnly } from "../lib/date-only.js";
 import type { PrismaClient } from "../lib/db.js";
+import { deriveInvoiceStatus } from "../modules/invoices/invoices.domain.js";
 import { signInAs } from "./auth-helpers.js";
 import type { TestAppOverrides } from "./build-test-app.js";
 import { dataOf, EXAMPLE_LINES, type QuotationWorld } from "./quotation-world.js";
@@ -240,4 +244,113 @@ export type { InvoiceStatus };
 export async function moveClockTo(w: QuotationWorld, time: string): Promise<void> {
   w.clock.set(time);
   w.adminCookie = await signInAs(w.app, w.admin.email);
+}
+
+// ---- Payments (T21) --------------------------------------------------------------------------------
+
+export function recordPaymentRequest(
+  w: QuotationWorld,
+  id: string,
+  body: object,
+  cookie = w.adminCookie,
+) {
+  return w.client.post(`${ADMIN_INVOICES}/${id}/payments`, { cookie }).send(body);
+}
+
+export function voidPaymentRequest(
+  w: QuotationWorld,
+  id: string,
+  paymentId: string,
+  body: object,
+  cookie = w.adminCookie,
+) {
+  return w.client.post(`${ADMIN_INVOICES}/${id}/payments/${paymentId}/void`, { cookie }).send(body);
+}
+
+/** A valid payment body on the test clock's day (2 March 2026), with `overrides` on top. */
+export function paymentBody(overrides: Record<string, unknown> = {}) {
+  return {
+    amount: "100.00",
+    paymentDate: "2026-03-02",
+    method: "BANK_TRANSFER",
+    ...overrides,
+  };
+}
+
+/**
+ * A completed job with an issued invoice whose total is exactly `total` (300.00 unless asked): a
+ * single untaxed line, so the numbers in a test are the numbers on the page. Due 16 March 2026.
+ */
+export async function payableInvoice(
+  w: QuotationWorld,
+  options: { total?: string; owner?: "alex" | "priya" } = {},
+) {
+  const { total = "300.00", owner = "alex" } = options;
+  const made = await draftInvoice(w, owner);
+  const saved = await saveInvoice(w, made.invoice, {
+    lines: [{ description: "Service call", quantity: "1", unitPrice: total, taxable: false }],
+    discountAmount: "0.00",
+    taxRate: "0.00",
+    issueDate: null,
+    dueDate: "2026-03-16",
+  });
+  expect(saved.totalAmount).toBe(total);
+  const invoice = await issued(w, saved.id);
+  return { ...made, invoice };
+}
+
+/** Records a payment through the endpoint and returns the invoice, failing the setup if it is refused. */
+export async function paid(
+  w: QuotationWorld,
+  id: string,
+  amount: string,
+  overrides: Record<string, unknown> = {},
+): Promise<AdminInvoiceDto> {
+  const response = await recordPaymentRequest(w, id, paymentBody({ amount, ...overrides }));
+  if (response.status !== 201) {
+    throw new Error(`Recording failed with ${response.status}: ${JSON.stringify(response.body)}`);
+  }
+  await w.deps.emailDispatcher.idle();
+  return dataOf<AdminInvoiceDto>(response);
+}
+
+/**
+ * The invariant to check after every scenario (D-26): the invoice's `amountPaid` is the sum of its
+ * payments that have not been voided, never more than the total, and its stored status is the one
+ * the derivation gives for those facts at the clock's time.
+ */
+export async function expectLedgerInvariant(w: QuotationWorld, invoiceId: string): Promise<void> {
+  const invoice = await w.prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
+  const standing = await w.prisma.paymentRecord.findMany({
+    where: { invoiceId, voidedAt: null },
+  });
+  const settings = await w.prisma.businessSettings.findFirstOrThrow({
+    select: { timeZone: true },
+  });
+  const sum = sumAmounts(standing.map((payment) => payment.amount.toFixed(2)));
+  expect(invoice.amountPaid.toFixed(2)).toBe(sum);
+  expect(invoice.amountPaid.lte(invoice.totalAmount)).toBe(true);
+  expect(invoice.status).toBe(
+    deriveInvoiceStatus({
+      issuedAt: invoice.issuedAt,
+      voidedAt: invoice.voidedAt,
+      totalAmount: invoice.totalAmount.toFixed(2),
+      amountPaid: sum,
+      dueDate: invoice.dueDate === null ? null : toDateOnly(invoice.dueDate),
+      now: w.clock.now(),
+      timeZone: settings.timeZone,
+    }),
+  );
+}
+
+/** Everything a payment adds that a refusal must not: rows, events, notifications and emails. */
+export async function paymentFootprint(w: QuotationWorld, invoiceId: string) {
+  await w.deps.emailDispatcher.idle();
+  return {
+    payments: JSON.stringify(
+      await w.prisma.paymentRecord.findMany({ where: { invoiceId }, orderBy: { id: "asc" } }),
+    ),
+    invoice: await invoiceSnapshot(w.prisma, invoiceId),
+    ...(await invoiceFootprint(w)),
+  };
 }

@@ -101,6 +101,14 @@ export const ErrorCode = {
   INVOICE_NOT_EDITABLE: "INVOICE_NOT_EDITABLE",
   /** 409 — an invoice with active payments cannot be voided; void the payments first (D-26). */
   INVOICE_HAS_PAYMENTS: "INVOICE_HAS_PAYMENTS",
+
+  // Payments (T21)
+  /** 409 — a payment cannot be recorded on this invoice: a draft, a void or a paid one (D-27). */
+  INVOICE_NOT_PAYABLE: "INVOICE_NOT_PAYABLE",
+  /** 422 — the payment is more than the remaining balance; `details.remainingBalance` is what is left (FR-075). */
+  PAYMENT_EXCEEDS_BALANCE: "PAYMENT_EXCEEDS_BALANCE",
+  /** 409 — the payment was already voided, so it cannot be voided again (BR-16). */
+  PAYMENT_ALREADY_VOIDED: "PAYMENT_ALREADY_VOIDED",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

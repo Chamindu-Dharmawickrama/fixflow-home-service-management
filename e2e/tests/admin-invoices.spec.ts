@@ -178,10 +178,10 @@ test("an admin creates an invoice from a completed job, adds a parts line, saves
   await expect(doc.getByText(`Please quote ${number} with your payment.`)).toBeVisible();
   await expect(page.getByTestId("invoice-banner")).toContainText("Issued");
   await expect(page.getByTestId("invoice-banner")).toContainText("The contents are locked");
-  // Issued is kept apart from received: nothing has been paid, and no payment button is offered.
+  // Issued is kept apart from received: nothing has been paid, and the panel offers to record a payment (T21).
   const payments = page.getByTestId("invoice-payments");
-  await expect(payments).toContainText("Payments are recorded in the next step");
-  await expect(payments.getByRole("button")).toHaveCount(0);
+  await expect(payments).toContainText("No payments recorded yet");
+  await expect(payments.getByRole("button", { name: "Record payment" })).toBeVisible();
   // The editor is gone: no fields, no Save draft.
   await expect(page.getByRole("button", { name: "Save draft" })).toHaveCount(0);
 

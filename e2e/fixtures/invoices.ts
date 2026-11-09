@@ -1,4 +1,10 @@
-import { calculateDocumentTotals, type InvoiceStatus } from "@fixflow/shared";
+import {
+  balanceDue,
+  calculateDocumentTotals,
+  type InvoiceStatus,
+  isPositiveAmount,
+  sumAmounts,
+} from "@fixflow/shared";
 
 import { withDatabase } from "./accounts.js";
 import { createJobFor } from "./customers.js";
@@ -236,4 +242,86 @@ export async function insertInvoiceFor(
     });
     return { id: invoice.id, invoiceNumber: number };
   });
+}
+
+// ---- Payments (T21) --------------------------------------------------------------------------------
+
+/** The payments recorded on an invoice as stored, oldest first (voided ones included). */
+export async function paymentsOfInvoice(invoiceId: string) {
+  return withDatabase((prisma) =>
+    prisma.paymentRecord.findMany({
+      where: { invoiceId },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    }),
+  );
+}
+
+/**
+ * A payment inserted straight into the E2E database, with the invoice's `amountPaid` and status kept
+ * in step the way the server keeps them, for screens that need a history without clicking through it.
+ * A `voidReason` makes it a voided payment (which then does not count towards `amountPaid`).
+ */
+export async function insertPaymentFor(
+  invoiceId: string,
+  options: {
+    amount: string;
+    paymentDate?: string;
+    method?: "CASH" | "BANK_TRANSFER" | "CARD_TERMINAL" | "CHEQUE" | "OTHER";
+    reference?: string;
+    notes?: string;
+    voidReason?: string;
+  },
+) {
+  const {
+    amount,
+    paymentDate = "2026-11-03",
+    method = "BANK_TRANSFER",
+    reference,
+    notes,
+    voidReason,
+  } = options;
+  return withDatabase(async (prisma) => {
+    const admin = await prisma.user.findFirstOrThrow({
+      where: { role: "BUSINESS_ADMIN" },
+      select: { id: true },
+    });
+    await prisma.paymentRecord.create({
+      data: {
+        invoiceId,
+        amount,
+        paymentDate: new Date(`${paymentDate}T00:00:00.000Z`),
+        method,
+        reference: reference ?? null,
+        notes: notes ?? null,
+        recordedByUserId: admin.id,
+        ...(voidReason !== undefined && {
+          voidedAt: new Date(),
+          voidedByUserId: admin.id,
+          voidReason,
+        }),
+      },
+    });
+    const standing = await prisma.paymentRecord.findMany({ where: { invoiceId, voidedAt: null } });
+    const invoice = await prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
+    const amountPaid = sumAmounts(standing.map((row) => row.amount.toFixed(2)));
+    const settled = !isPositiveAmount(balanceDue(invoice.totalAmount.toFixed(2), amountPaid));
+    await prisma.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        amountPaid,
+        status: settled ? "PAID" : isPositiveAmount(amountPaid) ? "PARTIALLY_PAID" : "ISSUED",
+      },
+    });
+  });
+}
+
+/** The customer's notifications about payments, newest first. */
+export async function paymentNotificationsFor(customerUserId: string) {
+  return withDatabase((prisma) =>
+    prisma.notification.findMany({
+      where: { recipientUserId: customerUserId, type: "PAYMENT_RECORDED" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: { title: true, message: true, linkPath: true },
+    }),
+  );
 }

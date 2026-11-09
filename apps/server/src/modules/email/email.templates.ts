@@ -487,6 +487,8 @@ export interface PaymentRecordedEmailInput {
   currencyCode: string;
   /** `YYYY-MM-DD`. */
   paymentDate: string;
+  /** How it was received, as a person reads it: "Bank transfer". */
+  paymentMethod: string;
   /** What is still owed after this payment, a decimal string (`"0.00"` when paid in full). */
   balance: string;
   invoiceUrl: string;
@@ -511,6 +513,7 @@ export function renderPaymentRecordedEmail(
       { label: "Invoice", value: invoiceReference },
       { label: "Payment", value: formatEmailMoney(input.paymentAmount, currencyCode) },
       { label: "Payment date", value: formatEmailDate(input.paymentDate) },
+      { label: "Method", value: input.paymentMethod },
       { label: "Balance", value: formatEmailMoney(input.balance, currencyCode) },
     ],
     action: { label: "View invoice", url: invoiceUrl },

@@ -10,10 +10,10 @@ import { InvoiceActions } from "@/features/admin/components/invoice-actions";
 import { InvoiceDocument } from "@/features/admin/components/invoice-document";
 import { InvoiceEditor } from "@/features/admin/components/invoice-editor";
 import { InvoicePageHeader } from "@/features/admin/components/invoice-page-header";
+import { InvoicePaymentsPanel } from "@/features/admin/components/invoice-payments-panel";
 import {
   InvoiceDetailsCard,
   InvoiceHistoryCard,
-  InvoicePaymentsCard,
   InvoiceStatusBanner,
 } from "@/features/admin/components/invoice-readonly-cards";
 import { INVOICES_PATH } from "@/features/admin/lib/invoices";
@@ -97,13 +97,13 @@ async function InvoiceContent({ params }: InvoicePageProps) {
         actions={<InvoiceActions invoice={invoice} />}
       />
       <InvoiceStatusBanner invoice={invoice} timeZone={timeZone} />
+      <InvoicePaymentsPanel invoice={invoice} timeZone={timeZone} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start print:block">
         <div className="min-w-0">
           <InvoiceDocument invoice={invoice} timeZone={timeZone} />
         </div>
         <div className="flex min-w-0 flex-col gap-6">
-          <InvoicePaymentsCard invoice={invoice} timeZone={timeZone} />
           <InvoiceDetailsCard invoice={invoice} timeZone={timeZone} />
           <InvoiceHistoryCard invoice={invoice} timeZone={timeZone} />
         </div>

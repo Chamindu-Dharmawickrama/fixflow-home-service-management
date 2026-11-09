@@ -21,6 +21,12 @@ import {
   updateInvoice,
   voidInvoiceByAdmin,
 } from "./invoices.service.js";
+import {
+  paymentParamsSchema,
+  recordPaymentBodySchema,
+  voidPaymentBodySchema,
+} from "./payments.schemas.js";
+import { recordPayment, voidPayment } from "./payments.service.js";
 
 /**
  * The business's invoice endpoints (FR-070, FR-071, FR-074, FR-076, FR-077, spec §14.4), mounted on
@@ -30,9 +36,12 @@ import {
  * - `GET /invoices` lists them (filters, sort, pages, chip counts);
  * - `GET /invoices/:id` reads one with its history and the actions allowed now;
  * - `PATCH /invoices/:id` saves a draft (totals are worked out by the server);
- * - `POST /invoices/:id/issue` gives it its number and locks it; `POST /invoices/:id/void` withdraws it.
+ * - `POST /invoices/:id/issue` gives it its number and locks it; `POST /invoices/:id/void` withdraws it;
+ * - `POST /invoices/:id/payments` records money received outside FixFlow (D-27, T21);
+ * - `POST /invoices/:id/payments/:paymentId/void` voids a recorded payment with a reason.
  *
- * There is no `DELETE`: an invoice that exists stays in the history (BR-16). Every endpoint is
+ * There is no `DELETE` and no `PATCH` of a payment: an invoice or a payment that exists stays in the
+ * history, and a correction is a void plus a new record (BR-16). Every endpoint is
  * admin-only (a customer gets `403`). The role check is on each route and not on the router, because
  * this router shares the `/admin` prefix with other modules' routers.
  */
@@ -89,6 +98,28 @@ export function createAdminInvoicesRouter(deps: AppDeps): Router {
     validate({ params: invoiceIdParamsSchema, body: voidInvoiceBodySchema }),
     async (req, res) => {
       res.json({ data: await voidInvoiceByAdmin(deps, authOf(req), req.params.id, req.body) });
+    },
+  );
+
+  router.post("/invoices/:id/payments", ...write);
+  router.post(
+    "/invoices/:id/payments",
+    validate({ params: invoiceIdParamsSchema, body: recordPaymentBodySchema }),
+    async (req, res) => {
+      res
+        .status(201)
+        .json({ data: await recordPayment(deps, authOf(req), req.params.id, req.body) });
+    },
+  );
+
+  router.post("/invoices/:id/payments/:paymentId/void", ...write);
+  router.post(
+    "/invoices/:id/payments/:paymentId/void",
+    validate({ params: paymentParamsSchema, body: voidPaymentBodySchema }),
+    async (req, res) => {
+      res.json({
+        data: await voidPayment(deps, authOf(req), req.params.id, req.params.paymentId, req.body),
+      });
     },
   );
 

@@ -92,6 +92,47 @@ export async function transitionInvoice(
   return { from: current.status };
 }
 
+// ---- Payments (D-26, D-27) ---------------------------------------------------------------------
+
+/**
+ * Stores the invoice's new `amountPaid` together with the status it now has, inside the caller's
+ * transaction (it also holds the invoice's row lock). `amountPaid` is only ever written here and is
+ * always the sum of the payments that stand, which the caller has just worked out. When the status
+ * changes the change goes through {@link transitionInvoice}, so D-26's table still decides; when a part
+ * payment leaves it where it was (a second part payment, or one on an overdue invoice) only the amount
+ * moves, conditional on the status that was read. Returns the status the invoice left.
+ */
+export async function applyPaymentToInvoice(
+  tx: DbClient,
+  input: { invoiceId: string; to: InvoiceStatus; amountPaid: string },
+): Promise<{ from: InvoiceStatus }> {
+  const { invoiceId, to, amountPaid } = input;
+  const current = await tx.invoice.findUnique({
+    where: { id: invoiceId },
+    select: { status: true },
+  });
+  if (current === null) {
+    throw notFound();
+  }
+  if (current.status !== to) {
+    return transitionInvoice(tx, {
+      invoiceId,
+      to,
+      trigger: Trigger.PAYMENT,
+      data: { amountPaid },
+    });
+  }
+  const { count } = await tx.invoice.updateMany({
+    where: { id: invoiceId, status: current.status },
+    data: { amountPaid },
+  });
+  if (count === 0) {
+    const now = await tx.invoice.findUnique({ where: { id: invoiceId }, select: { status: true } });
+    throw now === null ? notFound() : staleInvoiceError(now.status);
+  }
+  return { from: current.status };
+}
+
 // ---- Overdue (D-23, D-26) -----------------------------------------------------------------------
 
 /**

@@ -25,10 +25,14 @@ const I = InvoiceStatus;
 
 // ---- Status transitions (D-26, spec §6.5) --------------------------------------------------------
 
-/** Who makes a change: a business admin, or the system as time passes. T21 adds payments. */
+/**
+ * Who makes a change: a business admin, the system as time passes, or a payment being recorded or
+ * voided (D-27), which moves an invoice between the four statuses that are about money owed.
+ */
 export const InvoiceTrigger = {
   ADMIN: "ADMIN",
   SYSTEM: "SYSTEM",
+  PAYMENT: "PAYMENT",
 } as const;
 export type InvoiceTrigger = (typeof InvoiceTrigger)[keyof typeof InvoiceTrigger];
 
@@ -42,9 +46,13 @@ export interface InvoiceTransition {
 
 /**
  * Every allowed change of an invoice's status, as data (D-26). A pair that is not listed is not
- * allowed, whoever asks. `PAID`, `PARTIALLY_PAID` and `VOID` are not reached by an admin action in
- * T20: a payment moves an invoice there (T21), and `VOID` has no way out. An invoice with payments
- * cannot be voided at all (`INVOICE_HAS_PAYMENTS`), which is why no payment status leads to `VOID`.
+ * allowed, whoever asks. `PAID` and `PARTIALLY_PAID` are reached only by a payment, and `VOID` has no
+ * way out. An invoice with payments cannot be voided at all (`INVOICE_HAS_PAYMENTS`), which is why no
+ * payment status leads to `VOID`. The `PAYMENT` pairs are exactly the ones the derivation can reach
+ * from the money alone: recording moves an invoice towards paid and voiding a payment moves it back
+ * (`PAID` → `PARTIALLY_PAID`, `ISSUED` or `OVERDUE`). A payment on an invoice that is already past due
+ * but still stored as `ISSUED` (the overdue save had not run yet) also reaches `OVERDUE`. A payment that
+ * leaves the status as it is (a part payment on an overdue invoice) is not a transition.
  */
 export const INVOICE_TRANSITIONS: readonly InvoiceTransition[] = [
   { from: I.DRAFT, to: I.ISSUED, trigger: InvoiceTrigger.ADMIN, action: InvoiceAction.ISSUE },
@@ -53,6 +61,18 @@ export const INVOICE_TRANSITIONS: readonly InvoiceTransition[] = [
   { from: I.OVERDUE, to: I.VOID, trigger: InvoiceTrigger.ADMIN, action: InvoiceAction.VOID },
   { from: I.ISSUED, to: I.OVERDUE, trigger: InvoiceTrigger.SYSTEM },
   { from: I.PARTIALLY_PAID, to: I.OVERDUE, trigger: InvoiceTrigger.SYSTEM },
+  // Recording a payment (FR-073, FR-074, D-26)
+  { from: I.ISSUED, to: I.PARTIALLY_PAID, trigger: InvoiceTrigger.PAYMENT },
+  { from: I.ISSUED, to: I.PAID, trigger: InvoiceTrigger.PAYMENT },
+  { from: I.ISSUED, to: I.OVERDUE, trigger: InvoiceTrigger.PAYMENT },
+  { from: I.PARTIALLY_PAID, to: I.PAID, trigger: InvoiceTrigger.PAYMENT },
+  { from: I.PARTIALLY_PAID, to: I.OVERDUE, trigger: InvoiceTrigger.PAYMENT },
+  { from: I.OVERDUE, to: I.PAID, trigger: InvoiceTrigger.PAYMENT },
+  // Voiding a payment (FR-076, BR-16)
+  { from: I.PAID, to: I.PARTIALLY_PAID, trigger: InvoiceTrigger.PAYMENT },
+  { from: I.PAID, to: I.ISSUED, trigger: InvoiceTrigger.PAYMENT },
+  { from: I.PAID, to: I.OVERDUE, trigger: InvoiceTrigger.PAYMENT },
+  { from: I.PARTIALLY_PAID, to: I.ISSUED, trigger: InvoiceTrigger.PAYMENT },
 ];
 
 export function canTransitionInvoice(
@@ -214,19 +234,29 @@ export interface InvoiceActionContext {
 
 /**
  * What an admin may do to an invoice in this status, the most likely step first (D-43). The screen
- * offers exactly these and the endpoints check them again. Voiding is for a draft or an issued
- * invoice that nothing has been paid against.
+ * offers exactly these and the endpoints check them again. A payment is recorded on an issued, partly
+ * paid or overdue invoice (D-27). Voiding the invoice is for a draft or an issued invoice that nothing
+ * has been paid against; once a payment is on it, the payment is voided first. A payment can be voided
+ * on any invoice that is not void, so a paid invoice can still be corrected.
  */
 export function availableInvoiceActions(
   status: InvoiceStatus,
   context: InvoiceActionContext = {},
 ): InvoiceAction[] {
+  const hasPayments = context.hasActivePayments === true;
   switch (status) {
     case I.DRAFT:
       return [InvoiceAction.EDIT, InvoiceAction.ISSUE, InvoiceAction.VOID];
     case I.ISSUED:
     case I.OVERDUE:
-      return context.hasActivePayments === true ? [] : [InvoiceAction.VOID];
+    case I.PARTIALLY_PAID:
+      return [
+        InvoiceAction.RECORD_PAYMENT,
+        ...(hasPayments ? [InvoiceAction.VOID_PAYMENT] : []),
+        ...(hasPayments || status === I.PARTIALLY_PAID ? [] : [InvoiceAction.VOID]),
+      ];
+    case I.PAID:
+      return hasPayments ? [InvoiceAction.VOID_PAYMENT] : [];
     default:
       return [];
   }

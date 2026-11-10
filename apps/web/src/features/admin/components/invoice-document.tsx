@@ -1,9 +1,15 @@
-import { type AdminInvoiceDto, InvoiceStatus } from "@fixflow/shared";
+import {
+  type AdminInvoiceDto,
+  type CustomerInvoicePaymentDto,
+  InvoiceStatus,
+} from "@fixflow/shared";
 
 import { DateTimeText } from "@/components/ui/date-time-text";
 import { DocumentLines, DocumentTotals } from "@/components/ui/document";
+import { MoneyText } from "@/components/ui/money-text";
 import { BusinessLogo } from "@/features/catalogue/components/business-logo";
 import { formatAddressLines } from "@/features/portal/lib/format-address";
+import { paidDirectlyNote } from "@/features/portal/lib/invoices";
 import { documentTotalRows } from "@/lib/formatting/document-totals";
 import { isZeroAmount } from "@/lib/formatting/money";
 import { cn } from "@/lib/utils";
@@ -43,6 +49,11 @@ export interface InvoiceDocumentProps {
   timeZone: string;
   /** Names the document for screen readers when two are on a page (the preview over the editor). */
   idPrefix?: string | undefined;
+  /**
+   * The payments that stand, to print as the document's "Payments received" (the customer's page and
+   * the PDF carry them). Left out, the section is not drawn: the business's page has its own panel.
+   */
+  payments?: readonly CustomerInvoicePaymentDto[] | undefined;
 }
 
 /**
@@ -57,7 +68,12 @@ export interface InvoiceDocumentProps {
  * "Amount paid" is what the invoice records as received; this task does not record payments, so it
  * reads zero until they do.
  */
-export function InvoiceDocument({ invoice, timeZone, idPrefix = "" }: InvoiceDocumentProps) {
+export function InvoiceDocument({
+  invoice,
+  timeZone,
+  idPrefix = "",
+  payments,
+}: InvoiceDocumentProps) {
   const { business, customer } = invoice;
   const titleId = `${idPrefix}invoice-document-title`;
   const isDraft = invoice.status === InvoiceStatus.DRAFT;
@@ -198,7 +214,47 @@ export function InvoiceDocument({ invoice, timeZone, idPrefix = "" }: InvoiceDoc
         </section>
       ) : null}
 
-      {invoice.paymentInstructions ? (
+      {payments === undefined || isDraft ? null : (
+        <section
+          aria-labelledby={`${idPrefix}invoice-payments-heading`}
+          data-testid="invoice-document-payments"
+          className="flex flex-col gap-2 print:break-inside-avoid"
+        >
+          <h3
+            id={`${idPrefix}invoice-payments-heading`}
+            className="text-xs font-semibold tracking-wide text-ink-secondary uppercase"
+          >
+            Payments received
+          </h3>
+          {payments.length === 0 ? (
+            <p className="text-sm text-ink-secondary">No payments have been recorded yet.</p>
+          ) : (
+            <ul
+              aria-label="Payments received"
+              className="flex flex-col divide-y divide-border text-sm"
+            >
+              {payments.map((payment) => (
+                <li
+                  key={payment.id}
+                  className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2"
+                >
+                  <span className="min-w-0 text-ink">
+                    <DateTimeText value={payment.paymentDate} timeZone={timeZone} />
+                    <span className="text-ink-secondary"> · {payment.methodLabel}</span>
+                  </span>
+                  <MoneyText
+                    amount={payment.amount}
+                    currencyCode={invoice.currencyCode}
+                    className="font-medium text-ink"
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {invoice.paymentInstructions && !isVoid ? (
         <section
           aria-label="How to pay"
           className={cn(
@@ -215,6 +271,7 @@ export function InvoiceDocument({ invoice, timeZone, idPrefix = "" }: InvoiceDoc
               Please quote {invoice.invoiceNumber} with your payment.
             </p>
           )}
+          <p className="text-xs text-ink-secondary">{paidDirectlyNote(business.name)}</p>
         </section>
       ) : null}
 

@@ -260,3 +260,103 @@ export interface JobInvoiceLinkDto {
   status: InvoiceStatus;
   statusLabel: string;
 }
+
+// ---- The customer's view (T22, D-41) -------------------------------------------------------------
+
+/**
+ * The statuses a customer can ever be shown: an invoice that was issued. A draft is the business's
+ * working copy and a draft that was voided never reached the customer (D-26, D-110).
+ */
+export const CUSTOMER_INVOICE_STATUSES = [
+  InvoiceStatus.ISSUED,
+  InvoiceStatus.PARTIALLY_PAID,
+  InvoiceStatus.PAID,
+  InvoiceStatus.OVERDUE,
+  InvoiceStatus.VOID,
+] as const satisfies readonly InvoiceStatus[];
+
+/** The statuses that still owe money: the "Outstanding" filter and the portal's overview section. */
+export const OUTSTANDING_INVOICE_STATUSES = [
+  InvoiceStatus.ISSUED,
+  InvoiceStatus.PARTIALLY_PAID,
+  InvoiceStatus.OVERDUE,
+] as const satisfies readonly InvoiceStatus[];
+
+export const CUSTOMER_INVOICE_SORT_FIELDS = ["issueDate", "dueDate", "totalAmount"] as const;
+export type CustomerInvoiceSortField = (typeof CUSTOMER_INVOICE_SORT_FIELDS)[number];
+
+/** One row of `GET /invoices/me`. */
+export interface CustomerInvoiceListItemDto {
+  id: string;
+  /** Always set: a customer is only shown invoices that were issued. */
+  invoiceNumber: string;
+  /** What the invoice is now, overdue included. */
+  status: InvoiceStatus;
+  statusLabel: string;
+  /** `YYYY-MM-DD`. */
+  issueDate: string;
+  dueDate: string;
+  currencyCode: string;
+  totalAmount: string;
+  amountPaid: string;
+  balanceDue: string;
+  /** Whole days past the due date in the business time zone; `0` unless the invoice is overdue. */
+  daysOverdue: number;
+  serviceName: string;
+  jobReference: string;
+}
+
+export type CustomerInvoiceListResponse = PaginatedResponse<CustomerInvoiceListItemDto>;
+
+/**
+ * A payment as its customer sees it: when, how and how much. Only payments that stand are listed: a
+ * payment the business voided is left out, and `amountPaid` is already the total without it (D-110).
+ * The reference, the notes, who recorded it and any void reason stay with the business.
+ */
+export interface CustomerInvoicePaymentDto {
+  id: string;
+  /** `YYYY-MM-DD`. */
+  paymentDate: string;
+  method: PaymentMethod;
+  methodLabel: string;
+  amount: string;
+}
+
+/**
+ * `GET /invoices/:id`: an invoice as its customer sees it. An admin who opens the same address gets
+ * this same shape (a draft only as a preview). The business, customer, instructions and footer are
+ * the snapshot taken when it was issued (DM-04). Nothing internal is in it: no internal notes, no
+ * staff names, no payment notes or references, no void reason.
+ */
+export interface CustomerInvoiceDto extends CustomerInvoiceListItemDto {
+  /** A percentage, two decimal places. */
+  taxRate: string;
+  lines: QuotationLineDto[];
+  subtotal: string;
+  discountAmount: string;
+  taxableBase: string;
+  taxAmount: string;
+  customerNote: string | null;
+  business: QuotationBusinessDto;
+  customer: InvoiceCustomerDto;
+  paymentInstructions: string | null;
+  footer: string | null;
+  job: InvoiceLinkDto;
+  request: InvoiceLinkDto;
+  /** Payments that stand, oldest first. */
+  payments: CustomerInvoicePaymentDto[];
+  /** The day the last payment was received, once the invoice is paid in full; otherwise `null`. */
+  paidOn: string | null;
+  /** When the business withdrew the invoice, as an ISO instant; `null` unless it is void. */
+  voidedAt: string | null;
+  /** The business time zone (IANA) the instants are shown in. */
+  timeZone: string;
+}
+
+/** The invoice a customer's job points to (T22): the issued invoice that is not void. */
+export interface CustomerJobInvoiceLinkDto {
+  id: string;
+  invoiceNumber: string;
+  status: InvoiceStatus;
+  statusLabel: string;
+}

@@ -1,7 +1,7 @@
 import type { AdminTimelineEventDto, CustomerTimelineEventDto } from "./activity.js";
 import type { PaginatedResponse } from "./api.js";
 import { WorkOrderStatus } from "./enums.js";
-import type { JobInvoiceLinkDto } from "./invoices.js";
+import type { CustomerJobInvoiceLinkDto, JobInvoiceLinkDto } from "./invoices.js";
 import { LIMITS } from "./limits.js";
 import type { QuotationLineDto } from "./quotations.js";
 import type { RequestAddressDto } from "./requests.js";
@@ -425,8 +425,8 @@ export interface CustomerWorkOrderDto extends CustomerWorkOrderListItemDto {
   completionNote: string | null;
   request: CustomerWorkOrderSourceDto;
   quotation: CustomerWorkOrderSourceDto;
-  /** The invoice for this job once there is one (T22); `null` until then. */
-  invoice: CustomerWorkOrderSourceDto | null;
+  /** The issued invoice for this job that is not void (T22); `null` until there is one. */
+  invoice: CustomerJobInvoiceLinkDto | null;
   /** What happened to the job, written for the customer, oldest first. */
   timeline: CustomerTimelineEventDto[];
 }

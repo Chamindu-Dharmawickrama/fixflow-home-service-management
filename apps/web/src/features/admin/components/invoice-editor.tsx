@@ -35,6 +35,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
 import { Textarea } from "@/components/ui/textarea";
+import { DownloadInvoicePdfButton } from "@/features/portal/components/download-invoice-pdf-button";
 import { apiFetch, describeApiError, isApiError } from "@/lib/api";
 import { formatDate, formatDateTime } from "@/lib/formatting/datetime";
 import { formatMoney } from "@/lib/formatting/money";
@@ -229,6 +230,12 @@ export function InvoiceEditor({
         <Eye aria-hidden="true" />
         Preview
       </Button>
+      <DownloadInvoicePdfButton
+        invoiceId={invoice.id}
+        label="draft invoice"
+        disabled={!savedClean}
+        aria-describedby={savedClean ? undefined : "invoice-save-first"}
+      />
       <Button
         disabled={!savedClean || !hasTotal}
         aria-describedby={

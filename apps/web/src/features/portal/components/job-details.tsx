@@ -6,10 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DateTimeText } from "@/components/ui/date-time-text";
 import { DescriptionItem, DescriptionList } from "@/components/ui/description-list";
 import { ReferenceText } from "@/components/ui/reference-text";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { ActivityTimeline } from "@/features/activity/components/activity-timeline";
 import { formatTimeZoneName } from "@/lib/formatting";
 
 import { formatAddressLines } from "../lib/format-address";
+import { portalInvoicePath } from "../lib/invoices";
 import { portalQuotationPath } from "../lib/quotations";
 import { requestPath } from "../lib/requests-list";
 import { VisitWindow } from "./job-cards";
@@ -205,6 +207,16 @@ export function JobLinksCard({ job }: CardProps) {
               <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
             </Link>
           </li>
+          {job.invoice === null ? null : (
+            <li className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="text-ink-secondary">Invoice</span>
+              <Link href={portalInvoicePath(job.invoice.id)} className={LINK_CLASS}>
+                <ReferenceText reference={job.invoice.invoiceNumber} />
+                <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
+              </Link>
+              <StatusBadge kind="invoice" status={job.invoice.status} />
+            </li>
+          )}
         </ul>
       </CardContent>
     </Card>

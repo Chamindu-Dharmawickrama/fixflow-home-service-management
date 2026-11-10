@@ -1,4 +1,6 @@
 import {
+  type CustomerInvoiceDto,
+  type CustomerInvoiceListItemDto,
   type CustomerQuotationDto,
   type CustomerQuotationListItemDto,
   type CustomerQuotationSummaryDto,
@@ -245,6 +247,131 @@ export function cancelledCustomerJob(overrides: Partial<CustomerWorkOrderDto> = 
       start: "2026-03-03T15:00:00.000Z",
       end: "2026-03-03T17:00:00.000Z",
     },
+    ...overrides,
+  });
+}
+
+// ---- Invoices (T22) -----------------------------------------------------------------------------
+
+export const PORTAL_INVOICE_ID = "7d3c9b1a-2e4f-4a6b-8c5d-1f0e9d8c7b6a";
+
+/** An issued invoice on the customer's list: 255.64 due on 16 March 2026, nothing paid yet. */
+export function customerInvoiceListItem(
+  overrides: Partial<CustomerInvoiceListItemDto> = {},
+): CustomerInvoiceListItemDto {
+  return {
+    id: PORTAL_INVOICE_ID,
+    invoiceNumber: "INV-2026-00004",
+    status: "ISSUED",
+    statusLabel: "Issued",
+    issueDate: "2026-03-02",
+    dueDate: "2026-03-16",
+    currencyCode: "USD",
+    totalAmount: "255.64",
+    amountPaid: "0.00",
+    balanceDue: "255.64",
+    daysOverdue: 0,
+    serviceName: "AC Repair",
+    jobReference: "JOB-2026-00007",
+    ...overrides,
+  };
+}
+
+/** An invoice in full, as its customer sees it: the worked example of D-19, issued, nothing paid. */
+export function customerInvoice(overrides: Partial<CustomerInvoiceDto> = {}): CustomerInvoiceDto {
+  return {
+    ...customerInvoiceListItem(),
+    taxRate: "8.00",
+    lines: [
+      {
+        id: "line-1",
+        position: 1,
+        description: "Diagnostic visit",
+        quantity: "1.00",
+        unitPrice: "79.00",
+        taxable: false,
+        lineTotal: "79.00",
+      },
+      {
+        id: "line-2",
+        position: 2,
+        description: "Run capacitor",
+        quantity: "1.00",
+        unitPrice: "45.50",
+        taxable: true,
+        lineTotal: "45.50",
+      },
+      {
+        id: "line-3",
+        position: 3,
+        description: "Labour",
+        quantity: "1.50",
+        unitPrice: "85.00",
+        taxable: false,
+        lineTotal: "127.50",
+      },
+    ],
+    subtotal: "252.00",
+    discountAmount: "0.00",
+    taxableBase: "45.50",
+    taxAmount: "3.64",
+    customerNote: null,
+    business: {
+      name: "CoolBreeze Home Services",
+      tagline: "Home comfort and repairs, done properly the first time.",
+      logoKey: null,
+      logoUrl: null,
+      email: "hello@coolbreeze.test",
+      phone: "(212) 555-0142",
+      address: {
+        line1: "48 Harbor Point Road",
+        line2: "Unit 3",
+        city: "Harbor City",
+        region: "NY",
+        postalCode: "10999",
+      },
+    },
+    customer: {
+      name: "Amara Okafor",
+      email: "amara.okafor@example.test",
+      address: {
+        line1: "214 Larkspur Lane",
+        line2: "Unit 4",
+        city: "Harbor City",
+        region: "NY",
+        postalCode: "10001",
+      },
+    },
+    paymentInstructions: "Pay by bank transfer, quoting the invoice number as your reference.",
+    footer: "Thank you for choosing CoolBreeze Home Services.",
+    job: { id: PORTAL_JOB_ID, reference: "JOB-2026-00007" },
+    request: { id: PORTAL_REQUEST_ID, reference: "FF-2026-00012" },
+    payments: [],
+    paidOn: null,
+    voidedAt: null,
+    timeZone: PORTAL_TIME_ZONE,
+    ...overrides,
+  };
+}
+
+/** The same invoice after a 100.00 payment: partly paid, 155.64 still owed. */
+export function partlyPaidCustomerInvoice(
+  overrides: Partial<CustomerInvoiceDto> = {},
+): CustomerInvoiceDto {
+  return customerInvoice({
+    status: "PARTIALLY_PAID",
+    statusLabel: "Partially paid",
+    amountPaid: "100.00",
+    balanceDue: "155.64",
+    payments: [
+      {
+        id: "payment-1",
+        paymentDate: "2026-03-05",
+        method: "BANK_TRANSFER",
+        methodLabel: "Bank transfer",
+        amount: "100.00",
+      },
+    ],
     ...overrides,
   });
 }

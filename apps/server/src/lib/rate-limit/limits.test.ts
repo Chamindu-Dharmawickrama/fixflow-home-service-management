@@ -18,6 +18,10 @@ describe("RATE_LIMITS", () => {
     expect(RATE_LIMITS.logout).toEqual({ limit: 30, windowSeconds: 60 });
   });
 
+  it("limits an invoice PDF to thirty an hour per user (T22)", () => {
+    expect(RATE_LIMITS.invoicePdf).toEqual({ limit: 30, windowSeconds: 3600 });
+  });
+
   it("uses positive integers for every limit", () => {
     for (const rule of Object.values(RATE_LIMITS)) {
       expect(Number.isInteger(rule.limit) && rule.limit > 0).toBe(true);

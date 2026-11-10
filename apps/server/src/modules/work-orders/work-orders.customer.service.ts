@@ -14,6 +14,7 @@ import { canActAsAdmin, canActAsCustomer } from "../auth/auth.domain.js";
 import { assertCustomerOwns } from "../auth/auth.middleware.js";
 import type { AuthContext } from "../auth/auth.types.js";
 import { customerIdOf } from "../customers/customers.service.js";
+import { syncOverdueInvoicesIfDue } from "../invoices/invoices.service.js";
 import { loadBusiness } from "../requests/requests.service.js";
 import {
   CUSTOMER_DETAIL_SELECT,
@@ -148,7 +149,7 @@ export async function listMyWorkOrders(
  * every time (BR-21).
  */
 export async function getCustomerWorkOrder(
-  deps: Pick<AppDeps, "prisma" | "config">,
+  deps: Pick<AppDeps, "prisma" | "config" | "clock">,
   auth: AuthContext,
   id: string,
 ): Promise<CustomerWorkOrderDto> {
@@ -164,6 +165,8 @@ export async function getCustomerWorkOrder(
     throw notFound();
   }
 
+  // The job's invoice link says whether it is overdue (D-23), so any overdue invoice is saved first.
+  await syncOverdueInvoicesIfDue(deps);
   const row = await prisma.workOrder.findUnique({ where: { id }, select: CUSTOMER_DETAIL_SELECT });
   if (row === null) {
     throw notFound();
@@ -177,5 +180,10 @@ export async function getCustomerWorkOrder(
     ),
     loadBusiness(prisma),
   ]);
-  return toCustomerWorkOrderDto({ row, timeline, timeZone: business.timeZone });
+  return toCustomerWorkOrderDto({
+    row,
+    timeline,
+    timeZone: business.timeZone,
+    now: deps.clock.now(),
+  });
 }

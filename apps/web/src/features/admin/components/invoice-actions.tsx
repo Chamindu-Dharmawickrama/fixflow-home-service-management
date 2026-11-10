@@ -7,6 +7,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { PrintButton } from "@/components/ui/print-button";
+import { DownloadInvoicePdfButton } from "@/features/portal/components/download-invoice-pdf-button";
 
 import { invoiceTitle } from "../lib/invoices";
 import { InvoiceVoidDialog } from "./invoice-void-dialog";
@@ -23,6 +24,7 @@ export function InvoiceActions({ invoice }: { invoice: AdminInvoiceDto }) {
 
   return (
     <>
+      <DownloadInvoicePdfButton invoiceId={invoice.id} label={invoiceTitle(invoice)} />
       <PrintButton>Print</PrintButton>
       {canVoid ? (
         <Button variant="outline" className="print:hidden" onClick={() => setVoidOpen(true)}>

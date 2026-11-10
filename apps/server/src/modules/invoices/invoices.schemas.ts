@@ -1,4 +1,11 @@
-import { ADMIN_INVOICE_SORT_FIELDS, InvoiceStatus, isDateOnly, LIMITS } from "@fixflow/shared";
+import {
+  ADMIN_INVOICE_SORT_FIELDS,
+  CUSTOMER_INVOICE_SORT_FIELDS,
+  CUSTOMER_INVOICE_STATUSES,
+  InvoiceStatus,
+  isDateOnly,
+  LIMITS,
+} from "@fixflow/shared";
 import { z } from "zod";
 
 import { createPaginationSchema } from "../../lib/pagination.js";
@@ -151,3 +158,28 @@ export const adminInvoicesQuerySchema = createPaginationSchema({
   );
 
 export type AdminInvoicesQuery = z.output<typeof adminInvoicesQuerySchema>;
+
+/**
+ * `GET /api/v1/invoices/me` (T22): the customer's own invoices, newest first. `status` takes one or
+ * several of the statuses a customer can be shown; a draft is not one of them. Whose invoices they are
+ * comes from the session.
+ */
+export const listMyInvoicesQuerySchema = createPaginationSchema({
+  sortFields: CUSTOMER_INVOICE_SORT_FIELDS,
+  defaultSort: "issueDate",
+  defaultOrder: "desc",
+}).extend({
+  status: enumListFilter(CUSTOMER_INVOICE_STATUSES, "status"),
+});
+
+export type ListMyInvoicesQuery = z.output<typeof listMyInvoicesQuerySchema>;
+
+/** `GET /api/v1/invoices/:id/pdf`: `?inline=1` asks for the browser to show it instead of saving it. */
+export const invoicePdfQuerySchema = z.object({
+  inline: z
+    .enum(["1", "true", "0", "false"], { error: "inline must be 1 or 0." })
+    .optional()
+    .transform((value) => value === "1" || value === "true"),
+});
+
+export type InvoicePdfQuery = z.output<typeof invoicePdfQuerySchema>;

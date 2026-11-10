@@ -44,6 +44,10 @@ export const RATE_LIMITS = {
   // Quotation decisions (T15). Counted per signed-in customer, accept and decline together and a
   // refused answer too: a customer answers a handful of quotations, never twenty in an hour.
   quotationDecision: { limit: 20, windowSeconds: 60 * 60 },
+
+  // Invoice PDFs (T22). Counted per signed-in user. A PDF is built on the server on every request, so
+  // this keeps a script from using its memory and time; a person downloads a handful an hour.
+  invoicePdf: { limit: 30, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export type RateLimitName = keyof typeof RATE_LIMITS;

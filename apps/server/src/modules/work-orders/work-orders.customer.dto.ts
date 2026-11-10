@@ -9,6 +9,12 @@ import {
 } from "@fixflow/shared";
 
 import type { Prisma } from "../../generated/prisma/client.js";
+import {
+  CUSTOMER_JOB_INVOICE_SELECT,
+  type CustomerJobInvoiceRow,
+  toCustomerJobInvoiceLink,
+} from "../invoices/invoices.customer.dto.js";
+import type { InvoiceViewContext } from "../invoices/invoices.dto.js";
 import { toRequestAddress } from "../requests/requests.domain.js";
 
 /**
@@ -65,6 +71,13 @@ export const CUSTOMER_DETAIL_SELECT = {
   completionNote: true,
   request: { select: { id: true, reference: true } },
   quotation: { select: { id: true, reference: true } },
+  // The invoice the customer may see: issued and not void. A draft, or one that was voided, is the
+  // business's, so the job says nothing of it. At most one is live (a partial unique index).
+  invoices: {
+    where: { issuedAt: { not: null }, voidedAt: null, status: { not: "VOID" } },
+    select: CUSTOMER_JOB_INVOICE_SELECT,
+    take: 1,
+  },
 } as const satisfies Prisma.WorkOrderSelect;
 
 export type CustomerDetailRow = Prisma.WorkOrderGetPayload<{
@@ -119,8 +132,12 @@ export function toCustomerWorkOrderDto(input: {
   row: CustomerDetailRow;
   timeline: CustomerTimelineEventDto[];
   timeZone: string;
+  /** When the invoice is read: whether it is overdue is judged from this. */
+  now: Date;
 }): CustomerWorkOrderDto {
-  const { row, timeline, timeZone } = input;
+  const { row, timeline, timeZone, now } = input;
+  const invoiceContext: InvoiceViewContext = { now, timeZone };
+  const invoice: CustomerJobInvoiceRow | undefined = row.invoices[0];
   const completed = row.status === WorkOrderStatus.COMPLETED;
   const hadVisit =
     FORMER_VISIT_STATUSES.includes(row.status) &&
@@ -143,8 +160,7 @@ export function toCustomerWorkOrderDto(input: {
     completionNote: completed ? row.completionNote : null,
     request: { id: row.request.id, reference: row.request.reference },
     quotation: { id: row.quotation.id, reference: row.quotation.reference },
-    // T22 fills this in with the issued invoice.
-    invoice: null,
+    invoice: invoice === undefined ? null : toCustomerJobInvoiceLink(invoice, invoiceContext),
     timeline,
   };
 }

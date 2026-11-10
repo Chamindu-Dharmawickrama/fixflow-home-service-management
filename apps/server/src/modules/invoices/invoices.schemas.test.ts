@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   adminInvoicesQuerySchema,
   createInvoiceBodySchema,
+  invoicePdfQuerySchema,
   issueInvoiceBodySchema,
+  listMyInvoicesQuerySchema,
   updateInvoiceBodySchema,
   voidInvoiceBodySchema,
 } from "./invoices.schemas.js";
@@ -156,5 +158,62 @@ describe("adminInvoicesQuerySchema", () => {
   it("treats a blank search as none", () => {
     expect(adminInvoicesQuerySchema.parse({ q: "   " }).q).toBeUndefined();
     expect(adminInvoicesQuerySchema.parse({ q: " INV-1 " }).q).toBe("INV-1");
+  });
+});
+
+describe("listMyInvoicesQuerySchema (T22)", () => {
+  it("defaults to the newest first, twenty to a page, with no status filter", () => {
+    const parsed = listMyInvoicesQuerySchema.parse({});
+    expect(parsed).toMatchObject({ page: 1, pageSize: 20, sort: "issueDate", order: "desc" });
+    expect(parsed.status).toBeUndefined();
+  });
+
+  it("takes statuses as a comma list or as repeated parameters", () => {
+    expect(listMyInvoicesQuerySchema.parse({ status: "ISSUED,OVERDUE" }).status).toEqual([
+      "ISSUED",
+      "OVERDUE",
+    ]);
+    expect(listMyInvoicesQuerySchema.parse({ status: ["PAID", "VOID"] }).status).toEqual([
+      "PAID",
+      "VOID",
+    ]);
+  });
+
+  it.each(["DRAFT", "PENDING", "paid", "ISSUED,DRAFT"])(
+    "refuses the status %s: a customer is never shown a draft",
+    (status) => {
+      expect(listMyInvoicesQuerySchema.safeParse({ status }).success).toBe(false);
+    },
+  );
+
+  it("allows only the customer's own sort fields", () => {
+    for (const sort of ["issueDate", "dueDate", "totalAmount"]) {
+      expect(listMyInvoicesQuerySchema.safeParse({ sort }).success, sort).toBe(true);
+    }
+    for (const sort of ["createdAt", "status", "customerId"]) {
+      expect(listMyInvoicesQuerySchema.safeParse({ sort }).success, sort).toBe(false);
+    }
+  });
+
+  it("drops a customerId in the query: whose invoices they are comes from the session", () => {
+    const parsed = listMyInvoicesQuerySchema.parse({
+      customerId: "00000000-0000-4000-8000-000000000000",
+    });
+    expect("customerId" in parsed).toBe(false);
+  });
+});
+
+describe("invoicePdfQuerySchema (T22)", () => {
+  it("is an attachment unless inline is asked for", () => {
+    expect(invoicePdfQuerySchema.parse({}).inline).toBe(false);
+    expect(invoicePdfQuerySchema.parse({ inline: "0" }).inline).toBe(false);
+    expect(invoicePdfQuerySchema.parse({ inline: "1" }).inline).toBe(true);
+    expect(invoicePdfQuerySchema.parse({ inline: "true" }).inline).toBe(true);
+  });
+
+  it("refuses anything else", () => {
+    for (const inline of ["yes", "2", "", "inline"]) {
+      expect(invoicePdfQuerySchema.safeParse({ inline }).success, inline).toBe(false);
+    }
   });
 });

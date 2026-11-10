@@ -62,7 +62,7 @@ export type InvoiceSettingsRow = Prisma.BusinessSettingsGetPayload<{
 
 // ---- The issue-time snapshots (DM-04) ------------------------------------------------------------
 
-const addressSnapshotSchema = z.object({
+export const addressSnapshotSchema = z.object({
   line1: z.string(),
   line2: z.string().nullable(),
   city: z.string(),
@@ -70,7 +70,7 @@ const addressSnapshotSchema = z.object({
   postalCode: z.string(),
 });
 
-const businessSnapshotSchema = z.object({
+export const businessSnapshotSchema = z.object({
   name: z.string(),
   tagline: z.string().nullable(),
   logoKey: z.string().nullable(),
@@ -80,7 +80,7 @@ const businessSnapshotSchema = z.object({
   address: addressSnapshotSchema,
 });
 
-const customerSnapshotSchema = z.object({
+export const customerSnapshotSchema = z.object({
   name: z.string(),
   email: z.string(),
   address: addressSnapshotSchema,
@@ -231,6 +231,70 @@ export function currentStatusOf(row: Parameters<typeof statusOf>[0], context: In
   return statusOf(row, context);
 }
 
+/** What the parties part of an invoice reads: the issue-time snapshots and the live records behind them. */
+export interface InvoicePartiesSource {
+  issuedAt: Date | null;
+  businessSnapshot: Prisma.JsonValue;
+  customerSnapshot: Prisma.JsonValue;
+  paymentInstructionsSnapshot: string | null;
+  footerSnapshot: string | null;
+  customer: { user: { name: string; email: string } };
+  workOrder: {
+    addressLine1: string;
+    addressLine2: string | null;
+    addressCity: string;
+    addressRegion: string | null;
+    addressPostalCode: string;
+  };
+}
+
+/**
+ * Who the invoice is from and for, and how to pay it. Once issued these are the snapshot taken at that
+ * moment (DM-04); an invoice that was issued always has one, and a missing or unreadable snapshot falls
+ * back to the current details rather than failing the page. Before it is issued they are the current
+ * ones (a preview). Shared by the business's view, the customer's view and the PDF, so the three always
+ * agree.
+ */
+export function invoiceParties(
+  row: InvoicePartiesSource,
+  settings: InvoiceSettingsRow,
+): {
+  isSnapshot: boolean;
+  business: QuotationBusinessDto;
+  customer: InvoiceCustomerDto;
+  paymentInstructions: string | null;
+  footer: string | null;
+} {
+  const businessSnapshot = businessSnapshotSchema.safeParse(row.businessSnapshot);
+  const customerSnapshot = customerSnapshotSchema.safeParse(row.customerSnapshot);
+  if (row.issuedAt !== null && businessSnapshot.success && customerSnapshot.success) {
+    return {
+      isSnapshot: true,
+      business: businessSnapshot.data,
+      customer: customerSnapshot.data,
+      paymentInstructions: row.paymentInstructionsSnapshot,
+      footer: row.footerSnapshot,
+    };
+  }
+  return {
+    isSnapshot: false,
+    business: toQuotationBusiness(settings),
+    customer: customerSnapshotOf({
+      name: row.customer.user.name,
+      email: row.customer.user.email,
+      address: {
+        line1: row.workOrder.addressLine1,
+        line2: row.workOrder.addressLine2,
+        city: row.workOrder.addressCity,
+        region: row.workOrder.addressRegion,
+        postalCode: row.workOrder.addressPostalCode,
+      },
+    }),
+    paymentInstructions: settings.paymentInstructions,
+    footer: settings.invoiceFooter,
+  };
+}
+
 /**
  * The invoice for the business. Before it is issued the business, customer, payment instructions and
  * footer are the current ones (a preview). Once issued they are the snapshot taken at that moment
@@ -247,21 +311,7 @@ export function toAdminInvoiceDto(input: {
   const status = statusOf(row, context);
   const dueDate = row.dueDate === null ? null : toDateOnly(row.dueDate);
 
-  const businessSnapshot = businessSnapshotSchema.safeParse(row.businessSnapshot);
-  const customerSnapshot = customerSnapshotSchema.safeParse(row.customerSnapshot);
-  const isSnapshot = row.issuedAt !== null && businessSnapshot.success && customerSnapshot.success;
-
-  const liveCustomer = customerSnapshotOf({
-    name: row.customer.user.name,
-    email: row.customer.user.email,
-    address: {
-      line1: row.workOrder.addressLine1,
-      line2: row.workOrder.addressLine2,
-      city: row.workOrder.addressCity,
-      region: row.workOrder.addressRegion,
-      postalCode: row.workOrder.addressPostalCode,
-    },
-  });
+  const parties = invoiceParties(row, settings);
 
   const activePayments = row.payments.filter((payment) => payment.voidedAt === null);
   const actionContext: InvoiceActionContext = { hasActivePayments: activePayments.length > 0 };
@@ -285,16 +335,7 @@ export function toAdminInvoiceDto(input: {
     dueDate,
     daysOverdue: daysOverdue({ status, dueDate, now: context.now, timeZone: context.timeZone }),
     customerNote: row.customerNote,
-    isSnapshot,
-    business:
-      isSnapshot && businessSnapshot.success
-        ? businessSnapshot.data
-        : toQuotationBusiness(settings),
-    customer: isSnapshot && customerSnapshot.success ? customerSnapshot.data : liveCustomer,
-    paymentInstructions: isSnapshot
-      ? row.paymentInstructionsSnapshot
-      : settings.paymentInstructions,
-    footer: isSnapshot ? row.footerSnapshot : settings.invoiceFooter,
+    ...parties,
     serviceName: row.workOrder.serviceNameSnapshot,
     customerId: row.customerId,
     job: { id: row.workOrder.id, reference: row.workOrder.reference },

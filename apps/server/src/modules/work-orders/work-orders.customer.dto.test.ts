@@ -1,6 +1,7 @@
 import { WorkOrderStatus } from "@fixflow/shared";
 import { describe, expect, it } from "vitest";
 
+import { Prisma } from "../../generated/prisma/client.js";
 import {
   CUSTOMER_DETAIL_SELECT,
   CUSTOMER_LIST_SELECT,
@@ -38,6 +39,7 @@ function row(overrides: Partial<CustomerDetailRow> = {}): CustomerDetailRow {
     completionNote: null,
     request: { id: "request-1", reference: "FF-2026-00001" },
     quotation: { id: "quotation-1", reference: "QT-2026-00001" },
+    invoices: [],
   };
   return { ...base, ...overrides };
 }
@@ -73,6 +75,7 @@ function dto(overrides: Partial<CustomerDetailRow> = {}) {
     row: rowWithSecrets(overrides),
     timeline,
     timeZone: "America/New_York",
+    now: new Date("2026-03-04T12:00:00.000Z"),
   });
 }
 
@@ -86,11 +89,30 @@ describe("what the customer's queries read", () => {
       "createdBy",
       "technicianId",
       "customer",
-      "invoices",
     ]) {
       expect(columns, forbidden).not.toContain(forbidden);
     }
     expect(CUSTOMER_LIST_SELECT.technician).toEqual({ select: { name: true } });
+  });
+
+  it("reads the invoice only as the customer-safe link: issued, not void, a handful of columns (T22)", () => {
+    // T18 forbade any invoice column here; T22 deliberately lets the job link to the invoice the
+    // customer may see, through an allowlisted select and nothing else.
+    expect(CUSTOMER_DETAIL_SELECT.invoices.where).toEqual({
+      issuedAt: { not: null },
+      voidedAt: null,
+      status: { not: "VOID" },
+    });
+    expect(CUSTOMER_DETAIL_SELECT.invoices.take).toBe(1);
+    expect(Object.keys(CUSTOMER_DETAIL_SELECT.invoices.select).sort()).toEqual([
+      "amountPaid",
+      "dueDate",
+      "id",
+      "invoiceNumber",
+      "issuedAt",
+      "totalAmount",
+      "voidedAt",
+    ]);
   });
 });
 
@@ -252,11 +274,30 @@ describe("toCustomerWorkOrderDto", () => {
     expect(item.previouslyScheduled).toBeNull();
   });
 
-  it("links the request and the quotation, and leaves the invoice for T22", () => {
+  it("links the request and the quotation, and has no invoice link until one is issued", () => {
     const item = dto();
     expect(item.request).toEqual({ id: "request-1", reference: "FF-2026-00001" });
     expect(item.quotation).toEqual({ id: "quotation-1", reference: "QT-2026-00001" });
     expect(item.invoice).toBeNull();
+  });
+
+  it("links the issued invoice with its number and what it is now (T22)", () => {
+    const invoice = {
+      id: "invoice-1",
+      invoiceNumber: "INV-2026-00012",
+      issuedAt: new Date("2026-03-01T15:00:00.000Z"),
+      voidedAt: null,
+      totalAmount: new Prisma.Decimal("120.00"),
+      amountPaid: new Prisma.Decimal("0.00"),
+      dueDate: new Date("2026-03-03T00:00:00.000Z"),
+    };
+    // Past the due date in New York, so the link says it is overdue.
+    expect(dto({ status: S.COMPLETED, invoices: [invoice] }).invoice).toEqual({
+      id: "invoice-1",
+      invoiceNumber: "INV-2026-00012",
+      status: "OVERDUE",
+      statusLabel: "Overdue",
+    });
   });
 
   it("shows the address the customer gave, with their own access notes", () => {

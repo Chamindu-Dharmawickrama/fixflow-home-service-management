@@ -55,9 +55,11 @@ export function UserMenu({ name, avatarUrl, roleLabel, accountHref }: UserMenuPr
         >
           <Avatar name={name} src={avatarUrl ?? undefined} size="sm" decorative />
           <span className="sr-only">Account menu for </span>
-          <span className="text-left text-sm max-sm:sr-only">
-            <span className="block font-medium leading-4 text-ink">{name}</span>
-            <span className="block text-xs text-ink-muted">{roleLabel}</span>
+          {/* A long name is cut off (the full name is in the menu and the accessible name), so one with no
+              space to break at cannot push the page sideways. */}
+          <span className="max-w-40 min-w-0 text-left text-sm max-sm:sr-only xl:max-w-56">
+            <span className="block truncate font-medium leading-4 text-ink">{name}</span>
+            <span className="block truncate text-xs text-ink-muted">{roleLabel}</span>
           </span>
           <ChevronDown aria-hidden="true" className="hidden size-4 text-ink-muted sm:block" />
         </button>

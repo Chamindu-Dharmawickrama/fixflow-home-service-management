@@ -230,7 +230,7 @@ describe("JobHistoryCard", () => {
 });
 
 describe("JobLinksCard", () => {
-  it("links the request and the quotation the job came from, and shows no invoice yet", () => {
+  it("links the request and the quotation the job came from, and shows no invoice until one is issued", () => {
     render(<JobLinksCard job={customerJob()} />);
     expect(screen.getByRole("link", { name: /FF-2026-00012/ })).toHaveAttribute(
       "href",

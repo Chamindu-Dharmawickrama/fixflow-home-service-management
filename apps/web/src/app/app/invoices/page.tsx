@@ -4,10 +4,12 @@ import { Suspense } from "react";
 
 import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
+import { ExportCsvButton } from "@/features/admin/components/export-csv-button";
 import { InvoiceStatusChips } from "@/features/admin/components/invoice-status-chips";
 import { InvoicesEmpty } from "@/features/admin/components/invoices-empty";
 import { InvoicesFilters } from "@/features/admin/components/invoices-filters";
 import { InvoicesTable } from "@/features/admin/components/invoices-table";
+import { StatusFilterNote } from "@/features/admin/components/status-filter-note";
 import {
   hasActiveInvoiceFilters,
   INVOICES_PATH,
@@ -15,11 +17,13 @@ import {
   invoicesSortHref,
   invoicesStatusHref,
   parseInvoicesQuery,
+  singleStatus,
   toInvoicesApiQueryString,
 } from "@/features/admin/lib/invoices";
 import { PageSkeleton } from "@/features/auth/components/area-skeleton";
 import { loadErrorState } from "@/features/catalogue/components/load-error";
 import { serverApiGetEnvelope } from "@/lib/api/server";
+import { statusLabel } from "@/lib/formatting";
 import { getPublicSettings } from "@/lib/settings";
 import { buildHref, type SearchParamsInput } from "@/lib/url";
 
@@ -77,9 +81,18 @@ async function InvoicesContent({ searchParams }: { searchParams: Promise<SearchP
       <PageHeader
         title="Invoices"
         description="What has been billed and what is still owed. Create an invoice from a completed job, check it, then issue it to the customer."
+        actions={<ExportCsvButton kind="invoices" query={toInvoicesApiQueryString(query)} />}
       />
 
       <InvoiceStatusChips selected={query.status} counts={list.meta.counts} params={params} />
+
+      {query.status.length > 1 ? (
+        <StatusFilterNote
+          noun="invoices"
+          labels={query.status.map((status) => statusLabel("invoice", status))}
+          clearHref={invoicesStatusHref(params, undefined)}
+        />
+      ) : null}
 
       <InvoicesFilters
         q={query.q}
@@ -92,7 +105,7 @@ async function InvoicesContent({ searchParams }: { searchParams: Promise<SearchP
       {list.data.length === 0 ? (
         <InvoicesEmpty
           filtered={filtered}
-          status={query.status}
+          status={singleStatus(query)}
           pastLastPage={list.pagination.totalItems > 0}
           firstPageHref={buildHref(INVOICES_PATH, params, { page: null })}
           clearFiltersHref={invoicesStatusHref({}, query.status)}

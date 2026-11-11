@@ -1,13 +1,15 @@
+import type { AdminDashboardSummaryDto } from "@fixflow/shared";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
 
-import { buttonVariants } from "@/components/ui/button-variants";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { QUEUE_PATH } from "@/features/admin/lib/requests-queue";
-import { PageSkeleton } from "@/features/auth/components/area-skeleton";
+import { DashboardSkeleton } from "@/features/admin/dashboard/components/dashboard-skeleton";
+import { DashboardView } from "@/features/admin/dashboard/components/dashboard-view";
+import { parseDashboardRange, rangeHref } from "@/features/admin/dashboard/lib/dashboard";
+import { loadErrorState } from "@/features/catalogue/components/load-error";
+import { serverApiGet } from "@/lib/api/server";
 import { getCurrentUser } from "@/lib/auth/session";
+import type { SearchParamsInput } from "@/lib/url";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -18,65 +20,44 @@ export const metadata: Metadata = { title: "Dashboard" };
  */
 export const instant = false;
 
-const COMING = [
-  ["Quotations", "Build, send and track quotations until the customer decides."],
-  ["Jobs and schedule", "Turn accepted quotations into jobs and plan them on a calendar."],
-  ["Invoices and payments", "Invoice completed jobs and record the payments you receive."],
-] as const;
-
 /**
- * The interim admin home (T05): a real welcome and an honest description of what is coming. It
- * shows no figures, because there is no data to show yet; the dashboard proper replaces it later.
+ * The business's dashboard (IA-A01, FR-080 to FR-085): what needs doing now, the figures behind it,
+ * the next visits and the latest activity. Every number comes from `GET /admin/dashboard/summary`,
+ * computed on the server in the business's time zone. The period is in the address (`?range=`).
  */
-export default function DashboardPage() {
-  // The welcome needs the signed-in user, a request-time read, so it streams in behind a boundary
-  // of its own: a navigation between pages of this area re-renders only the page, and the
-  // boundary in the layout is out of its reach.
+export default function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParamsInput>;
+}) {
   return (
-    <Suspense fallback={<PageSkeleton />}>
-      <DashboardContent />
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function DashboardContent() {
+async function DashboardContent({ searchParams }: { searchParams: Promise<SearchParamsInput> }) {
+  const range = parseDashboardRange(await searchParams);
+
+  let summary: AdminDashboardSummaryDto;
+  try {
+    summary = await serverApiGet<AdminDashboardSummaryDto>(
+      `/admin/dashboard/summary?range=${range}`,
+    );
+  } catch (error) {
+    return (
+      <>
+        <PageHeader title="Dashboard" />
+        {loadErrorState({
+          error,
+          title: "We couldn't load the dashboard",
+          retryHref: rangeHref(range),
+        })}
+      </>
+    );
+  }
   const me = await getCurrentUser();
 
-  return (
-    <>
-      <PageHeader
-        title={`Welcome, ${me?.user.name ?? "there"}`}
-        description="This is your business dashboard. It is being built feature by feature, and each area below will appear in the sidebar as soon as it is ready."
-      />
-      <Card>
-        <CardHeader>
-          <CardTitle as="h2">Service requests</CardTitle>
-          <CardDescription>
-            Review what customers have sent, add notes and decide what happens next.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href={QUEUE_PATH} className={buttonVariants({ variant: "primary" })}>
-            Open the request queue
-          </Link>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle as="h2">Still to come</CardTitle>
-          <CardDescription>
-            Nothing here is live yet. These are the areas that will join the sidebar.
-          </CardDescription>
-        </CardHeader>
-        <ul className="divide-y divide-border border-t border-border">
-          {COMING.map(([title, text]) => (
-            <li key={title} className="flex flex-col gap-0.5 px-5 py-3 sm:px-6">
-              <span className="font-medium text-ink">{title}</span>
-              <span className="text-sm text-ink-secondary">{text}</span>
-            </li>
-          ))}
-        </ul>
-      </Card>
-    </>
-  );
+  return <DashboardView summary={summary} userName={me?.user.name} />;
 }

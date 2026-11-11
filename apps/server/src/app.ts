@@ -13,6 +13,8 @@ import { requestId } from "./middleware/request-id.js";
 import { createAuthRouter } from "./modules/auth/auth.routes.js";
 import { createAdminCustomersRouter } from "./modules/customers/customers.admin.routes.js";
 import { createCustomersRouter } from "./modules/customers/customers.routes.js";
+import { createAdminDashboardRouter } from "./modules/dashboard/dashboard.routes.js";
+import { createAdminExportsRouter } from "./modules/exports/exports.routes.js";
 import { createHealthRouter } from "./modules/health/health.routes.js";
 import { createInvoicesRouter } from "./modules/invoices/invoices.customer.routes.js";
 import { createAdminInvoicesRouter } from "./modules/invoices/invoices.routes.js";
@@ -82,6 +84,8 @@ export function createApp(deps: AppDeps, options: CreateAppOptions = {}): Expres
   app.use(`${API_PREFIX}/admin/requests`, createAdminRequestsRouter(deps));
   app.use(`${API_PREFIX}/admin/customers`, createAdminCustomersRouter(deps));
   app.use(`${API_PREFIX}/admin/technicians`, createAdminTechniciansRouter(deps));
+  app.use(`${API_PREFIX}/admin/dashboard`, createAdminDashboardRouter(deps));
+  app.use(`${API_PREFIX}/admin/exports`, createAdminExportsRouter(deps));
   app.use(`${API_PREFIX}/quotations`, createQuotationsRouter(deps));
   // Mounted on `/admin` itself: it serves `/admin/requests/:id/quotations` and `/admin/quotations/...`
   // and puts the role check on each route, so it never answers for another module's `/admin/...` paths.

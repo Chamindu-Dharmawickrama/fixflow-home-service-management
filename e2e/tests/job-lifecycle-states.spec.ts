@@ -268,10 +268,11 @@ test.describe("the customer's job screens at the four widths", () => {
       await loginAs(page, fresh);
 
       await page.goto("/portal");
-      await expect(page.getByRole("region", { name: "Upcoming visits" })).toContainText(
-        "No visits are booked",
-        { timeout: NAVIGATION_TIMEOUT },
-      );
+      // A customer with nothing yet is welcomed (T23) instead of shown an empty list of visits.
+      await expect(page.getByRole("heading", { name: /Welcome/ })).toBeVisible({
+        timeout: NAVIGATION_TIMEOUT,
+      });
+      await expect(page.getByRole("region", { name: "Upcoming visits" })).toHaveCount(0);
       await expectPageFits(page, "the overview with no jobs", width);
 
       await page.goto("/portal/jobs");

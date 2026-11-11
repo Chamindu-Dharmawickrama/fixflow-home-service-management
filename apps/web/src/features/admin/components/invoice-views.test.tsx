@@ -361,7 +361,7 @@ describe("InvoiceStatusChips", () => {
   const counts = { all: 9, DRAFT: 1, ISSUED: 3, PARTIALLY_PAID: 1, PAID: 2, OVERDUE: 2, VOID: 0 };
 
   it("has All and one chip for each status, each with its count in its name", () => {
-    render(<InvoiceStatusChips selected={undefined} counts={counts} params={{}} />);
+    render(<InvoiceStatusChips selected={[]} counts={counts} params={{}} />);
     const nav = screen.getByRole("navigation", { name: "Filter invoices by status" });
     const names = within(nav)
       .getAllByRole("link")
@@ -378,7 +378,7 @@ describe("InvoiceStatusChips", () => {
   });
 
   it("marks the current chip and links each chip to its status, keeping the search", () => {
-    render(<InvoiceStatusChips selected="OVERDUE" counts={counts} params={{ q: "okafor" }} />);
+    render(<InvoiceStatusChips selected={["OVERDUE"]} counts={counts} params={{ q: "okafor" }} />);
     expect(screen.getByRole("link", { name: "Overdue 2" })).toHaveAttribute("aria-current", "true");
     expect(screen.getByRole("link", { name: "Overdue 2" })).toHaveAttribute(
       "href",

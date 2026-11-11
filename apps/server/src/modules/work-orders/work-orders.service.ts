@@ -9,6 +9,7 @@ import {
   ReferenceType,
   type SchedulingConflictDto,
   ServiceRequestStatus,
+  type SortOrder,
   WORK_ORDER_VIEW_STATUSES,
   WORK_ORDER_VIEWS,
   WorkOrderAction,
@@ -112,7 +113,10 @@ export async function getAdminWorkOrder(
  * The filters that are not the status, as one `where`. The tab counts are computed from exactly
  * this (so each tab says what choosing it would show), and the list adds the statuses on top.
  */
-function filtersWhere(query: AdminWorkOrdersQuery, timeZone: string): Prisma.WorkOrderWhereInput {
+export function filtersWhere(
+  query: AdminWorkOrdersQuery,
+  timeZone: string,
+): Prisma.WorkOrderWhereInput {
   const range = scheduledRange(query.scheduledFrom, query.scheduledTo, timeZone);
   // `contains` hands the text to ILIKE as it is, so `%` and `_` would act as wildcards.
   const contains =
@@ -151,12 +155,34 @@ const READY_TO_INVOICE_WHERE: Prisma.WorkOrderWhereInput = {
 };
 
 /** The statuses the list shows: those of the view, narrowed by `status` when both are given. */
-function statusesOf(query: AdminWorkOrdersQuery): WorkOrderStatus[] | undefined {
+function statusesOf(
+  query: Pick<AdminWorkOrdersQuery, "view" | "status">,
+): WorkOrderStatus[] | undefined {
   const inView = query.view === undefined ? undefined : WORK_ORDER_VIEW_STATUSES[query.view];
   if (inView !== undefined && query.status !== undefined) {
     return inView.filter((status) => query.status?.includes(status));
   }
   return inView === undefined ? query.status : [...inView];
+}
+
+/** The list's `where`: the filters that are not the tab or the status, and the tab and status on top. The CSV export reads the same. */
+export function withViewAndStatus(
+  base: Prisma.WorkOrderWhereInput,
+  query: Pick<AdminWorkOrdersQuery, "view" | "status">,
+): Prisma.WorkOrderWhereInput {
+  const statuses = statusesOf(query);
+  return {
+    ...base,
+    ...(statuses !== undefined && { status: { in: statuses } }),
+    ...(query.view === READY_TO_INVOICE && READY_TO_INVOICE_WHERE),
+  };
+}
+
+/** A job that has no appointment yet (or is not completed, for `completedAt`) sorts after the ones that have, in either direction. */
+export function jobsOrderBy(sort: AdminWorkOrdersQuery["sort"], order: SortOrder) {
+  return sort === "scheduledStart" || sort === "completedAt"
+    ? { [sort]: { sort: order, nulls: "last" as const } }
+    : { [sort]: order };
 }
 
 /**
@@ -171,24 +197,13 @@ export async function listAdminWorkOrders(
   const { prisma } = deps;
   const business = await loadBusiness(prisma);
   const base = filtersWhere(query, business.timeZone);
-  const statuses = statusesOf(query);
-  const where: Prisma.WorkOrderWhereInput = {
-    ...base,
-    ...(statuses !== undefined && { status: { in: statuses } }),
-    ...(query.view === READY_TO_INVOICE && READY_TO_INVOICE_WHERE),
-  };
+  const where = withViewAndStatus(base, query);
 
   const [rows, totalItems, groups, readyToInvoice] = await Promise.all([
     prisma.workOrder.findMany({
       where,
       select: ADMIN_LIST_SELECT,
-      ...toPrismaPage(query, (sort, order) =>
-        // A job that has no appointment yet (or is not completed, for `completedAt`) sorts after
-        // the ones that have, in either direction.
-        sort === "scheduledStart" || sort === "completedAt"
-          ? { [sort]: { sort: order, nulls: "last" as const } }
-          : { [sort]: order },
-      ),
+      ...toPrismaPage(query, jobsOrderBy),
     }),
     prisma.workOrder.count({ where }),
     prisma.workOrder.groupBy({ by: ["status"], where: base, _count: { _all: true } }),

@@ -200,7 +200,7 @@ export async function getAdminInvoice(
  * The filters that are not the status, as one `where`. The chip counts are computed from exactly
  * this (so each chip says what choosing it would show), and the list adds the statuses on top.
  */
-function filtersWhere(query: AdminInvoicesQuery): Prisma.InvoiceWhereInput {
+export function filtersWhere(query: AdminInvoicesQuery): Prisma.InvoiceWhereInput {
   // `contains` hands the text to ILIKE as it is, so `%` and `_` would act as wildcards.
   const contains =
     query.q === undefined
@@ -231,10 +231,18 @@ function filtersWhere(query: AdminInvoicesQuery): Prisma.InvoiceWhereInput {
 }
 
 /** Sorting on a column that can be empty (a draft has no issue date) puts the empty ones last. */
-function orderByOf(sort: AdminInvoicesQuery["sort"], order: SortOrder) {
+export function orderByOf(sort: AdminInvoicesQuery["sort"], order: SortOrder) {
   return sort === "issueDate" || sort === "dueDate"
     ? { [sort]: { sort: order, nulls: "last" as const } }
     : { [sort]: order };
+}
+
+/** The list's `where`: the filters that are not the status, and the status on top. The CSV export reads the same. */
+export function withStatus(
+  base: Prisma.InvoiceWhereInput,
+  query: Pick<AdminInvoicesQuery, "status">,
+): Prisma.InvoiceWhereInput {
+  return { ...base, ...(query.status !== undefined && { status: { in: query.status } }) };
 }
 
 /**
@@ -251,10 +259,7 @@ export async function listAdminInvoices(
   const settings = await loadSettings(prisma);
 
   const base = filtersWhere(query);
-  const where: Prisma.InvoiceWhereInput = {
-    ...base,
-    ...(query.status !== undefined && { status: { in: query.status } }),
-  };
+  const where = withStatus(base, query);
 
   const [rows, totalItems, groups] = await Promise.all([
     prisma.invoice.findMany({

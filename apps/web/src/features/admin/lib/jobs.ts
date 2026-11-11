@@ -4,6 +4,7 @@ import {
   isDateOnly,
   LIMITS,
   WORK_ORDER_VIEWS,
+  WorkOrderStatus,
   type WorkOrderView,
 } from "@fixflow/shared";
 
@@ -64,6 +65,11 @@ export const VIEW_DEFAULT_SORT: Readonly<
 
 export interface JobsQuery {
   view: WorkOrderView;
+  /**
+   * Statuses that narrow the tab further, in the order of {@link JOB_STATUS_ORDER}. No tab asks for
+   * them; the dashboard's "jobs today" link does (scheduled and in progress), on the "all" tab.
+   */
+  status: WorkOrderStatus[];
   q: string | undefined;
   technicianId: string | undefined;
   scheduledFrom: string | undefined;
@@ -72,6 +78,16 @@ export interface JobsQuery {
   order: SortOrder;
   page: number;
 }
+
+/** The statuses in the order of a job's life, which is the order a filter lists them in. */
+export const JOB_STATUS_ORDER: readonly WorkOrderStatus[] = [
+  WorkOrderStatus.PENDING_SCHEDULING,
+  WorkOrderStatus.SCHEDULED,
+  WorkOrderStatus.IN_PROGRESS,
+  WorkOrderStatus.NEEDS_RESCHEDULING,
+  WorkOrderStatus.COMPLETED,
+  WorkOrderStatus.CANCELLED,
+];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -105,9 +121,15 @@ export function parseJobsQuery(params: SearchParamsInput): JobsQuery {
   const to = dateOrUndefined(params.scheduledTo);
   const backwards = from !== undefined && to !== undefined && from > to;
   const technicianId = first(params.technicianId)?.trim();
+  const wanted = new Set(
+    (Array.isArray(params.status) ? params.status : [params.status ?? ""])
+      .flatMap((entry) => entry.split(","))
+      .map((entry) => entry.trim()),
+  );
 
   return {
     view,
+    status: JOB_STATUS_ORDER.filter((candidate) => wanted.has(candidate)),
     q: q === undefined || q === "" ? undefined : q,
     technicianId: technicianId !== undefined && UUID.test(technicianId) ? technicianId : undefined,
     scheduledFrom: backwards ? to : from,
@@ -136,6 +158,7 @@ export function toJobsApiQueryString(query: JobsQuery): string {
     sort: query.sort,
     order: query.order,
   });
+  if (query.status.length > 0) params.set("status", query.status.join(","));
   if (query.q !== undefined) params.set("q", query.q);
   if (query.technicianId !== undefined) params.set("technicianId", query.technicianId);
   if (query.scheduledFrom !== undefined) params.set("scheduledFrom", query.scheduledFrom);
@@ -143,14 +166,19 @@ export function toJobsApiQueryString(query: JobsQuery): string {
   return params.toString();
 }
 
-/** True when a search or a filter narrows the list (so an empty result means "no match", not "none yet"). */
-export function hasActiveJobFilters(query: JobsQuery): boolean {
+/** True when the search box or a filter of the form narrows the list: what "Clear filters" clears. */
+export function hasJobFormFilters(query: JobsQuery): boolean {
   return (
     query.q !== undefined ||
     query.technicianId !== undefined ||
     query.scheduledFrom !== undefined ||
     query.scheduledTo !== undefined
   );
+}
+
+/** True when a search or a filter narrows the list (so an empty result means "no match", not "none yet"). */
+export function hasActiveJobFilters(query: JobsQuery): boolean {
+  return query.status.length > 0 || hasJobFormFilters(query);
 }
 
 /**
@@ -161,6 +189,9 @@ export function jobsFormCarryOver(query: JobsQuery): Record<string, string> {
   const carry: Record<string, string> = {};
   if (query.view !== DEFAULT_VIEW) {
     carry.view = query.view;
+  }
+  if (query.status.length > 0) {
+    carry.status = query.status.join(",");
   }
   const defaults = VIEW_DEFAULT_SORT[query.view];
   if (query.sort !== defaults.sort || query.order !== defaults.order) {
@@ -177,6 +208,8 @@ export function jobsFormCarryOver(query: JobsQuery): Record<string, string> {
 export function jobsTabHref(params: SearchParamsInput, view: WorkOrderView): string {
   return buildHref(JOBS_PATH, params, {
     view: view === DEFAULT_VIEW ? null : view,
+    // A tab is a preset of its own; a status filter from a link does not follow it.
+    status: null,
     sort: null,
     order: null,
     page: null,

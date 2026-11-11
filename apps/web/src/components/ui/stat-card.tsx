@@ -14,6 +14,11 @@ export interface StatCardProps {
   /** Makes the card a link to the records behind the number. */
   href?: string | undefined;
   icon?: LucideIcon | undefined;
+  /**
+   * An "about this figure" control placed beside the label (a popover with the definition). It sits
+   * above the card's link, so it can be used without following it.
+   */
+  info?: ReactNode;
   /** Colours the value to flag a figure that needs attention (for example overdue invoices). */
   tone?: "default" | "attention" | "danger" | undefined;
   className?: string | undefined;
@@ -35,6 +40,7 @@ export function StatCard({
   context,
   href,
   icon: Icon,
+  info,
   tone = "default",
   className,
 }: StatCardProps) {
@@ -57,7 +63,10 @@ export function StatCard({
         ) : (
           <span>{label}</span>
         )}
-        {Icon ? <Icon aria-hidden="true" className="size-4 shrink-0 text-ink-muted" /> : null}
+        <span className="relative z-10 flex shrink-0 items-center gap-1">
+          {info}
+          {Icon ? <Icon aria-hidden="true" className="size-4 shrink-0 text-ink-muted" /> : null}
+        </span>
       </div>
       <p className={cn("font-display text-3xl font-semibold tabular-nums", VALUE_TONES[tone])}>
         {value}

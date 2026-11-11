@@ -4,6 +4,7 @@ import type { AppDeps } from "../../deps.js";
 import { rateLimitByName } from "../../middleware/rate-limit.js";
 import { validate } from "../../middleware/validate.js";
 import { authOf, createAuthMiddleware } from "../auth/auth.middleware.js";
+import { getMyOverview } from "./customers.overview.service.js";
 import {
   addressIdParamsSchema,
   createAddressBodySchema,
@@ -35,6 +36,11 @@ export function createCustomersRouter(deps: AppDeps): Router {
 
   router.get("/me", async (req, res) => {
     res.json({ data: await getMyProfile(deps, authOf(req)) });
+  });
+
+  // The portal home in one call: what needs the customer, what is coming, their latest requests.
+  router.get("/me/overview", async (req, res) => {
+    res.json({ data: await getMyOverview(deps, authOf(req)) });
   });
 
   // Each limit runs first, on its own registration: Express cannot type a validated body in a

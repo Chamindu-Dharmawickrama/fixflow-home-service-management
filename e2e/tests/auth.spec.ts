@@ -43,7 +43,7 @@ test.describe("route protection", () => {
 
     await page.waitForURL("**/app/dashboard", { timeout: NAVIGATION_TIMEOUT });
     await expect(
-      page.getByRole("heading", { level: 1, name: `Welcome, ${admin.name}` }),
+      page.getByRole("heading", { level: 1, name: /^Good (morning|afternoon|evening), Morgan$/ }),
     ).toBeVisible();
   });
 
@@ -79,7 +79,9 @@ test.describe("route protection", () => {
     await page.goto("/portal");
 
     await page.waitForURL("**/app/dashboard", { timeout: NAVIGATION_TIMEOUT });
-    await expect(page.getByRole("heading", { level: 1, name: /^Welcome,/ })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: /^Good (morning|afternoon|evening), Morgan$/ }),
+    ).toBeVisible();
   });
 
   test("a stale or forged session cookie is sent to sign-in with the page remembered", async ({

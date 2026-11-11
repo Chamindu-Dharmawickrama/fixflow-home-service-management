@@ -1,10 +1,12 @@
 export {
   formatDate,
   formatDateTime,
+  formatDateWithWeekday,
   formatRelative,
   formatTime,
   formatTimeRange,
   formatTimeZoneName,
+  hourInTimeZone,
 } from "./datetime";
 export { FORMAT_LOCALE } from "./locale";
 export { formatMoney, isDecimalString, isZeroAmount } from "./money";

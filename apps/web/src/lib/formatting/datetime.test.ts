@@ -3,10 +3,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   formatDate,
   formatDateTime,
+  formatDateWithWeekday,
   formatRelative,
   formatTime,
   formatTimeRange,
   formatTimeZoneName,
+  hourInTimeZone,
 } from "./datetime";
 
 const NEW_YORK = "America/New_York";
@@ -100,6 +102,32 @@ describe("independence from the machine's time zone", () => {
       );
     },
   );
+});
+
+describe("formatDateWithWeekday and hourInTimeZone (T23)", () => {
+  it("writes the weekday with the date, on the business's calendar day", () => {
+    expect(formatDateWithWeekday("2026-03-05T15:00:00Z", "America/New_York")).toBe(
+      "Thursday, Mar 5, 2026",
+    );
+    // 04:30 UTC on the 6th is still the evening of Thursday the 5th in New York, and already Friday in Tokyo.
+    expect(formatDateWithWeekday("2026-03-06T04:30:00Z", "America/New_York")).toBe(
+      "Thursday, Mar 5, 2026",
+    );
+    expect(formatDateWithWeekday("2026-03-06T04:30:00Z", "Asia/Tokyo")).toBe("Friday, Mar 6, 2026");
+  });
+
+  it("writes a date-only value as written", () => {
+    expect(formatDateWithWeekday("2026-11-01", "America/New_York")).toBe("Sunday, Nov 1, 2026");
+    expect(formatDateWithWeekday("2026-12-31", "Asia/Tokyo")).toBe("Thursday, Dec 31, 2026");
+  });
+
+  it("reads the hour of the day on the wall clock of the zone, across a change of the clocks", () => {
+    expect(hourInTimeZone("2026-03-05T05:00:00Z", "America/New_York")).toBe(0);
+    expect(hourInTimeZone("2026-03-05T04:59:00Z", "America/New_York")).toBe(23);
+    // The clocks went forward on 8 March: 07:30 UTC is 03:30 EDT (02:30 does not exist).
+    expect(hourInTimeZone("2026-03-08T07:30:00Z", "America/New_York")).toBe(3);
+    expect(hourInTimeZone("2026-03-08T00:00:00Z", "Asia/Tokyo")).toBe(9);
+  });
 });
 
 describe("formatTimeRange", () => {

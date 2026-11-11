@@ -451,7 +451,7 @@ test.describe("the service catalogue", () => {
 
 test.describe("who can reach the settings", () => {
   test("the admin sees the Settings group in the sidebar", async ({ page }) => {
-    await openAs(page, "/app/dashboard", /Welcome/);
+    await openAs(page, "/app/dashboard", /^Good (morning|afternoon|evening),/);
 
     const nav = page.getByRole("navigation", { name: "Main" });
     await expect(nav.getByText("Settings", { exact: true })).toBeVisible();

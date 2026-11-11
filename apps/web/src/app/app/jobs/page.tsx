@@ -6,11 +6,14 @@ import { Suspense } from "react";
 import { LinkTabs } from "@/components/ui/link-tabs";
 import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
+import { ExportCsvButton } from "@/features/admin/components/export-csv-button";
 import { JobsEmpty } from "@/features/admin/components/jobs-empty";
 import { JobsFilters } from "@/features/admin/components/jobs-filters";
 import { JobsTable } from "@/features/admin/components/jobs-table";
+import { StatusFilterNote } from "@/features/admin/components/status-filter-note";
 import {
   hasActiveJobFilters,
+  hasJobFormFilters,
   JOBS_PATH,
   jobsFormCarryOver,
   jobsSortHref,
@@ -22,6 +25,7 @@ import {
 import { PageSkeleton } from "@/features/auth/components/area-skeleton";
 import { loadErrorState } from "@/features/catalogue/components/load-error";
 import { serverApiGetEnvelope } from "@/lib/api/server";
+import { statusLabel } from "@/lib/formatting";
 import { getPublicSettings } from "@/lib/settings";
 import { buildHref, type SearchParamsInput } from "@/lib/url";
 
@@ -81,6 +85,7 @@ async function JobsContent({ searchParams }: { searchParams: Promise<SearchParam
       <PageHeader
         title="Jobs"
         description="The work customers have agreed to. Schedule each job with a technician, then follow it through to completion."
+        actions={<ExportCsvButton kind="jobs" query={toJobsApiQueryString(query)} />}
       />
 
       <LinkTabs
@@ -93,6 +98,14 @@ async function JobsContent({ searchParams }: { searchParams: Promise<SearchParam
         }))}
       />
 
+      {query.status.length > 0 ? (
+        <StatusFilterNote
+          noun="jobs"
+          labels={query.status.map((status) => statusLabel("workOrder", status))}
+          clearHref={buildHref(JOBS_PATH, params, { status: null, page: null })}
+        />
+      ) : null}
+
       <JobsFilters
         q={query.q}
         technicianId={query.technicianId}
@@ -100,7 +113,7 @@ async function JobsContent({ searchParams }: { searchParams: Promise<SearchParam
         scheduledTo={query.scheduledTo}
         technicians={technicians.data.map(({ id, name, isActive }) => ({ id, name, isActive }))}
         preserve={jobsFormCarryOver(query)}
-        canClear={filtered}
+        canClear={hasJobFormFilters(query)}
       />
 
       {list.data.length === 0 ? (

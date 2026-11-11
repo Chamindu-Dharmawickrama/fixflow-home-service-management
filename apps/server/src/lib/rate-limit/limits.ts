@@ -48,6 +48,10 @@ export const RATE_LIMITS = {
   // Invoice PDFs (T22). Counted per signed-in user. A PDF is built on the server on every request, so
   // this keeps a script from using its memory and time; a person downloads a handful an hour.
   invoicePdf: { limit: 30, windowSeconds: 60 * 60 },
+
+  // CSV exports (T23). Counted per signed-in admin. An export reads a whole list from the database, so
+  // this keeps a script from asking for one over and over; a person downloads a file now and then.
+  adminExport: { limit: 10, windowSeconds: 60 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export type RateLimitName = keyof typeof RATE_LIMITS;

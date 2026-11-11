@@ -22,6 +22,8 @@ export interface AwaitingDecisionProps {
   timeZone: string;
   /** When the page is drawn: how many days are left is measured from it. */
   now: Date;
+  /** The heading level of the card's title: `h3` when a section heading sits above it. */
+  headingAs?: "h2" | "h3";
 }
 
 /**
@@ -30,7 +32,12 @@ export interface AwaitingDecisionProps {
  * the page, in the brand's colour, because it is the one thing the business is waiting on them for.
  * With none waiting nothing is drawn: an empty "awaiting" box would only add noise.
  */
-export function AwaitingDecision({ quotations, timeZone, now }: AwaitingDecisionProps) {
+export function AwaitingDecision({
+  quotations,
+  timeZone,
+  now,
+  headingAs = "h2",
+}: AwaitingDecisionProps) {
   // The list is of the stored status; one that has just run out is not waiting for an answer.
   const open = quotations.filter((quotation) => quotation.status === QuotationStatus.SENT);
   if (open.length === 0) {
@@ -45,7 +52,11 @@ export function AwaitingDecision({ quotations, timeZone, now }: AwaitingDecision
       className="border-brand/30 bg-brand-soft"
     >
       <CardHeader>
-        <CardTitle as="h2" id="awaiting-decision-heading" className="flex items-center gap-2">
+        <CardTitle
+          as={headingAs}
+          id="awaiting-decision-heading"
+          className="flex items-center gap-2"
+        >
           <FileCheck aria-hidden="true" className="size-5 shrink-0 text-brand" />
           Awaiting your decision
         </CardTitle>

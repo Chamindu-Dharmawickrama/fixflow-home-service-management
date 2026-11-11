@@ -460,10 +460,11 @@ test("the customer finds a job from their overview and from its request, and no 
     other.page.getByRole("heading", { level: 2, name: "You don't have a job yet" }),
   ).toBeVisible({ timeout: NAVIGATION_TIMEOUT });
   await other.page.goto("/portal");
-  await expect(other.page.getByRole("region", { name: "Upcoming visits" })).toContainText(
-    "No visits are booked",
-    { timeout: NAVIGATION_TIMEOUT },
-  );
+  // The other customer has nothing: welcomed (T23), and shown none of the first customer's visits.
+  await expect(other.page.getByRole("heading", { name: /Welcome/ })).toBeVisible({
+    timeout: NAVIGATION_TIMEOUT,
+  });
+  await expect(other.page.getByRole("region", { name: "Upcoming visits" })).toHaveCount(0);
 
   await mine.close();
   await other.close();

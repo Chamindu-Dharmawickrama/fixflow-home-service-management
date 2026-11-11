@@ -41,8 +41,11 @@ export const INVOICE_STATUS_ORDER: readonly InvoiceStatus[] = [
 type SortOrder = "asc" | "desc";
 
 export interface InvoicesQuery {
-  /** One status, or none for every invoice. */
-  status: InvoiceStatus | undefined;
+  /**
+   * The statuses to list, in the order of {@link INVOICE_STATUS_ORDER}; none means every invoice. A chip
+   * chooses one; the dashboard's "unpaid balance" link names three (issued, part paid and overdue).
+   */
+  status: InvoiceStatus[];
   q: string | undefined;
   dueFrom: string | undefined;
   dueTo: string | undefined;
@@ -74,7 +77,12 @@ function dateOrUndefined(value: string | string[] | undefined): string | undefin
  */
 export function parseInvoicesQuery(params: SearchParamsInput): InvoicesQuery {
   const q = first(params.q)?.trim().slice(0, 100);
-  const status = INVOICE_STATUS_ORDER.find((candidate) => candidate === first(params.status));
+  const wanted = new Set(
+    (Array.isArray(params.status) ? params.status : [params.status ?? ""])
+      .flatMap((entry) => entry.split(","))
+      .map((entry) => entry.trim()),
+  );
+  const status = INVOICE_STATUS_ORDER.filter((candidate) => wanted.has(candidate));
   const asked = first(params.sort);
   const order = first(params.order);
   const page = first(params.page);
@@ -112,7 +120,7 @@ export function toInvoicesApiQueryString(query: InvoicesQuery): string {
     sort: query.sort,
     order: query.order,
   });
-  if (query.status !== undefined) params.set("status", query.status);
+  if (query.status.length > 0) params.set("status", query.status.join(","));
   if (query.q !== undefined) params.set("q", query.q);
   if (query.dueFrom !== undefined) params.set("dueFrom", query.dueFrom);
   if (query.dueTo !== undefined) params.set("dueTo", query.dueTo);
@@ -127,8 +135,8 @@ export function hasActiveInvoiceFilters(query: InvoicesQuery): boolean {
 /** What a change in the filter form keeps from the address: the status, and the sort when it is not the default. */
 export function invoicesFormCarryOver(query: InvoicesQuery): Record<string, string> {
   const carry: Record<string, string> = {};
-  if (query.status !== undefined) {
-    carry.status = query.status;
+  if (query.status.length > 0) {
+    carry.status = query.status.join(",");
   }
   if (query.sort !== DEFAULT_INVOICE_SORT.sort || query.order !== DEFAULT_INVOICE_SORT.order) {
     carry.sort = query.sort;
@@ -137,12 +145,24 @@ export function invoicesFormCarryOver(query: InvoicesQuery): Record<string, stri
   return carry;
 }
 
-/** The link of a status chip: that status (or all), back on page 1, keeping the search, dates and sort. */
+/**
+ * The link of a status chip: that status (or all, with none), back on page 1, keeping the search,
+ * dates and sort. A list of statuses is written comma-separated, as the dashboard's links write it.
+ */
 export function invoicesStatusHref(
   params: SearchParamsInput,
-  status: InvoiceStatus | undefined,
+  status: InvoiceStatus | readonly InvoiceStatus[] | undefined,
 ): string {
-  return buildHref(INVOICES_PATH, params, { status: status ?? null, page: null });
+  const value = status === undefined ? [] : typeof status === "string" ? [status] : status;
+  return buildHref(INVOICES_PATH, params, {
+    status: value.length === 0 ? null : value.join(","),
+    page: null,
+  });
+}
+
+/** The one status a chip chose, or `undefined` when the list is of every status or of several. */
+export function singleStatus(query: Pick<InvoicesQuery, "status">): InvoiceStatus | undefined {
+  return query.status.length === 1 ? query.status[0] : undefined;
 }
 
 /** The link a column header goes to: this column, with the order flipped if it is already the sort. */

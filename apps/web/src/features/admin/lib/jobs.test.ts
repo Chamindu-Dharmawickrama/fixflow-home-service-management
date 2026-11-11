@@ -6,6 +6,7 @@ import {
   adminJobSchedulePath,
   DEFAULT_VIEW,
   hasActiveJobFilters,
+  hasJobFormFilters,
   JOBS_PATH,
   jobsFormCarryOver,
   jobsSortHref,
@@ -62,6 +63,7 @@ describe("parseJobsQuery", () => {
       }),
     ).toEqual({
       view: "upcoming",
+      status: [],
       q: "priya",
       technicianId: ID,
       scheduledFrom: "2026-03-01",
@@ -86,6 +88,7 @@ describe("parseJobsQuery", () => {
       }),
     ).toEqual({
       view: "needs-scheduling",
+      status: [],
       q: undefined,
       technicianId: undefined,
       scheduledFrom: undefined,
@@ -161,6 +164,39 @@ describe("toJobsApiQueryString", () => {
       scheduledFrom: "2026-03-01",
       scheduledTo: "2026-03-31",
     });
+  });
+});
+
+describe("the status filter (the dashboard's link)", () => {
+  it("reads several statuses, comma-separated or repeated, in the order of a job's life", () => {
+    expect(parseJobsQuery({ view: "all", status: "IN_PROGRESS,SCHEDULED" }).status).toEqual([
+      "SCHEDULED",
+      "IN_PROGRESS",
+    ]);
+    expect(parseJobsQuery({ status: ["COMPLETED", "CANCELLED"] }).status).toEqual([
+      "COMPLETED",
+      "CANCELLED",
+    ]);
+    expect(parseJobsQuery({ status: "SHIPPED,SCHEDULED,SCHEDULED" }).status).toEqual(["SCHEDULED"]);
+    expect(parseJobsQuery({}).status).toEqual([]);
+  });
+
+  it("is sent to the API, and kept when the form is used, but a tab drops it", () => {
+    const query = parseJobsQuery({ view: "all", status: "SCHEDULED,IN_PROGRESS" });
+    expect(new URLSearchParams(toJobsApiQueryString(query)).get("status")).toBe(
+      "SCHEDULED,IN_PROGRESS",
+    );
+    expect(jobsFormCarryOver(query)).toEqual({ view: "all", status: "SCHEDULED,IN_PROGRESS" });
+    expect(jobsTabHref({ view: "all", status: "SCHEDULED,IN_PROGRESS", q: "x" }, "upcoming")).toBe(
+      `${JOBS_PATH}?q=x&view=upcoming`,
+    );
+  });
+
+  it("counts as a filter for the empty state, but not for the form's Clear button", () => {
+    const query = parseJobsQuery({ view: "all", status: "SCHEDULED" });
+    expect(hasActiveJobFilters(query)).toBe(true);
+    expect(hasJobFormFilters(query)).toBe(false);
+    expect(hasJobFormFilters(parseJobsQuery({ q: "x" }))).toBe(true);
   });
 });
 

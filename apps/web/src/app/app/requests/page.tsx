@@ -8,6 +8,7 @@ import { buttonVariants } from "@/components/ui/button-variants";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
+import { ExportCsvButton } from "@/features/admin/components/export-csv-button";
 import { RequestQueueFilters } from "@/features/admin/components/request-queue-filters";
 import { RequestStatusChips } from "@/features/admin/components/request-status-chips";
 import { RequestsQueueTable } from "@/features/admin/components/requests-queue-table";
@@ -82,6 +83,7 @@ async function QueueContent({ searchParams }: { searchParams: Promise<SearchPara
       <PageHeader
         title="Service requests"
         description="What customers have sent. Open a request to review it, add notes and decide what happens next."
+        actions={<ExportCsvButton kind="requests" query={toApiQueryString(query)} />}
       />
 
       <RequestStatusChips

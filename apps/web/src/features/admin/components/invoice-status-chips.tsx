@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
 import { INVOICE_STATUS_ORDER, invoicesStatusHref } from "../lib/invoices";
 
 export interface InvoiceStatusChipsProps {
-  /** The status in the filter now, or none for every invoice. */
-  selected: InvoiceStatus | undefined;
+  /** The statuses in the filter now, or none for every invoice. A chip is current when it is the only one. */
+  selected: readonly InvoiceStatus[];
   /** Per status, for the search and dates in force but ignoring the status filter. */
   counts: AdminInvoiceListMeta["counts"];
   /** The page's `searchParams`, so every chip keeps the search, dates and sort. */
@@ -74,7 +74,7 @@ export function InvoiceStatusChips({ selected, counts, params }: InvoiceStatusCh
       <ul className="flex gap-2 overflow-x-auto pb-1">
         <Chip
           href={invoicesStatusHref(params, undefined)}
-          selected={selected === undefined}
+          selected={selected.length === 0}
           label="All"
           count={counts.all}
         />
@@ -82,7 +82,7 @@ export function InvoiceStatusChips({ selected, counts, params }: InvoiceStatusCh
           <Chip
             key={status}
             href={invoicesStatusHref(params, status)}
-            selected={selected === status}
+            selected={selected.length === 1 && selected[0] === status}
             label={statusLabel("invoice", status)}
             count={counts[status]}
           />

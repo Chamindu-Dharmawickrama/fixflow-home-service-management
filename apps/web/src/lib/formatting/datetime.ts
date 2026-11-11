@@ -126,6 +126,23 @@ export function formatDate(value: IsoInput, timeZone: string): string {
   return dateText(dateOnly ?? wallClock(parseInstant(value), timeZone));
 }
 
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/**
+ * `"Thursday, Oct 28, 2026"`: a date with its weekday, for the heading of a page about today. An ISO
+ * instant is shown on the calendar day it falls on in `timeZone`; a date-only value as written.
+ */
+export function formatDateWithWeekday(value: IsoInput, timeZone: string): string {
+  const parts = dateOnlyParts(value) ?? wallClock(parseInstant(value), timeZone);
+  const weekday = WEEKDAYS[new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay()];
+  return `${weekday}, ${dateText(parts)}`;
+}
+
+/** The hour of the day (0–23) on the wall clock of `timeZone` at that instant. */
+export function hourInTimeZone(value: IsoInput, timeZone: string): number {
+  return wallClock(parseInstant(value), timeZone).hour;
+}
+
 /** `"Oct 28, 2026, 3:30 PM"` in `timeZone`. */
 export function formatDateTime(value: IsoInput, timeZone: string): string {
   const clock = wallClock(parseInstant(value), timeZone);

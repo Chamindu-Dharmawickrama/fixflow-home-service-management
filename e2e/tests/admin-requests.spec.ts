@@ -223,8 +223,8 @@ test.describe("finding a request and reviewing it (workflow 7.2)", () => {
     await loginAs(page, "admin");
 
     await page.goto("/app/dashboard");
-    await page.getByRole("link", { name: "Open the request queue" }).click();
-    await page.waitForURL(/\/app\/requests$/, { timeout: NAVIGATION_TIMEOUT });
+    await page.getByRole("link", { name: "Requests needing action", exact: true }).click();
+    await page.waitForURL(/\/app\/requests\?status=/, { timeout: NAVIGATION_TIMEOUT });
     const sidebarLink = page
       .getByRole("navigation", { name: "Main" })
       .getByRole("link", { name: "Requests" });

@@ -16,6 +16,7 @@ import {
   invoiceToFormValues,
   overdueSentence,
   parseInvoicesQuery,
+  singleStatus,
   splitInvoiceApiProblems,
   toInvoicesApiQueryString,
   toInvoiceUpdateBody,
@@ -51,7 +52,7 @@ describe("addresses and words", () => {
 describe("parseInvoicesQuery", () => {
   it("defaults to every status, newest first, page 1", () => {
     expect(parseInvoicesQuery({})).toEqual({
-      status: undefined,
+      status: [],
       q: undefined,
       dueFrom: undefined,
       dueTo: undefined,
@@ -73,7 +74,7 @@ describe("parseInvoicesQuery", () => {
         page: "3",
       }),
     ).toEqual({
-      status: "OVERDUE",
+      status: ["OVERDUE"],
       q: "Okafor",
       dueFrom: "2026-03-01",
       dueTo: "2026-03-31",
@@ -93,7 +94,7 @@ describe("parseInvoicesQuery", () => {
       q: "   ",
     });
     expect(query).toMatchObject({
-      status: undefined,
+      status: [],
       sort: "createdAt",
       order: "desc",
       page: 1,
@@ -113,8 +114,21 @@ describe("parseInvoicesQuery", () => {
     expect(parseInvoicesQuery({ sort: "createdAt" }).order).toBe("desc");
   });
 
-  it("takes the first of a repeated parameter", () => {
-    expect(parseInvoicesQuery({ status: ["PAID", "VOID"] }).status).toBe("PAID");
+  it("reads several statuses, comma-separated or repeated, in the order of an invoice's life", () => {
+    // The dashboard's "unpaid balance" link names three at once.
+    expect(parseInvoicesQuery({ status: "OVERDUE,ISSUED,PARTIALLY_PAID" }).status).toEqual([
+      "ISSUED",
+      "PARTIALLY_PAID",
+      "OVERDUE",
+    ]);
+    expect(parseInvoicesQuery({ status: ["VOID", "PAID"] }).status).toEqual(["PAID", "VOID"]);
+    expect(parseInvoicesQuery({ status: "PAID,SHIPPED,PAID" }).status).toEqual(["PAID"]);
+  });
+
+  it("knows the one status a chip chose", () => {
+    expect(singleStatus(parseInvoicesQuery({ status: "PAID" }))).toBe("PAID");
+    expect(singleStatus(parseInvoicesQuery({ status: "PAID,VOID" }))).toBeUndefined();
+    expect(singleStatus(parseInvoicesQuery({}))).toBeUndefined();
   });
 });
 
@@ -147,6 +161,9 @@ describe("the list's links and API query", () => {
 
   it("carries the status and a non-default sort through the filter form", () => {
     expect(invoicesFormCarryOver(parseInvoicesQuery({}))).toEqual({});
+    expect(invoicesFormCarryOver(parseInvoicesQuery({ status: "ISSUED,OVERDUE" }))).toEqual({
+      status: "ISSUED,OVERDUE",
+    });
     expect(
       invoicesFormCarryOver(parseInvoicesQuery({ status: "OVERDUE", sort: "dueDate" })),
     ).toEqual({ status: "OVERDUE", sort: "dueDate", order: "asc" });
@@ -158,6 +175,9 @@ describe("the list's links and API query", () => {
     );
     expect(invoicesStatusHref({ status: "PAID", dueFrom: "2026-03-01" }, undefined)).toBe(
       "/app/invoices?dueFrom=2026-03-01",
+    );
+    expect(invoicesStatusHref({}, ["ISSUED", "OVERDUE"])).toBe(
+      "/app/invoices?status=ISSUED%2COVERDUE",
     );
   });
 

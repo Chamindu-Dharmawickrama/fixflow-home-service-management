@@ -13,6 +13,8 @@ export interface OutstandingInvoicesProps {
   /** All the customer owes on, so the link can say there are more. */
   totalItems: number;
   timeZone: string;
+  /** The heading level of the card's title: `h3` when a section heading sits above it. */
+  headingAs?: "h2" | "h3";
 }
 
 /**
@@ -21,7 +23,12 @@ export interface OutstandingInvoicesProps {
  * unpaid bill is something the customer may need to act on. With nothing owed nothing is drawn: a
  * box that says "nothing to pay" would only add noise (the invoices page has the full history).
  */
-export function OutstandingInvoices({ invoices, totalItems, timeZone }: OutstandingInvoicesProps) {
+export function OutstandingInvoices({
+  invoices,
+  totalItems,
+  timeZone,
+  headingAs = "h2",
+}: OutstandingInvoicesProps) {
   if (invoices.length === 0) {
     return null;
   }
@@ -29,7 +36,11 @@ export function OutstandingInvoices({ invoices, totalItems, timeZone }: Outstand
     <Card aria-labelledby="outstanding-invoices-heading" role="region">
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <CardTitle as="h2" id="outstanding-invoices-heading" className="flex items-center gap-2">
+          <CardTitle
+            as={headingAs}
+            id="outstanding-invoices-heading"
+            className="flex items-center gap-2"
+          >
             <Receipt aria-hidden="true" className="size-5 shrink-0 text-brand" />
             Outstanding invoices
           </CardTitle>

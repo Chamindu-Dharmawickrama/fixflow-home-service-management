@@ -54,7 +54,7 @@ type AdminRequestDeps = Pick<AppDeps, "prisma" | "clock" | "config" | "emailDisp
  * The filters that are not the status, as one `where`. The status counts are computed from exactly
  * this (so the chips say what each status would give), and the list adds the status on top.
  */
-function filtersWhere(
+export function filtersWhere(
   query: AdminRequestsQuery,
   timeZone: string,
 ): Prisma.ServiceRequestWhereInput {
@@ -84,6 +84,14 @@ function filtersWhere(
   };
 }
 
+/** The queue's `where`: the filters that are not the status, and the status on top. The CSV export reads the same. */
+export function withStatus(
+  base: Prisma.ServiceRequestWhereInput,
+  query: Pick<AdminRequestsQuery, "status">,
+): Prisma.ServiceRequestWhereInput {
+  return { ...base, ...(query.status !== undefined && { status: { in: query.status } }) };
+}
+
 /**
  * The request queue: search, filters, sort and a page of rows, with how many requests each status
  * holds under the current non-status filters. Three queries in all, however many rows: the page
@@ -97,10 +105,7 @@ export async function listAdminRequests(
   await syncExpiredQuotationsIfDue(deps);
   const business = await loadBusiness(deps.prisma);
   const base = filtersWhere(query, business.timeZone);
-  const where: Prisma.ServiceRequestWhereInput = {
-    ...base,
-    ...(query.status !== undefined && { status: { in: query.status } }),
-  };
+  const where = withStatus(base, query);
 
   const [rows, totalItems, groups] = await Promise.all([
     deps.prisma.serviceRequest.findMany({

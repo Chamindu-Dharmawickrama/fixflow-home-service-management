@@ -1,8 +1,11 @@
+import { IDENTITY_SETTINGS_FIELDS } from "@fixflow/shared";
 import { describe, expect, it } from "vitest";
 
 import { DEMO_SETTINGS } from "../../db/seed-data.js";
 import {
+  changedIdentityFields,
   changedSettingsFields,
+  identityLockedFor,
   isTaxRateInRange,
   isValidPhone,
   isValidPostalCode,
@@ -129,5 +132,64 @@ describe("logoConflict", () => {
     expect(logoConflict({ logoKey: "breeze", logoUrl: "https://example.test/a.png" })).toBe(
       "Choose either a bundled logo or a web address, not both.",
     );
+  });
+});
+
+describe("the locked identity of the public demo (T24, Q-11)", () => {
+  it("lists what the public website shows about the business, and nothing that is only a default", () => {
+    expect([...IDENTITY_SETTINGS_FIELDS].sort()).toEqual(
+      [
+        "businessName",
+        "tagline",
+        "logoKey",
+        "logoUrl",
+        "contactEmail",
+        "phone",
+        "addressLine1",
+        "addressLine2",
+        "city",
+        "region",
+        "postalCode",
+        "serviceAreaDescription",
+      ].sort(),
+    );
+    for (const settingThatIsNotIdentity of [
+      "currencyCode",
+      "timeZone",
+      "defaultTaxRate",
+      "quotationValidityDays",
+      "invoiceDueDays",
+      "defaultQuotationTerms",
+      "paymentInstructions",
+      "invoiceFooter",
+    ] as const) {
+      expect(IDENTITY_SETTINGS_FIELDS as readonly string[]).not.toContain(settingThatIsNotIdentity);
+    }
+  });
+
+  it("is locked only for a shared demo account while demo mode is on", () => {
+    const demo = { auth: { demoMode: true } };
+    const open = { auth: { demoMode: false } };
+    expect(identityLockedFor(demo, "admin@demo.fixflow.test")).toBe(true);
+    expect(identityLockedFor(demo, "ADMIN@Demo.FixFlow.test")).toBe(true);
+    expect(identityLockedFor(open, "admin@demo.fixflow.test")).toBe(false);
+    // The owner's own admin account is never locked, even in the demo.
+    expect(identityLockedFor(demo, "owner@coolbreeze.example")).toBe(false);
+  });
+
+  it("finds only identity fields whose value really changes", () => {
+    expect(changedIdentityFields(CURRENT, { businessName: "Another Name" })).toEqual([
+      "businessName",
+    ]);
+    expect(changedIdentityFields(CURRENT, { phone: "(212) 555-0199", city: "Elsewhere" })).toEqual([
+      "phone",
+      "city",
+    ]);
+    // Repeating the stored value is not a change.
+    expect(changedIdentityFields(CURRENT, { businessName: CURRENT.businessName })).toEqual([]);
+    // A default is not identity.
+    expect(
+      changedIdentityFields(CURRENT, { defaultTaxRate: "9.00", invoiceFooter: "Bye" }),
+    ).toEqual([]);
   });
 });

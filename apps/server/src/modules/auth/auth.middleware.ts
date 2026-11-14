@@ -2,12 +2,19 @@ import type { Request, RequestHandler, Response } from "express";
 
 import type { AppDeps } from "../../deps.js";
 import { forbidden, notFound, unauthorized } from "../../lib/errors.js";
+import { clientIp, rateLimitByName } from "../../middleware/rate-limit.js";
 import { clearSessionCookie, readSessionToken, setSessionCookie } from "./auth.cookie.js";
-import { canActAsAdmin, canActAsCustomer } from "./auth.domain.js";
+import { canActAsAdmin, canActAsCustomer, isDemoAccountEmail } from "./auth.domain.js";
 import type { AuthContext } from "./auth.types.js";
 import { resolveSession } from "./session.service.js";
 
-type AuthDeps = Pick<AppDeps, "prisma" | "clock" | "config" | "logger">;
+type AuthDeps = Pick<
+  AppDeps,
+  "prisma" | "clock" | "config" | "logger" | "rateLimiter" | "rateLimits"
+>;
+
+/** The methods that change something. A shared demo account's use of them is limited (T24). */
+const WRITE_METHODS: ReadonlySet<string> = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 export const SESSION_REQUIRED_MESSAGE = "Sign in to continue.";
 
@@ -60,6 +67,37 @@ export function assertCustomerOwns(
 export function createAuthMiddleware(deps: AuthDeps): AuthMiddleware {
   const { config, clock } = deps;
 
+  /**
+   * The demo write limit (T24): while `DEMO_MODE` is on, a write made with a session of one of the
+   * shared demo accounts counts against `demoWrite` (60 in ten minutes per account and IP address).
+   * The 429 comes from the same limiter every other limit uses, so it carries `Retry-After`. It lives
+   * here because this is the one place that knows who the caller is, before any handler writes.
+   */
+  const demoWriteLimit = rateLimitByName(
+    deps,
+    "demoWrite",
+    (req) => `${req.auth?.userId ?? "unknown"}:${clientIp(req)}`,
+  );
+
+  function enforceDemoWriteLimit(req: Request, res: Response, auth: AuthContext): Promise<void> {
+    if (
+      !config.auth.demoMode ||
+      !WRITE_METHODS.has(req.method) ||
+      !isDemoAccountEmail(auth.email)
+    ) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve, reject) => {
+      void demoWriteLimit(req, res, (error?: unknown) => {
+        if (error === undefined || error === null) {
+          resolve();
+        } else {
+          reject(error instanceof Error ? error : new Error("The demo write limit failed."));
+        }
+      });
+    });
+  }
+
   async function authenticate(req: Request, res: Response): Promise<AuthContext> {
     const token = readSessionToken(req, config);
     if (token === undefined || token === "") {
@@ -77,6 +115,7 @@ export function createAuthMiddleware(deps: AuthDeps): AuthMiddleware {
     if (resolved.renewedUntil !== undefined) {
       setSessionCookie(res, config, token, resolved.renewedUntil, clock.now());
     }
+    await enforceDemoWriteLimit(req, res, resolved.auth);
     return resolved.auth;
   }
 

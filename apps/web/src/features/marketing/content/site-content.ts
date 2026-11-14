@@ -179,7 +179,7 @@ export const FAQ = {
       id: "is-this-real",
       question: "Is CoolBreeze Home Services a real business?",
       answer: [
-        "No. This is a portfolio demonstration of FixFlow, a service-management application. The business, its services, prices, phone numbers and addresses are fictional, and the data resets regularly.",
+        "No. This is a portfolio demonstration of FixFlow, a service-management application. The business, its services, prices, phone numbers and addresses are fictional, and the data is reset every day.",
         "Please do not enter real personal information. The privacy notice explains what the demo stores.",
       ],
       demoOnly: true,
@@ -221,10 +221,10 @@ export const SERVICES_PAGE = {
 
 /** The notice shown under the demo banner and in the footer when the site is the portfolio demo. */
 export const DEMO_NOTICE = {
-  banner: "FixFlow portfolio demo — {business} is a fictional business. Data resets regularly.",
+  banner: "FixFlow portfolio demo — {business} is a fictional business. Data resets daily.",
   /** When the business name could not be loaded. */
   bannerWithoutName:
-    "FixFlow portfolio demo — the business shown here is fictional. Data resets regularly.",
+    "FixFlow portfolio demo — the business shown here is fictional. Data resets daily.",
   footer: "FixFlow portfolio demo — fictional business and data.",
   linkLabel: "Privacy and demo notice",
 } as const;
@@ -261,7 +261,8 @@ export function buildPrivacySections(context: PrivacyContext): PrivacySection[] 
       paragraphs: [
         `${businessName} is a fictional business. This website is a demonstration of FixFlow, a service-management application built as a portfolio project. No real service will be carried out and no real invoice or payment exists.`,
         "Do not submit real personal information. The demo's sign-in details are published so anyone can explore the business side, which means anyone can read the names, email addresses and requests that visitors enter. Use made-up details, such as a name and an address that do not belong to you.",
-        "The demo's data is reset regularly, and anything you enter may be deleted without notice.",
+        "The demo's data is reset every day, and anything you enter, including an account you create, may be deleted at any time without notice.",
+        "To keep the demo usable for everyone, the shared demo accounts cannot change their passwords or the business's name, logo and contact details, and there are limits on how many changes and new accounts one visitor can make in a short time.",
         "The photographs on this website are royalty-free stock images that illustrate the kind of work involved. The people and equipment in them are not this business's staff, customers or work.",
       ],
     });

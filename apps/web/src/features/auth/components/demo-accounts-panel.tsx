@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
 
 import { DEMO_NOTICE, type DemoAccountOption } from "../demo-accounts";
@@ -29,7 +31,15 @@ export function DemoAccountsPanel({
         <h2 id="demo-accounts-heading" className="text-base font-semibold text-ink">
           Demo accounts
         </h2>
-        <p className="text-sm text-ink-secondary">{DEMO_NOTICE}</p>
+        <p className="text-sm text-ink-secondary">
+          {DEMO_NOTICE}{" "}
+          <Link
+            href="/privacy"
+            className="rounded-sm font-medium text-brand underline underline-offset-4 hover:text-brand-hover"
+          >
+            Read the demo notice
+          </Link>
+        </p>
       </div>
       <ul className="flex flex-col gap-3">
         {accounts.map((account) => (
@@ -55,6 +65,13 @@ export function DemoAccountsPanel({
                   {account.password}
                 </code>
               </p>
+              <p className="mt-1 text-ink-secondary">{account.description}</p>
+              <ul className="mt-1 list-disc pl-5 text-ink-secondary">
+                {account.abilities.map((ability) => (
+                  <li key={ability}>{ability}</li>
+                ))}
+              </ul>
+              <p className="mt-1 text-ink-muted">{account.limits}</p>
             </div>
             <Button
               variant="outline"

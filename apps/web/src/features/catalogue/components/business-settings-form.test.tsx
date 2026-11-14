@@ -41,6 +41,7 @@ const SETTINGS: AdminSettingsDto = {
   paymentInstructions: "Pay by bank transfer.",
   invoiceFooter: "Thank you for choosing us.",
   updatedAt: "2026-10-28T10:30:00.000Z",
+  identityLocked: false,
 };
 
 const TIME_ZONES = ["America/New_York", "America/Toronto", "Asia/Colombo", "Europe/London", "UTC"];
@@ -366,5 +367,77 @@ describe("BusinessSettingsForm", () => {
     expect(field(/^Business name/)).toHaveValue("CoolBreeze Home Services");
     expect(field(/^Currency/)).toHaveValue("USD");
     expect(save()).toBeDisabled();
+  });
+
+  describe("in the public demo, for the shared demo admin (T24, Q-11)", () => {
+    const LOCKED: AdminSettingsDto = { ...SETTINGS, identityLocked: true };
+    const IDENTITY_LABELS = [
+      /^Business name/,
+      /^Tagline/,
+      /^Contact email/,
+      /^Phone number/,
+      /^Street address/,
+      /^Address line 2/,
+      /^City/,
+      /^State or region/,
+      /^Postal code/,
+      /^Service area/,
+    ];
+
+    it("explains that the business identity is locked, and says what can still be changed", () => {
+      renderForm(LOCKED);
+
+      const notice = screen.getByTestId("identity-locked-notice");
+      expect(notice).toHaveTextContent("public demo");
+      expect(notice).toHaveTextContent("business name, logo and contact details are locked");
+      expect(notice).toHaveTextContent("reset every day");
+    });
+
+    it("shows the identity fields read-only and leaves the rest editable", () => {
+      renderForm(LOCKED);
+
+      for (const label of IDENTITY_LABELS) {
+        expect(field(label)).toBeDisabled();
+      }
+      expect(screen.getByRole("radio", { name: /One of the logos/ })).toBeDisabled();
+      for (const label of [
+        /^Currency/,
+        /^Time zone/,
+        /^Default tax rate/,
+        /^Quotation validity/,
+        /^Invoice payment term/,
+        /^Default quotation terms/,
+        /^Payment instructions/,
+        /^Invoice footer/,
+      ]) {
+        expect(field(label)).toBeEnabled();
+      }
+    });
+
+    it("still saves a change to an editable field, sending only that field", async () => {
+      apiFetchMock.mockResolvedValue({ ...LOCKED, defaultTaxRate: "9.50" });
+      const user = userEvent.setup();
+      renderForm(LOCKED);
+
+      await user.clear(field(/^Default tax rate/));
+      await user.type(field(/^Default tax rate/), "9.50");
+      await user.click(save());
+
+      await waitFor(() => {
+        expect(apiFetchMock).toHaveBeenCalledWith("/admin/settings", {
+          method: "PATCH",
+          body: { defaultTaxRate: "9.50" },
+        });
+      });
+    });
+
+    it("shows no notice and leaves every field editable for any other admin", () => {
+      renderForm(SETTINGS);
+
+      expect(screen.queryByTestId("identity-locked-notice")).not.toBeInTheDocument();
+      for (const label of IDENTITY_LABELS) {
+        expect(field(label)).toBeEnabled();
+      }
+    });
   });
 });

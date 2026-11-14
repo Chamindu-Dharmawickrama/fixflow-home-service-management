@@ -54,7 +54,34 @@ export interface AdminSettingsDto {
   invoiceFooter: string | null;
   /** ISO 8601 instant of the last change. */
   updatedAt: string;
+  /**
+   * True when the signed-in admin is the shared demo admin of the public demo (T24, Q-11): the fields
+   * in {@link IDENTITY_SETTINGS_FIELDS} cannot be changed by this account, so what the public website
+   * says about the business cannot be rewritten by whoever holds the published credentials. Not a
+   * setting: the server works it out from the caller and the demo mode.
+   */
+  identityLocked: boolean;
 }
 
 /** The fields a `PATCH /admin/settings` may change, as named in activity events. */
-export type AdminSettingsField = Exclude<keyof AdminSettingsDto, "updatedAt">;
+export type AdminSettingsField = Exclude<keyof AdminSettingsDto, "updatedAt" | "identityLocked">;
+
+/**
+ * What the public website shows about the business: its name, tagline, logo, contact details, address
+ * and service area. In the public demo these are locked for the shared demo admin (Q-11, D-112); every
+ * other setting stays editable and is put back by the demo reset.
+ */
+export const IDENTITY_SETTINGS_FIELDS = [
+  "businessName",
+  "tagline",
+  "logoKey",
+  "logoUrl",
+  "contactEmail",
+  "phone",
+  "addressLine1",
+  "addressLine2",
+  "city",
+  "region",
+  "postalCode",
+  "serviceAreaDescription",
+] as const satisfies readonly AdminSettingsField[];

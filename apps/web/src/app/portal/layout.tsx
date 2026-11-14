@@ -8,10 +8,12 @@ import { AreaSkeleton } from "@/features/auth/components/area-skeleton";
 import { NoAccessPage } from "@/features/auth/components/no-access";
 import { SessionKeepAlive } from "@/features/auth/components/session-keep-alive";
 import { UserMenu } from "@/features/auth/components/user-menu";
+import { DemoBanner } from "@/features/marketing/components/demo-banner";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { currentPath } from "@/lib/auth/current-path";
 import { loginUrl, roleHomePath } from "@/lib/auth/paths";
 import { getSession } from "@/lib/auth/session";
+import { isDemoMode } from "@/lib/demo-mode";
 
 export const metadata: Metadata = {
   title: { default: "My account", template: "%s · My account · FixFlow" },
@@ -48,6 +50,7 @@ async function PortalGate({ children }: { children: ReactNode }) {
   return (
     <PortalShell
       homeHref={roleHomePath(user.role)}
+      banner={isDemoMode() ? <DemoBanner /> : undefined}
       notifications={<NotificationBell />}
       userMenu={
         <UserMenu

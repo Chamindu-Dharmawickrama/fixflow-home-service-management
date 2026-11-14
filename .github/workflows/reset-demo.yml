@@ -1,0 +1,64 @@
+name: Reset demo data
+
+# Puts the public demo back as it was: empties the demo database and loads the base seed and the
+# showcase dataset again (`npm run db:reset-demo`, T24). It does NOT run migrations: the schema is
+# changed deliberately, with `npm run db:deploy` (docs/DEPLOYMENT.md).
+#
+# DISABLED BY DEFAULT. Nothing below runs until the owner sets the repository variable
+# DEMO_RESET_ENABLED to `true` (T26) and adds the secrets and variables listed in docs/DEPLOYMENT.md §6a.
+# A scheduled workflow only runs from the default branch, and GitHub pauses scheduled workflows in a
+# repository with no activity for 60 days: re-enable it from the Actions tab if that happens.
+#
+# The time is 13:15 UTC, which is 08:15 or 09:15 in New York all year, after the business day has
+# begun there, so "the visit in progress today" in the showcase is plausible for the whole day.
+# Change the cron line if the demo's business keeps another time zone.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 13 * * *"
+
+permissions:
+  contents: read
+
+# Two resets at once would empty the database under each other.
+concurrency:
+  group: reset-demo
+  cancel-in-progress: false
+
+jobs:
+  reset:
+    name: Reset the demo database
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The switch. Without the variable the job is skipped, whether it was scheduled or started by hand.
+    if: ${{ vars.DEMO_RESET_ENABLED == 'true' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The API package reads @fixflow/shared from its build, and the Prisma client is generated, not committed.
+      - name: Build the shared package and generate the database client
+        run: |
+          npm run build:shared
+          npm run db:generate
+
+      # The command refuses to run unless DEMO_MODE is true and CONFIRM_DEMO_RESET is the name of the
+      # database in DEMO_DATABASE_URL. It prints the host and database name, never a credential.
+      - name: Reset the demo database
+        run: npm run db:reset-demo
+        env:
+          DEMO_MODE: "true"
+          DATABASE_URL: ${{ secrets.DEMO_DATABASE_URL }}
+          CONFIRM_DEMO_RESET: ${{ vars.DEMO_DATABASE_NAME }}
+          DEMO_ADMIN_PASSWORD: ${{ secrets.DEMO_ADMIN_PASSWORD }}
+          DEMO_CUSTOMER_PASSWORD: ${{ secrets.DEMO_CUSTOMER_PASSWORD }}

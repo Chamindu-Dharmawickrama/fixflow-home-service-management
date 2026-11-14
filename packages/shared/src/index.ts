@@ -267,7 +267,12 @@ export {
   ServiceAction,
   type ServiceStatusFilter,
 } from "./services.js";
-export type { AdminSettingsDto, AdminSettingsField, PublicSettingsDto } from "./settings.js";
+export {
+  type AdminSettingsDto,
+  type AdminSettingsField,
+  IDENTITY_SETTINGS_FIELDS,
+  type PublicSettingsDto,
+} from "./settings.js";
 export { isValidSlug, SLUG_MAX_LENGTH, SLUG_PATTERN, slugify } from "./slug.js";
 export {
   ADMIN_TECHNICIAN_SORT_FIELDS,

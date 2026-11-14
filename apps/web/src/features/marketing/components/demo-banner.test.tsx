@@ -18,7 +18,7 @@ describe("DemoBanner", () => {
 
     const banner = screen.getByRole("region", { name: "Demo notice" });
     expect(banner).toHaveTextContent(
-      "FixFlow portfolio demo — CoolBreeze Home Services is a fictional business. Data resets regularly.",
+      "FixFlow portfolio demo — CoolBreeze Home Services is a fictional business. Data resets daily.",
     );
   });
 
@@ -35,7 +35,7 @@ describe("DemoBanner", () => {
     render(<DemoBanner />);
 
     expect(screen.getByRole("region", { name: "Demo notice" })).toHaveTextContent(
-      "FixFlow portfolio demo — the business shown here is fictional. Data resets regularly.",
+      "FixFlow portfolio demo — the business shown here is fictional. Data resets daily.",
     );
     expect(bannerText(undefined)).not.toContain("{business}");
   });

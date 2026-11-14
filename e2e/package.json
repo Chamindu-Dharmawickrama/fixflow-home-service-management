@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "install:browsers": "playwright install chromium",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test && playwright test -c playwright.showcase.config.ts",
+    "test:e2e:showcase": "playwright test -c playwright.showcase.config.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

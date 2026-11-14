@@ -27,8 +27,8 @@ export function createSettingsRouter(deps: AppDeps): Router {
     res.json({ data: settings });
   });
 
-  router.get("/admin/settings", requireAdmin, async (_req, res) => {
-    res.json({ data: await getAdminSettings(deps) });
+  router.get("/admin/settings", requireAdmin, async (req, res) => {
+    res.json({ data: await getAdminSettings(deps, authOf(req)) });
   });
 
   router.patch(

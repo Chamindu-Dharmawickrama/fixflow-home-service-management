@@ -35,8 +35,15 @@ export function toSettingsValues(row: BusinessSettings): SettingsValues {
   };
 }
 
-export function toAdminSettingsDto(row: BusinessSettings): AdminSettingsDto {
-  return { ...toSettingsValues(row), updatedAt: row.updatedAt.toISOString() };
+export function toAdminSettingsDto(
+  row: BusinessSettings,
+  options: { identityLocked: boolean },
+): AdminSettingsDto {
+  return {
+    ...toSettingsValues(row),
+    updatedAt: row.updatedAt.toISOString(),
+    identityLocked: options.identityLocked,
+  };
 }
 
 export function toPublicSettingsDto(row: BusinessSettings): PublicSettingsDto {

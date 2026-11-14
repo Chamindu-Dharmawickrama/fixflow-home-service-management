@@ -8,6 +8,7 @@ import { LoginForm } from "@/features/auth/components/login-form";
 import { SignedInRedirect } from "@/features/auth/components/signed-in-redirect";
 import { getDemoAccounts } from "@/features/auth/demo-accounts";
 import { REGISTER_PATH } from "@/lib/auth/paths";
+import { isDemoMode } from "@/lib/demo-mode";
 import type { SearchParamsInput } from "@/lib/url";
 
 export const metadata: Metadata = {
@@ -51,6 +52,7 @@ async function LoginContent({ searchParams }: { searchParams: Promise<SearchPara
         returnTo={typeof returnTo === "string" ? returnTo : undefined}
         googleClientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || undefined}
         demoAccounts={getDemoAccounts()}
+        demoMode={isDemoMode()}
       />
     </>
   );

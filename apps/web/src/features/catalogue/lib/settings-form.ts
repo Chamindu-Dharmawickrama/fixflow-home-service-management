@@ -170,7 +170,7 @@ export function settingsToFormValues(settings: AdminSettingsDto): SettingsFormVa
 }
 
 /** The request body for `PATCH /admin/settings`: the API's own field names and types. */
-export type SettingsRequestBody = Omit<AdminSettingsDto, "updatedAt">;
+export type SettingsRequestBody = Omit<AdminSettingsDto, "updatedAt" | "identityLocked">;
 
 const blankToNull = (value: string): string | null => (value.trim() === "" ? null : value.trim());
 

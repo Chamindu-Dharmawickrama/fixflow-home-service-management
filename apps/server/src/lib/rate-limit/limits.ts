@@ -52,6 +52,15 @@ export const RATE_LIMITS = {
   // CSV exports (T23). Counted per signed-in admin. An export reads a whole list from the database, so
   // this keeps a script from asking for one over and over; a person downloads a file now and then.
   adminExport: { limit: 10, windowSeconds: 60 },
+
+  // The public demo (T24, D-09). Both apply only while DEMO_MODE is on.
+  // Writes (POST, PATCH, PUT, DELETE) made by a session of one of the shared demo accounts, counted per
+  // account and IP address: the published credentials let anyone in, so this keeps one visitor or one
+  // script from filling the demo with data between resets. Browsing is not limited.
+  demoWrite: { limit: 60, windowSeconds: 10 * 60 },
+  // New local accounts per IP address, on top of `register`: open sign-up stays open, but a script cannot
+  // fill the demo database with accounts.
+  demoRegister: { limit: 3, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export type RateLimitName = keyof typeof RATE_LIMITS;

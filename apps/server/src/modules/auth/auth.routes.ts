@@ -64,9 +64,17 @@ export function createAuthRouter(deps: AppDeps): Router {
     );
   };
 
+  // In the public demo, new accounts are limited further per IP address (T24). Off the demo, a no-op.
+  const demoRegisterLimit: RequestHandler = config.auth.demoMode
+    ? rateLimitByName(deps, "demoRegister", clientIp)
+    : (_req, _res, next) => {
+        next();
+      };
+
   router.post(
     "/register",
     rateLimitByName(deps, "register", clientIp),
+    demoRegisterLimit,
     signupGate,
     validate({ body: registerBodySchema }),
     async (req, res) => {

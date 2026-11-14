@@ -4,7 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 import type { AdminServiceDto, PublicServiceDto, PublicSettingsDto } from "@fixflow/shared";
 import { expect, type Page, test } from "@playwright/test";
 
-import { createCustomerAccount } from "../fixtures/accounts.js";
+import { createCustomerAccount, ensureSettingsAdmin } from "../fixtures/accounts.js";
 import {
   deleteServicesNamed,
   E2E_SERVICE_PREFIX,
@@ -12,6 +12,7 @@ import {
   storedBusinessPhone,
 } from "../fixtures/catalogue.js";
 import { loginAs } from "../support/auth.js";
+import { WEB_URL } from "../support/env.js";
 import { expectHydrated, NAVIGATION_TIMEOUT } from "./helpers/layout.js";
 
 /**
@@ -73,6 +74,23 @@ async function openAs(page: Page, path: string, heading: string | RegExp): Promi
   });
 }
 
+/**
+ * Opens a page as an admin who is not a shared demo account. In the public demo (this suite runs in demo
+ * mode) the shared demo admin cannot change the business identity (T24, Q-11), so the specs that save
+ * the name, phone or tagline sign in as this one.
+ */
+async function openAsSettingsAdmin(
+  page: Page,
+  path: string,
+  heading: string | RegExp,
+): Promise<void> {
+  await loginAs(page, await ensureSettingsAdmin());
+  await page.goto(path);
+  await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible({
+    timeout: NAVIGATION_TIMEOUT,
+  });
+}
+
 async function newServiceForm(page: Page) {
   await page.goto(`${SERVICES_PAGE}/new`);
   const form = page.getByRole("form", { name: "New service" });
@@ -122,9 +140,11 @@ test.describe("business settings", () => {
     const original = await storedBusinessPhone();
     const newPhone = "(212) 555-0188";
     try {
-      await openAs(page, SETTINGS_PAGE, "Business settings");
+      await openAsSettingsAdmin(page, SETTINGS_PAGE, "Business settings");
       const form = page.getByRole("form", { name: "Business settings" });
       await expectHydrated(form);
+      // Not the shared demo admin, so nothing is locked for this account.
+      await expect(page.getByTestId("identity-locked-notice")).toHaveCount(0);
       await expect(page.getByLabel(/^Phone number/)).toHaveValue(original);
       await expect(page.getByRole("button", { name: "Save changes" })).toBeDisabled();
 
@@ -159,7 +179,7 @@ test.describe("business settings", () => {
   });
 
   test("shows a problem beside the field and keeps what was typed", async ({ page }) => {
-    await openAs(page, SETTINGS_PAGE, "Business settings");
+    await openAsSettingsAdmin(page, SETTINGS_PAGE, "Business settings");
     await expectHydrated(page.getByRole("form", { name: "Business settings" }));
 
     await page.getByLabel(/^Default tax rate/).fill("100.5");
@@ -178,7 +198,7 @@ test.describe("business settings", () => {
   test("warns before unsaved changes are lost, and lets the person keep editing or leave", async ({
     page,
   }) => {
-    await openAs(page, SETTINGS_PAGE, "Business settings");
+    await openAsSettingsAdmin(page, SETTINGS_PAGE, "Business settings");
     await expectHydrated(page.getByRole("form", { name: "Business settings" }));
     await page.getByLabel(/^Tagline/).fill("A tagline nobody saved");
 
@@ -199,6 +219,65 @@ test.describe("business settings", () => {
       .click();
     await expect(page).toHaveURL(new RegExp(`${SERVICES_PAGE}$`), { timeout: NAVIGATION_TIMEOUT });
     await expect(page.getByRole("heading", { level: 1, name: "Services" })).toBeVisible();
+  });
+
+  test("the shared demo admin sees the business identity locked, with the reason, and can still edit the rest (Q-11)", async ({
+    page,
+  }) => {
+    await openAs(page, SETTINGS_PAGE, "Business settings");
+    await expectHydrated(page.getByRole("form", { name: "Business settings" }));
+
+    const notice = page.getByTestId("identity-locked-notice");
+    await expect(notice).toContainText("This is the public demo");
+    await expect(notice).toContainText("business name, logo and contact details are locked");
+    await expect(notice).toContainText("reset every day");
+    for (const label of [
+      /^Business name/,
+      /^Tagline/,
+      /^Contact email/,
+      /^Phone number/,
+      /^Street address/,
+      /^City/,
+      /^Postal code/,
+      /^Service area/,
+    ]) {
+      await expect(page.getByLabel(label), String(label)).toBeDisabled();
+    }
+    await expect(page.getByRole("radio", { name: "One of the logos" })).toBeDisabled();
+
+    // The rest can be edited (nothing is saved here: the tax rate is shared with other specs).
+    const tax = page.getByLabel(/^Default tax rate/);
+    const stored = await tax.inputValue();
+    await tax.fill("9.25");
+    await expect(page.getByRole("button", { name: "Save changes" })).toBeEnabled();
+    await page.getByRole("button", { name: "Discard changes" }).click();
+    await expect(tax).toHaveValue(stored);
+  });
+
+  test("the server refuses the shared demo admin a change of the business identity", async ({
+    page,
+  }) => {
+    await loginAs(page, "admin");
+    const before = (await (await page.request.get("/api/v1/settings/public")).json()) as {
+      data: PublicSettingsDto;
+    };
+
+    const response = await page.request.patch("/api/v1/admin/settings", {
+      headers: { Origin: WEB_URL },
+      data: { businessName: "Hijacked Plumbing", phone: "(212) 555-0199" },
+    });
+
+    expect(response.status()).toBe(403);
+    const { error } = (await response.json()) as {
+      error: { code: string; fieldErrors?: Record<string, string> };
+    };
+    expect(error.code).toBe("DEMO_ACCOUNT_LOCKED");
+    expect(Object.keys(error.fieldErrors ?? {}).sort()).toEqual(["businessName", "phone"]);
+    const after = (await (await page.request.get("/api/v1/settings/public")).json()) as {
+      data: PublicSettingsDto;
+    };
+    expect(after.data.businessName).toBe(before.data.businessName);
+    expect(after.data.phone).toBe(before.data.phone);
   });
 });
 
@@ -514,7 +593,8 @@ test.describe("accessibility", () => {
   test("the business settings page with errors, with the other logo choices, and with the leave dialog", async ({
     page,
   }) => {
-    await openAs(page, SETTINGS_PAGE, "Business settings");
+    // The logo choice is part of the business identity, locked for the shared demo admin (T24, Q-11).
+    await openAsSettingsAdmin(page, SETTINGS_PAGE, "Business settings");
     await expectHydrated(page.getByRole("form", { name: "Business settings" }));
 
     await page.getByLabel(/^Default tax rate/).fill("101");

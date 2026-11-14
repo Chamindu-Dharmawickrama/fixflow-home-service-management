@@ -58,6 +58,7 @@ const ADMIN_KEYS = [
   "paymentInstructions",
   "invoiceFooter",
   "updatedAt",
+  "identityLocked",
 ].sort();
 
 async function world(options: Parameters<typeof buildTestApp>[0] = {}) {

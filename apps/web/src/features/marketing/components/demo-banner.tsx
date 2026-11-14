@@ -44,7 +44,7 @@ export interface DemoBannerProps {
 
 /**
  * The slim portfolio-demo notice above the header (D-31): "FixFlow portfolio demo — CoolBreeze Home
- * Services is a fictional business. Data resets regularly." with a link to the privacy notice. It
+ * Services is a fictional business. Data resets daily." with a link to the privacy notice. It
  * can be dismissed for the rest of the session. It is only mounted in demo mode.
  */
 export function DemoBanner({ businessName }: DemoBannerProps) {

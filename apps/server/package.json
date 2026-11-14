@@ -16,6 +16,9 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:demo": "tsx prisma/seed-demo.ts",
+    "db:verify-demo": "tsx prisma/verify-demo.ts",
+    "db:reset-demo": "tsx prisma/reset-demo.ts",
     "db:studio": "prisma studio",
     "email:test": "tsx scripts/email-test.ts",
     "demo:notifications": "tsx scripts/demo-notifications.ts"

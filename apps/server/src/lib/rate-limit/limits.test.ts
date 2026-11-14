@@ -26,6 +26,11 @@ describe("RATE_LIMITS", () => {
     expect(RATE_LIMITS.adminExport).toEqual({ limit: 10, windowSeconds: 60 });
   });
 
+  it("limits the shared demo accounts to 60 writes in 10 minutes and new sign-ups to 3 an hour per IP (T24)", () => {
+    expect(RATE_LIMITS.demoWrite).toEqual({ limit: 60, windowSeconds: 600 });
+    expect(RATE_LIMITS.demoRegister).toEqual({ limit: 3, windowSeconds: 3600 });
+  });
+
   it("uses positive integers for every limit", () => {
     for (const rule of Object.values(RATE_LIMITS)) {
       expect(Number.isInteger(rule.limit) && rule.limit > 0).toBe(true);

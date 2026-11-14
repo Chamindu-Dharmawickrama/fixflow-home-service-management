@@ -27,6 +27,11 @@ export const OUTBOX_DIR = resolve(import.meta.dirname, "../../.data/e2e-outbox")
 /** The demo business owner is on the allowlist (D-08); so is a second admin the suite creates itself. */
 export const DEMO_ADMIN_EMAIL = "admin@demo.fixflow.test";
 export const E2E_SECOND_ADMIN_EMAIL = "e2e.admin@coolbreeze.test";
+/**
+ * An admin who is NOT one of the shared demo accounts, for the specs that change the business identity.
+ * In demo mode the shared demo admin cannot (T24, Q-11), but this one is an ordinary admin on the allowlist.
+ */
+export const E2E_SETTINGS_ADMIN_EMAIL = "e2e.settings.admin@coolbreeze.test";
 
 /** A fake client ID: enough for the Google button container to render. No real sign-in happens. */
 const FAKE_GOOGLE_CLIENT_ID = "000000000000-e2etestclientid.apps.googleusercontent.com";
@@ -77,7 +82,7 @@ export function apiEnvironment(): Record<string, string> {
     // The rest of the real environment must not leak in from a developer's apps/server/.env.
     TEST_DATABASE_URL: "",
     SESSION_SECRET: required("E2E_SESSION_SECRET"),
-    ADMIN_EMAILS: `${DEMO_ADMIN_EMAIL},${E2E_SECOND_ADMIN_EMAIL}`,
+    ADMIN_EMAILS: `${DEMO_ADMIN_EMAIL},${E2E_SECOND_ADMIN_EMAIL},${E2E_SETTINGS_ADMIN_EMAIL}`,
     DEMO_MODE: "true",
     PUBLIC_SIGNUP_ENABLED: "true",
     EMAIL_TRANSPORT: "log",

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -27,6 +27,8 @@ const DEMO_ACCOUNTS: DemoAccountOption[] = [
     email: "admin@demo.fixflow.test",
     password: "demo-admin-password-for-tests",
     description: "Runs the business.",
+    abilities: ["Review requests and send quotations", "Issue invoices"],
+    limits: "Cannot change its password.",
   },
   {
     id: "customer",
@@ -35,6 +37,8 @@ const DEMO_ACCOUNTS: DemoAccountOption[] = [
     email: "alex.morgan@example.test",
     password: "demo-customer-password-for-tests",
     description: "A homeowner.",
+    abilities: ["Send a service request", "Accept or decline a quotation"],
+    limits: "Cannot change its password.",
   },
 ];
 
@@ -243,6 +247,39 @@ describe("LoginForm", () => {
       expect(screen.getByText("admin@demo.fixflow.test")).toBeInTheDocument();
       expect(screen.getByText("alex.morgan@example.test")).toBeInTheDocument();
       expect(screen.getAllByRole("button", { name: /Use this account/ })).toHaveLength(2);
+    });
+
+    it("explains what each account can do and what it cannot (T24)", () => {
+      setup({ demoAccounts: DEMO_ACCOUNTS });
+
+      expect(screen.getByText("Review requests and send quotations")).toBeInTheDocument();
+      expect(screen.getByText("Accept or decline a quotation")).toBeInTheDocument();
+      expect(screen.getAllByText("Cannot change its password.")).toHaveLength(2);
+      expect(screen.getByRole("link", { name: "Read the demo notice" })).toHaveAttribute(
+        "href",
+        "/privacy",
+      );
+    });
+
+    it("still warns to use fictional details when the demo offers no account", () => {
+      setup({ demoAccounts: [], demoMode: true });
+
+      const notice = screen.getByTestId("demo-sign-in-notice");
+      expect(notice).toHaveTextContent(
+        "Public demo — use fictional details; other visitors can see what you enter.",
+      );
+      expect(within(notice).getByRole("link", { name: "Read the demo notice" })).toHaveAttribute(
+        "href",
+        "/privacy",
+      );
+      expect(screen.queryByRole("heading", { name: "Demo accounts" })).not.toBeInTheDocument();
+    });
+
+    it("shows the warning once, inside the panel, when accounts are offered", () => {
+      setup({ demoAccounts: DEMO_ACCOUNTS, demoMode: true });
+
+      expect(screen.queryByTestId("demo-sign-in-notice")).not.toBeInTheDocument();
+      expect(screen.getAllByText(/Public demo — use fictional details/)).toHaveLength(1);
     });
 
     it("fills the real form, signs nobody in, and moves focus to Sign in", async () => {

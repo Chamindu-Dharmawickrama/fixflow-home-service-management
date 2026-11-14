@@ -15,7 +15,7 @@ import { apiFetch, isApiError } from "@/lib/api";
 import { navigateWithFullReload } from "@/lib/auth/navigate";
 import { destinationAfterSignIn, FORGOT_PASSWORD_PATH } from "@/lib/auth/paths";
 
-import type { DemoAccountOption } from "../demo-accounts";
+import { DEMO_NOTICE, type DemoAccountOption } from "../demo-accounts";
 import { describeAuthError } from "../lib/errors";
 import { loginSchema, type LoginValues } from "../lib/schemas";
 import { DemoAccountsPanel } from "./demo-accounts-panel";
@@ -30,6 +30,8 @@ export interface LoginFormProps {
   googleClientId: string | undefined;
   /** Demo accounts to offer, empty outside demo mode. */
   demoAccounts: readonly DemoAccountOption[];
+  /** The public demo is on: visitors are told to use fictional details even when no account is offered. */
+  demoMode?: boolean;
 }
 
 /**
@@ -37,7 +39,12 @@ export interface LoginFormProps {
  * attempt, input kept after an error, and a pending state that blocks a second submit. After a
  * successful sign-in the browser navigates to the sanitized `returnTo` or the role's home.
  */
-export function LoginForm({ returnTo, googleClientId, demoAccounts }: LoginFormProps) {
+export function LoginForm({
+  returnTo,
+  googleClientId,
+  demoAccounts,
+  demoMode = false,
+}: LoginFormProps) {
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
@@ -82,6 +89,18 @@ export function LoginForm({ returnTo, googleClientId, demoAccounts }: LoginFormP
 
   return (
     <div className="flex flex-col gap-5">
+      {demoMode && demoAccounts.length === 0 ? (
+        // With the accounts panel the same notice sits inside it; this is for a demo that offers none.
+        <FormAlert tone="info" data-testid="demo-sign-in-notice">
+          {DEMO_NOTICE}{" "}
+          <Link
+            href="/privacy"
+            className="rounded-sm font-medium text-brand underline underline-offset-4 hover:text-brand-hover"
+          >
+            Read the demo notice
+          </Link>
+        </FormAlert>
+      ) : null}
       {formError !== null || google.error !== null ? (
         <FormAlert tone="error">{formError ?? google.error}</FormAlert>
       ) : null}

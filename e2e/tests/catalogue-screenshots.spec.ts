@@ -5,6 +5,7 @@ import AxeBuilder from "@axe-core/playwright";
 import type { AdminServiceDto } from "@fixflow/shared";
 import { expect, type Page, test } from "@playwright/test";
 
+import { ensureSettingsAdmin } from "../fixtures/accounts.js";
 import { loginAs } from "../support/auth.js";
 import {
   expectHydrated,
@@ -67,7 +68,12 @@ for (const width of WIDTHS) {
   test.describe(`settings and services at ${width}px`, () => {
     test.beforeEach(async ({ page }) => {
       await useViewport(page, width);
-      await loginAs(page, "admin");
+      // The business settings test types into the identity fields, which the shared demo admin cannot
+      // change in the public demo (T24, Q-11), so it signs in as an admin who is not a demo account.
+      await loginAs(
+        page,
+        test.info().title === "business settings" ? await ensureSettingsAdmin() : "admin",
+      );
     });
 
     test("business settings", async ({ page }) => {

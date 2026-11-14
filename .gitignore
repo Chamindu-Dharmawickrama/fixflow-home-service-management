@@ -25,6 +25,8 @@ apps/server/src/generated/
 coverage/
 playwright-report/
 test-results/
+test-results-showcase/
+playwright-report-showcase/
 blob-report/
 /e2e/.auth/
 

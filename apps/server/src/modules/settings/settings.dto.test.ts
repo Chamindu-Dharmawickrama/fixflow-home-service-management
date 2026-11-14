@@ -71,8 +71,8 @@ describe("toPublicSettingsDto", () => {
 });
 
 describe("toAdminSettingsDto", () => {
-  it("has every editable field plus updatedAt, and no id or editor", () => {
-    const dto = toAdminSettingsDto(ROW);
+  it("has every editable field plus updatedAt and identityLocked, and no id or editor", () => {
+    const dto = toAdminSettingsDto(ROW, { identityLocked: false });
     expect(Object.keys(dto).sort()).toEqual(
       [
         "businessName",
@@ -96,6 +96,7 @@ describe("toAdminSettingsDto", () => {
         "paymentInstructions",
         "invoiceFooter",
         "updatedAt",
+        "identityLocked",
       ].sort(),
     );
     expect(JSON.stringify(dto)).not.toContain("updatedByUserId");
@@ -103,9 +104,14 @@ describe("toAdminSettingsDto", () => {
   });
 
   it("serializes the tax rate as a two-decimal string and the time as ISO 8601 UTC", () => {
-    const dto = toAdminSettingsDto(ROW);
+    const dto = toAdminSettingsDto(ROW, { identityLocked: false });
     expect(dto.defaultTaxRate).toBe("8.00");
     expect(dto.updatedAt).toBe("2026-10-29T10:00:00.000Z");
     expect(typeof dto.quotationValidityDays).toBe("number");
+  });
+
+  it("says whether the caller's identity fields are locked (T24, Q-11)", () => {
+    expect(toAdminSettingsDto(ROW, { identityLocked: true }).identityLocked).toBe(true);
+    expect(toAdminSettingsDto(ROW, { identityLocked: false }).identityLocked).toBe(false);
   });
 });

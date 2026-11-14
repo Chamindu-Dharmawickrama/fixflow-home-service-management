@@ -11,6 +11,10 @@ export interface DemoAccountOption {
   email: string;
   password: string;
   description: string;
+  /** What this account can do in the demo, as short phrases. */
+  abilities: readonly string[];
+  /** What the demo does not let it do. */
+  limits: string;
 }
 
 export interface DemoAccountSettings {
@@ -47,6 +51,13 @@ export function getDemoAccounts(
       email: "admin@demo.fixflow.test",
       password: settings.adminPassword,
       description: "Runs CoolBreeze Home Services: requests, quotations, jobs and invoices.",
+      abilities: [
+        "Review requests, send quotations and schedule jobs",
+        "Complete jobs, issue invoices and record payments",
+        "See the dashboard and download lists as CSV",
+      ],
+      limits:
+        "Cannot change its password, or the business name, logo and contact details: they are locked in the demo.",
     });
   }
   if (settings.customerPassword) {
@@ -57,6 +68,12 @@ export function getDemoAccounts(
       email: "alex.morgan@example.test",
       password: settings.customerPassword,
       description: "A homeowner who requests services and follows them in the customer portal.",
+      abilities: [
+        "Send a service request",
+        "Accept or decline a quotation",
+        "Follow jobs, invoices and payments",
+      ],
+      limits: "Cannot change its password.",
     });
   }
   return accounts;

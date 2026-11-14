@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { expect, type Page, test } from "@playwright/test";
 
+import { ensureSettingsAdmin } from "../fixtures/accounts.js";
 import { deleteServicesNamed } from "../fixtures/catalogue.js";
 import {
   archiveService,
@@ -177,7 +178,8 @@ test.describe("homepage", () => {
   });
 
   test("a business name change in settings shows after revalidation", async ({ page }) => {
-    await loginAs(page, "admin");
+    // Not the shared demo admin: in the public demo it cannot change the business name (T24, Q-11).
+    await loginAs(page, await ensureSettingsAdmin());
     const tag = randomUUID().slice(0, 6);
     const newName = `CoolBreeze Home Services E2E ${tag}`;
     let originalName: string | undefined;
@@ -393,7 +395,7 @@ test.describe("demo banner", () => {
     await page.goto("/");
     const banner = page.getByRole("region", { name: "Demo notice" });
     await expect(banner).toContainText(
-      /FixFlow portfolio demo — .+ is a fictional business\. Data resets regularly\./,
+      /FixFlow portfolio demo — .+ is a fictional business\. Data resets daily\./,
     );
     await expect(banner.getByRole("link", { name: "Privacy and demo notice" })).toHaveAttribute(
       "href",

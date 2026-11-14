@@ -1,8 +1,10 @@
 import { randomBytes } from "node:crypto";
 
+import { isUniqueViolation } from "../../apps/server/src/lib/db.js";
 import { hashPassword } from "../../apps/server/src/lib/password.js";
 import { createE2ePrisma } from "../../apps/server/src/test/e2e-db.js";
 import { createAdmin, createCustomer } from "../../apps/server/src/test/fixtures.js";
+import { credentials, E2E_SETTINGS_ADMIN_EMAIL } from "../support/env.js";
 
 /**
  * Scenario fixtures for the E2E suite: rows inserted directly into the E2E database with the
@@ -81,6 +83,35 @@ export async function createAdminAccount(
     });
     return { id: user.id, email, name, password };
   });
+}
+
+/**
+ * An administrator who is not a shared demo account, so the demo-mode lock on the business identity
+ * (T24, Q-11) does not apply to them. Unlike {@link createAdminAccount} it never touches an existing
+ * account, its password or its sessions: every spec that needs it signs in separately, in parallel, and
+ * none may sign another out. Its password is this run's demo admin password.
+ */
+export async function ensureSettingsAdmin(): Promise<{ email: string; password: string }> {
+  const password = credentials.demoAdminPassword;
+  await withDatabase(async (prisma) => {
+    const existing = await prisma.user.findUnique({
+      where: { email: E2E_SETTINGS_ADMIN_EMAIL },
+      select: { id: true },
+    });
+    if (existing !== null) return;
+    try {
+      await createAdmin(prisma, {
+        email: E2E_SETTINGS_ADMIN_EMAIL,
+        name: "Jamie Settings",
+        passwordHash: await hashPassword(password),
+        emailVerifiedAt: new Date(),
+      });
+    } catch (error) {
+      // Another worker made it a moment ago.
+      if (!isUniqueViolation(error)) throw error;
+    }
+  });
+  return { email: E2E_SETTINGS_ADMIN_EMAIL, password };
 }
 
 /** An admin account whose address is NOT on the allowlist: signed in, but with no access (D-08). */

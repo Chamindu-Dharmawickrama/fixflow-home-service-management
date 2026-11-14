@@ -158,7 +158,7 @@ describe("honesty (CLAUDE.md §1, spec §22)", () => {
 
   it("uses the notice wording the brief gives for the demo banner and footer", () => {
     expect(DEMO_NOTICE.banner.replace("{business}", "CoolBreeze Home Services")).toBe(
-      "FixFlow portfolio demo — CoolBreeze Home Services is a fictional business. Data resets regularly.",
+      "FixFlow portfolio demo — CoolBreeze Home Services is a fictional business. Data resets daily.",
     );
     expect(DEMO_NOTICE.footer).toBe("FixFlow portfolio demo — fictional business and data.");
   });
@@ -176,7 +176,15 @@ describe("buildPrivacySections (spec §15.2)", () => {
     const text = sections[0]?.paragraphs.join(" ") ?? "";
     expect(text).toContain("CoolBreeze Home Services is a fictional business");
     expect(text).toContain("Do not submit real personal information");
-    expect(text).toContain("reset regularly");
+    expect(text).toContain("reset every day");
+  });
+
+  it("says what the demo locks and limits, so a visitor is not surprised (T24)", () => {
+    const text =
+      buildPrivacySections({ ...context, demoMode: true })[0]?.paragraphs.join(" ") ?? "";
+    expect(text).toContain("cannot change their passwords");
+    expect(text).toContain("name, logo and contact details");
+    expect(text).toContain("limits on how many changes and new accounts");
   });
 
   it("has no demo section outside the demo", () => {

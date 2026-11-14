@@ -148,6 +148,21 @@ describe("getDemoAccounts", () => {
     ]);
   });
 
+  it("says what each account can do, and what the demo locks for it (T24)", () => {
+    const [admin, customer] = getDemoAccounts({
+      mode: "true",
+      adminPassword: "admin-pw-x",
+      customerPassword: "cust-pw-y",
+    });
+
+    expect(admin?.abilities.join(" ")).toMatch(/quotations/);
+    expect(admin?.abilities.join(" ")).toMatch(/invoices/);
+    expect(admin?.limits).toMatch(/password/);
+    expect(admin?.limits).toMatch(/business name, logo and contact details/);
+    expect(customer?.abilities.join(" ")).toMatch(/Accept or decline a quotation/);
+    expect(customer?.limits).toMatch(/password/);
+  });
+
   it("leaves out an account whose password is not configured", () => {
     const accounts = getDemoAccounts({
       mode: "true",

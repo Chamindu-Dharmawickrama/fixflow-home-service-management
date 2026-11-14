@@ -88,6 +88,8 @@ export function BusinessSettingsForm({ settings, timeZones }: BusinessSettingsFo
   /** The last saved version, as the API takes it: a save sends only what differs from it. */
   const [saved, setSaved] = useState(() => toSettingsBody(initialValues));
   const [formError, setFormError] = useState<string | null>(null);
+  /** The shared demo admin may not change the business identity (T24, Q-11); the server refuses it too. */
+  const locked = settings.identityLocked;
   const zoneGroups = useMemo(() => groupTimeZones(timeZones), [timeZones]);
 
   const form = useForm<SettingsFormValues>({
@@ -137,6 +139,13 @@ export function BusinessSettingsForm({ settings, timeZones }: BusinessSettingsFo
     >
       <FormErrorSummary errors={errors} labels={FIELD_LABELS} submitCount={submitCount} />
       {formError !== null ? <FormAlert tone="error">{formError}</FormAlert> : null}
+      {locked ? (
+        <FormAlert tone="info" data-testid="identity-locked-notice">
+          <strong>This is the public demo.</strong> The business name, logo and contact details are
+          locked, so nobody can rewrite what the website says about the business. Everything else
+          here can be changed, and the demo data is reset every day.
+        </FormAlert>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -147,7 +156,9 @@ export function BusinessSettingsForm({ settings, timeZones }: BusinessSettingsFo
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <FormField control={form.control} name="businessName" label="Business name" required>
-            {(field) => <Input {...field} autoComplete="organization" disabled={isSubmitting} />}
+            {(field) => (
+              <Input {...field} autoComplete="organization" disabled={isSubmitting || locked} />
+            )}
           </FormField>
           <FormField
             control={form.control}
@@ -155,7 +166,7 @@ export function BusinessSettingsForm({ settings, timeZones }: BusinessSettingsFo
             label="Tagline"
             description="One short line under the name on the website. Optional."
           >
-            {(field) => <Input {...field} autoComplete="off" disabled={isSubmitting} />}
+            {(field) => <Input {...field} autoComplete="off" disabled={isSubmitting || locked} />}
           </FormField>
 
           <FormFieldGroup
@@ -169,7 +180,7 @@ export function BusinessSettingsForm({ settings, timeZones }: BusinessSettingsFo
                 id={field.id}
                 value={field.value}
                 onChange={field.onChange}
-                disabled={isSubmitting}
+                disabled={isSubmitting || locked}
                 aria-describedby={field["aria-describedby"]}
                 options={[
                   {
@@ -193,7 +204,7 @@ export function BusinessSettingsForm({ settings, timeZones }: BusinessSettingsFo
                   value={field.value}
                   onChange={field.onChange}
                   invalid={field["aria-invalid"] === true}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || locked}
                   aria-describedby={field["aria-describedby"]}
                 />
               )}
@@ -213,7 +224,7 @@ export function BusinessSettingsForm({ settings, timeZones }: BusinessSettingsFo
                   type="url"
                   autoComplete="off"
                   spellCheck={false}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || locked}
                 />
               )}
             </FormField>
@@ -242,11 +253,18 @@ export function BusinessSettingsForm({ settings, timeZones }: BusinessSettingsFo
         <CardContent className="grid gap-5 sm:grid-cols-2">
           <FormField control={form.control} name="contactEmail" label="Contact email" required>
             {(field) => (
-              <Input {...field} type="email" autoComplete="email" disabled={isSubmitting} />
+              <Input
+                {...field}
+                type="email"
+                autoComplete="email"
+                disabled={isSubmitting || locked}
+              />
             )}
           </FormField>
           <FormField control={form.control} name="phone" label="Phone number" required>
-            {(field) => <Input {...field} type="tel" autoComplete="tel" disabled={isSubmitting} />}
+            {(field) => (
+              <Input {...field} type="tel" autoComplete="tel" disabled={isSubmitting || locked} />
+            )}
           </FormField>
           <FormField
             control={form.control}
@@ -255,7 +273,9 @@ export function BusinessSettingsForm({ settings, timeZones }: BusinessSettingsFo
             required
             className="sm:col-span-2"
           >
-            {(field) => <Input {...field} autoComplete="address-line1" disabled={isSubmitting} />}
+            {(field) => (
+              <Input {...field} autoComplete="address-line1" disabled={isSubmitting || locked} />
+            )}
           </FormField>
           <FormField
             control={form.control}
@@ -263,16 +283,24 @@ export function BusinessSettingsForm({ settings, timeZones }: BusinessSettingsFo
             label="Address line 2"
             className="sm:col-span-2"
           >
-            {(field) => <Input {...field} autoComplete="address-line2" disabled={isSubmitting} />}
+            {(field) => (
+              <Input {...field} autoComplete="address-line2" disabled={isSubmitting || locked} />
+            )}
           </FormField>
           <FormField control={form.control} name="city" label="City" required>
-            {(field) => <Input {...field} autoComplete="address-level2" disabled={isSubmitting} />}
+            {(field) => (
+              <Input {...field} autoComplete="address-level2" disabled={isSubmitting || locked} />
+            )}
           </FormField>
           <FormField control={form.control} name="region" label="State or region">
-            {(field) => <Input {...field} autoComplete="address-level1" disabled={isSubmitting} />}
+            {(field) => (
+              <Input {...field} autoComplete="address-level1" disabled={isSubmitting || locked} />
+            )}
           </FormField>
           <FormField control={form.control} name="postalCode" label="Postal code" required>
-            {(field) => <Input {...field} autoComplete="postal-code" disabled={isSubmitting} />}
+            {(field) => (
+              <Input {...field} autoComplete="postal-code" disabled={isSubmitting || locked} />
+            )}
           </FormField>
           <FormField
             control={form.control}
@@ -287,7 +315,7 @@ export function BusinessSettingsForm({ settings, timeZones }: BusinessSettingsFo
                 rows={3}
                 maxLength={L.serviceArea.maxLength}
                 showCount
-                disabled={isSubmitting}
+                disabled={isSubmitting || locked}
               />
             )}
           </FormField>

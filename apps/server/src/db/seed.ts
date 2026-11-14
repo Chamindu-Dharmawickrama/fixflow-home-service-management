@@ -40,7 +40,8 @@ function passwordFor(account: DemoAccount, passwords: DemoPasswords): string {
  * password from the environment, it is replaced, so changing `DEMO_*_PASSWORD` and re-seeding
  * rotates the credential. The seed does not hash a password that already verifies.
  *
- * The full showcase dataset (requests, quotations, jobs, invoices) is a later task.
+ * The showcase dataset (requests, quotations, jobs, invoices, history) is loaded on top of this by
+ * `db/showcase` (`npm run db:seed:demo`, T24).
  */
 export async function seedBaseData(
   prisma: PrismaClient,

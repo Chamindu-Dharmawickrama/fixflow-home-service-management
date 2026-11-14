@@ -31,6 +31,7 @@ const SETTINGS: AdminSettingsDto = {
   paymentInstructions: "Pay by bank transfer.",
   invoiceFooter: "Thank you for choosing us.",
   updatedAt: "2026-10-28T10:30:00.000Z",
+  identityLocked: false,
 };
 
 function errorsFor(values: Partial<SettingsFormValues>): Record<string, string> {
@@ -174,7 +175,8 @@ describe("settingsToFormValues and toSettingsBody", () => {
   });
 
   it("sends back exactly what it was given: no change is no difference", () => {
-    const { updatedAt: _updatedAt, ...editable } = SETTINGS;
+    // `updatedAt` and `identityLocked` describe the record and the caller: neither is ever sent back.
+    const { updatedAt: _updatedAt, identityLocked: _identityLocked, ...editable } = SETTINGS;
     expect(toSettingsBody(settingsToFormValues(SETTINGS))).toEqual(editable);
   });
 

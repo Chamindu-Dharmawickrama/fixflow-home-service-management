@@ -12,10 +12,12 @@ import { AreaSkeleton } from "@/features/auth/components/area-skeleton";
 import { NoAccessPage } from "@/features/auth/components/no-access";
 import { SessionKeepAlive } from "@/features/auth/components/session-keep-alive";
 import { UserMenu } from "@/features/auth/components/user-menu";
+import { DemoBanner } from "@/features/marketing/components/demo-banner";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { currentPath } from "@/lib/auth/current-path";
 import { loginUrl, roleHomePath } from "@/lib/auth/paths";
 import { getSession } from "@/lib/auth/session";
+import { isDemoMode } from "@/lib/demo-mode";
 
 export const metadata: Metadata = {
   title: { default: "Admin", template: "%s · Admin · FixFlow" },
@@ -47,6 +49,8 @@ async function AdminGate({ children }: { children: ReactNode }) {
   }
 
   const { user } = session;
+  /** The portfolio-demo notice, in the signed-in areas too (T24, D-31). */
+  const banner = isDemoMode() ? <DemoBanner /> : undefined;
   const userMenu = (
     <UserMenu
       name={user.name}
@@ -63,6 +67,7 @@ async function AdminGate({ children }: { children: ReactNode }) {
         homeHref={roleHomePath(user.role)}
         notifications={<NotificationBell />}
         userMenu={userMenu}
+        banner={banner}
       >
         <PermissionDenied
           headingLevel="h1"
@@ -84,6 +89,7 @@ async function AdminGate({ children }: { children: ReactNode }) {
       context="Business administration"
       notifications={<NotificationBell />}
       userMenu={userMenu}
+      banner={banner}
     >
       <SessionKeepAlive />
       {children}

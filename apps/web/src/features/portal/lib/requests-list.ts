@@ -57,6 +57,3 @@ export function toApiQueryString(
 export function hasActiveFilters(query: RequestsListQuery): boolean {
   return query.status !== undefined;
 }
-
-/** How many requests the overview shows before linking to the full list. */
-export const RECENT_REQUESTS_COUNT = 3;

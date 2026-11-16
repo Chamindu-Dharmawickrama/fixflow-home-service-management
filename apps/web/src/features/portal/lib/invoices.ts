@@ -25,9 +25,6 @@ export function invoicePdfPath(id: string, options: { inline?: boolean } = {}): 
 
 export const PORTAL_INVOICES_PAGE_SIZE = LIMITS.pagination.defaultPageSize;
 
-/** How many outstanding invoices the portal home shows before it links to the whole list. */
-export const OUTSTANDING_INVOICES_COUNT = 3;
-
 // ---- The list's filter -----------------------------------------------------------------------------
 
 export const INVOICE_FILTERS = ["all", "outstanding", "paid"] as const;
@@ -82,16 +79,6 @@ export function invoicesApiQuery(query: PortalInvoicesQuery): string {
     params.set("status", statuses.join(","));
   }
   return params.toString();
-}
-
-/** `GET /invoices/me` for the portal home: the invoices still owing money, the soonest due first. */
-export function outstandingApiQuery(pageSize: number = OUTSTANDING_INVOICES_COUNT): string {
-  return new URLSearchParams({
-    status: OUTSTANDING_INVOICE_STATUSES.join(","),
-    sort: "dueDate",
-    order: "asc",
-    pageSize: String(pageSize),
-  }).toString();
 }
 
 /** The list's own address for a filter, `all` being the address with no filter. */

@@ -9,6 +9,7 @@
   },
   "include": [
     "tests",
+    "journeys",
     "showcase",
     "support",
     "fixtures",

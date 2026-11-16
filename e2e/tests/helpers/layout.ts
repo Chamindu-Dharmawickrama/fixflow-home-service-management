@@ -59,10 +59,17 @@ export async function expectNoHorizontalOverflow(page: Page): Promise<void> {
  */
 export async function expectHydrated(locator: Locator): Promise<void> {
   await expect
-    .poll(() =>
-      locator
-        .first()
-        .evaluate((element) => Object.keys(element).some((key) => key.startsWith("__reactProps$"))),
+    .poll(
+      () =>
+        locator
+          .first()
+          .evaluate((element) =>
+            Object.keys(element).some((key) => key.startsWith("__reactProps$")),
+          ),
+      // WebKit parses the development bundles more slowly than the other engines: with four busy
+      // workers its first hydration of a page took over 5 s (T25). This waits for the condition,
+      // never longer than needed.
+      { timeout: 15_000 },
     )
     .toBe(true);
 }

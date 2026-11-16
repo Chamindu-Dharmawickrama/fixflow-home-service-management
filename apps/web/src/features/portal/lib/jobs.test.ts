@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  homeUpcomingQuery,
   jobPath,
   JOBS_PATH,
   parsePastPage,
   PAST_JOBS_PAGE_SIZE,
   pastQuery,
   UPCOMING_JOBS_LIMIT,
-  UPCOMING_VISITS_COUNT,
   upcomingQuery,
 } from "./jobs";
 
@@ -55,12 +53,5 @@ describe("the queries to GET /work-orders/me", () => {
     expect(params.get("group")).toBe("past");
     expect(params.get("page")).toBe("2");
     expect(Number(params.get("pageSize"))).toBe(PAST_JOBS_PAGE_SIZE);
-  });
-
-  it("asks for the first few upcoming visits for the portal home", () => {
-    const params = new URLSearchParams(homeUpcomingQuery());
-    expect(params.get("group")).toBe("upcoming");
-    expect(Number(params.get("pageSize"))).toBe(UPCOMING_VISITS_COUNT);
-    expect(UPCOMING_VISITS_COUNT).toBe(3);
   });
 });

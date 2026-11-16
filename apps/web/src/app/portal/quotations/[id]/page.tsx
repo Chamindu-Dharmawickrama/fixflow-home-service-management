@@ -89,7 +89,11 @@ async function QuotationContent({ params }: QuotationPageProps) {
   return (
     <>
       <PageHeader
-        title={`Quotation ${quotation.reference}`}
+        title={
+          <>
+            Quotation <span className="whitespace-nowrap">{quotation.reference}</span>
+          </>
+        }
         status={<StatusBadge kind="quotation" status={quotation.status} />}
         breadcrumbs={[
           { label: "Requests", href: REQUESTS_PATH },
@@ -98,7 +102,7 @@ async function QuotationContent({ params }: QuotationPageProps) {
         ]}
         meta={
           <>
-            <span>{quotation.serviceName}</span>
+            <span className="min-w-0 [overflow-wrap:anywhere]">{quotation.serviceName}</span>
             <span>
               Valid until <DateTimeText value={quotation.validUntil} timeZone={timeZone} />
             </span>

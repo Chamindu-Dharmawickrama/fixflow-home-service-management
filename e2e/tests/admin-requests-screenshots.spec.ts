@@ -56,6 +56,9 @@ for (const width of [360, 1440]) {
 
       await page.goto("/app/requests");
       await expectHydrated(page.getByRole("search", { name: "Search and filter requests" }));
+      // The box itself, not only the form around it: text typed before its handler is attached is
+      // never searched for (seen under load in T25).
+      await expectHydrated(page.getByRole("searchbox", { name: "Search" }));
       await page.getByRole("searchbox", { name: "Search" }).fill(account.email);
       await expect(page.getByText(/Showing 1–5 of 5 requests/)).toBeVisible({
         timeout: NAVIGATION_TIMEOUT,

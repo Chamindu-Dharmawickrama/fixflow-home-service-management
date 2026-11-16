@@ -14,6 +14,11 @@ export const WEB_URL = "http://localhost:3000";
 export const API_URL = "http://localhost:4000";
 /** A second web server whose API cannot be reached, for the public-site fallback checks (T08). */
 export const API_DOWN_WEB_URL = "http://localhost:3001";
+/**
+ * The pass-through proxy between the main web server and the API (T25, `support/fault-proxy.ts`): a
+ * test can make its own session's requests fail there, including the web server's own reads.
+ */
+export const FAULT_PROXY_URL = "http://localhost:4100";
 /** Nothing listens on the discard port, so a request to it is refused at once. */
 const UNREACHABLE_API_URL = "http://127.0.0.1:9";
 
@@ -99,10 +104,14 @@ export function apiEnvironment(): Record<string, string> {
   };
 }
 
-/** The web app's environment: it talks to the E2E API and shows the demo panel. */
-export function webEnvironment(): Record<string, string> {
+/**
+ * The web app's environment: it talks to the E2E API and shows the demo panel. The main suite's web
+ * server reaches the API through the fault proxy (`apiUrl: FAULT_PROXY_URL`); the showcase suite's
+ * goes to the API directly.
+ */
+export function webEnvironment(options: { apiUrl?: string } = {}): Record<string, string> {
   return {
-    API_INTERNAL_URL: API_URL,
+    API_INTERNAL_URL: options.apiUrl ?? API_URL,
     // The public pages refresh what they read from the API after this many seconds (60 by default),
     // so the specs can see a change without a minute's wait.
     PUBLIC_REVALIDATE_SECONDS: "2",

@@ -79,7 +79,7 @@ export function RequestCustomerCard({ request, timeZone }: CardProps) {
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
-          <p className="text-base font-semibold text-ink">{customer.name}</p>
+          <p className="break-words text-base font-semibold text-ink">{customer.name}</p>
           <a
             href={`mailto:${customer.email}`}
             className="inline-flex min-h-6 items-center gap-2 break-all text-sm font-medium text-brand underline-offset-4 hover:underline"

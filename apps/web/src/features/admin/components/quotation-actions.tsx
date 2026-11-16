@@ -6,7 +6,7 @@ import {
   QuotationAction,
   QuotationStatus,
 } from "@fixflow/shared";
-import { ChevronDown, FilePen, Printer, Trash2 } from "lucide-react";
+import { ChevronDown, FilePen, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
@@ -18,6 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { PrintButton } from "@/components/ui/print-button";
 import { toast } from "@/components/ui/sonner";
 import { apiFetch, describeApiError, isApiError } from "@/lib/api";
 
@@ -86,16 +87,7 @@ export function QuotationActions({
     <>
       {canCreateJob ? <CreateJobButton quotationId={quotation.id} /> : null}
 
-      <Button
-        variant="outline"
-        onClick={() => {
-          window.print();
-        }}
-        className="print:hidden"
-      >
-        <Printer aria-hidden="true" />
-        Print
-      </Button>
+      <PrintButton />
 
       {canReplace ? (
         <Button

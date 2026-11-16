@@ -163,7 +163,7 @@ export function ServiceForm(props: ServiceFormProps) {
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
       <form
         noValidate
         aria-label={mode === "create" ? "New service" : "Edit service"}

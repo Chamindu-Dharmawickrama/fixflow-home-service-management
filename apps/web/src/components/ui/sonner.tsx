@@ -34,9 +34,11 @@ export function Toaster() {
           warning: "border-attention-edge",
           info: "border-info-edge",
           icon: "mt-0.5 shrink-0",
-          content: "flex flex-1 flex-col gap-0.5",
-          title: "font-medium text-ink",
-          description: "text-ink-secondary",
+          // min-w-0 and overflow-wrap: a long word in a message (a name, an address) wraps instead
+          // of pushing the toast past a phone's edge (F-75).
+          content: "flex min-w-0 flex-1 flex-col gap-0.5",
+          title: "font-medium text-ink [overflow-wrap:anywhere]",
+          description: "text-ink-secondary [overflow-wrap:anywhere]",
           actionButton:
             "rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-surface hover:bg-brand-hover",
           cancelButton:

@@ -170,6 +170,35 @@ describe("rolling session renewal (D-10)", () => {
     expect(setCookieLine(late, SESSION_COOKIE)).toMatch(/Max-Age=604800/);
   });
 
+  it("re-issues the cookie on `?refresh=1` with the stored expiry, after another request renewed it (T25)", async () => {
+    await createLocalCustomer(prisma, { email: ALEX });
+    const test = buildTestApp({ prisma });
+    const cookie = await signInAs(test.app, ALEX);
+
+    // A page load: the web server's own call renews the session, and its cookie goes nowhere.
+    test.clock.advance(SESSION_RENEW_INTERVAL_MS + 60_000);
+    const serverSide = await api(test.app).get(ME, { cookie });
+    expect(setCookieLine(serverSide, SESSION_COOKIE)).toMatch(/Max-Age=604800/);
+    const renewed = await prisma.session.findFirstOrThrow();
+
+    // The browser's keep-alive a few seconds later: nothing to renew, but it asks for the cookie.
+    test.clock.advance(5_000);
+    const plain = await api(test.app).get(ME, { cookie });
+    expect(setCookieLine(plain, SESSION_COOKIE)).toBeUndefined();
+    const refreshed = await api(test.app).get(`${ME}?refresh=1`, { cookie });
+    expect(refreshed.status).toBe(200);
+    // Max-Age is what is left of the stored expiry: seven days less the five seconds.
+    expect(setCookieLine(refreshed, SESSION_COOKIE)).toMatch(/Max-Age=604795;/);
+    expect(setCookieLine(refreshed, SESSION_COOKIE)).toMatch(/HttpOnly/);
+    expect((await prisma.session.findFirstOrThrow()).expiresAt).toEqual(renewed.expiresAt);
+
+    // Anything but `1` changes nothing, and without a session there is nothing to refresh.
+    expect(
+      setCookieLine(await api(test.app).get(`${ME}?refresh=yes`, { cookie }), SESSION_COOKIE),
+    ).toBeUndefined();
+    expect((await api(test.app).get(`${ME}?refresh=1`)).status).toBe(401);
+  });
+
   it("keeps a regularly used session alive beyond seven days", async () => {
     await createLocalCustomer(prisma, { email: ALEX });
     const test = buildTestApp({ prisma });

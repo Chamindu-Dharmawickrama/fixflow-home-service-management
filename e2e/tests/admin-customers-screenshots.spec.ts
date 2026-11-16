@@ -64,6 +64,8 @@ for (const width of [360, 1440]) {
 
       await page.goto("/app/customers");
       await expectHydrated(page.getByRole("search", { name: "Search customers" }));
+      // The box itself, not only the form around it (see admin-requests-screenshots.spec.ts).
+      await expectHydrated(page.getByRole("searchbox", { name: "Search" }));
       await page.getByRole("searchbox", { name: "Search" }).fill(`Hartley ${tag}`);
       await expect(page.getByText(/Showing 1–4 of 4 customers/)).toBeVisible({
         timeout: NAVIGATION_TIMEOUT,

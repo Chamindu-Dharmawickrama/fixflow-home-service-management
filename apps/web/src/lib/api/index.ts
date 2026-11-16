@@ -7,6 +7,7 @@ export {
   describeApiError,
   describeWait,
   isApiError,
+  isServiceProblem,
   NETWORK_ERROR_MESSAGE,
 } from "./errors";
 export { apiPath } from "./paths";

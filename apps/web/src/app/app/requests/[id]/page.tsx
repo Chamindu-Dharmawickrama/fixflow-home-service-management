@@ -93,8 +93,8 @@ async function RequestContent({ params }: RequestPageProps) {
         breadcrumbs={[{ label: "Requests", href: QUEUE_PATH }, { label: request.reference }]}
         meta={
           <>
-            <span>{request.serviceName}</span>
-            <span>{request.customer.name}</span>
+            <span className="min-w-0 [overflow-wrap:anywhere]">{request.serviceName}</span>
+            <span className="min-w-0 [overflow-wrap:anywhere]">{request.customer.name}</span>
             <span>
               Submitted{" "}
               <DateTimeText value={request.submittedAt} timeZone={timeZone} display="date" />

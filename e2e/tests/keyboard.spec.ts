@@ -14,6 +14,15 @@ import {
 
 test.describe.configure({ timeout: 90_000 });
 
+/**
+ * WebKit, like Safari with its default settings, never gives a link the Tab focus (Tab and Option+Tab
+ * reach buttons, fields and scrollable regions only; Safari users who move by keyboard turn on
+ * "Press Tab to highlight each item"). A test about Tabbing to a link has nothing to check there
+ * (T25, F-21: found by running this spec on WebKit for the first time).
+ */
+const WEBKIT_TABS_PAST_LINKS =
+  "WebKit (like Safari by default) does not move Tab focus to links; nothing to check";
+
 async function activeElementDescription(page: Page): Promise<string> {
   return page.evaluate(() => {
     const element = document.activeElement;
@@ -22,7 +31,11 @@ async function activeElementDescription(page: Page): Promise<string> {
 }
 
 test.describe("skip link", () => {
-  test("is the first tab stop and moves focus to the main content", async ({ page }) => {
+  test("is the first tab stop and moves focus to the main content", async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName === "webkit", WEBKIT_TABS_PAST_LINKS);
     await useViewport(page, 1280);
     await page.goto("/styleguide");
     await page.keyboard.press("Tab");
@@ -146,7 +159,10 @@ test.describe("portal shell", () => {
 test.describe("public layout", () => {
   test("the mobile menu is a disclosure that opens and closes with the keyboard", async ({
     page,
+    browserName,
   }) => {
+    // The disclosure itself is checked on every engine elsewhere; this test Tabs into its links.
+    test.skip(browserName === "webkit", WEBKIT_TABS_PAST_LINKS);
     await useViewport(page, 360);
     await page.goto("/styleguide/shells/public");
 
@@ -304,6 +320,11 @@ test.describe("form validation example", () => {
     await page.goto("/styleguide");
     const form = page.getByRole("form", { name: "Request a service (validation example)" });
     await expectHydrated(form.getByRole("button", { name: "Check request" }));
+    // Every field, not only the button. On WebKit under a full run the first field typed can still
+    // come back empty (F-105: cause not found; this wait made it rarer, not impossible).
+    for (const field of await form.locator("input, textarea, select").all()) {
+      await expectHydrated(field);
+    }
     await form.getByLabel(/Full name/).fill("Morgan Reyes");
 
     await form.getByRole("button", { name: "Check request" }).click();
@@ -326,6 +347,11 @@ test.describe("form validation example", () => {
     await page.goto("/styleguide");
     const form = page.getByRole("form", { name: "Request a service (validation example)" });
     await expectHydrated(form.getByRole("button", { name: "Check request" }));
+    // Every field, not only the button. On WebKit under a full run the first field typed can still
+    // come back empty (F-105: cause not found; this wait made it rarer, not impossible).
+    for (const field of await form.locator("input, textarea, select").all()) {
+      await expectHydrated(field);
+    }
 
     await form.getByLabel(/Full name/).fill("Morgan Reyes");
     await form.getByLabel(/Email address/).fill("morgan.reyes@example.com");
@@ -337,12 +363,24 @@ test.describe("form validation example", () => {
     await form.getByRole("checkbox", { name: /privacy notice/ }).click();
 
     const submit = form.getByRole("button", { name: "Check request" });
+    // The busy state is short: under a full run's load (WebKit especially) it could be over before a
+    // poll looked (T25, F-105). Record every change of `aria-busy` from before the click instead.
+    await submit.evaluate((element) => {
+      const seen: string[] = [];
+      (window as unknown as { __busy: string[] }).__busy = seen;
+      new MutationObserver(() => {
+        seen.push(element.getAttribute("aria-busy") ?? "none");
+      }).observe(element, { attributes: true, attributeFilter: ["aria-busy"] });
+    });
     await submit.click();
-    await expect(submit).toHaveAttribute("aria-busy", "true");
     await expect(
       form.getByRole("status").filter({ hasText: "does not send anything" }),
     ).toBeVisible();
     await expect(submit).not.toHaveAttribute("aria-busy");
+    // It was busy while the check ran, then not.
+    const busy = await page.evaluate(() => (window as unknown as { __busy: string[] }).__busy);
+    expect(busy).toContain("true");
+    expect(busy.at(-1)).toBe("none");
   });
 
   test("server errors land beside their fields", async ({ page }) => {

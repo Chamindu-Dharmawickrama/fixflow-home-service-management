@@ -19,5 +19,7 @@ declare module "express-serve-static-core" {
   interface Request {
     /** Set by `requireAuth` (and the guards built on it) when the session is valid. */
     auth?: AuthContext;
+    /** The session's stored expiry, set with `auth`; `GET /auth/me?refresh=1` re-issues the cookie with it. */
+    sessionExpiresAt?: Date;
   }
 }

@@ -13,6 +13,11 @@ export interface ErrorStateProps {
   onRetry?: (() => void) | undefined;
   /** Retry by navigating, for server-rendered pages: the current URL, so the data is fetched again. */
   retryHref?: string | undefined;
+  /**
+   * Retry with a full page load instead of a client navigation. For an error drawn by a layout (the
+   * area gates): a client navigation to the same address does not render a shared layout again.
+   */
+  retryReloads?: boolean | undefined;
   retryLabel?: string | undefined;
   /** The `requestId` from the API error body, so the problem can be traced in the logs. */
   requestId?: string | undefined;
@@ -25,6 +30,7 @@ export function ErrorState({
   message,
   onRetry,
   retryHref,
+  retryReloads = false,
   retryLabel = "Try again",
   requestId,
   className,
@@ -40,15 +46,23 @@ export function ErrorState({
       <span className="flex size-12 items-center justify-center rounded-full bg-surface text-danger">
         <TriangleAlert aria-hidden="true" className="size-6" />
       </span>
-      <h2 className="text-lg font-semibold text-ink">{title}</h2>
-      <p className="max-w-md text-pretty text-sm text-ink-secondary">{message}</p>
+      <h2 className="max-w-full text-lg font-semibold text-ink [overflow-wrap:anywhere]">
+        {title}
+      </h2>
+      <p className="max-w-md text-pretty text-sm text-ink-secondary [overflow-wrap:anywhere]">
+        {message}
+      </p>
       {onRetry ? (
         <Button variant="outline" onClick={onRetry} className="mt-2">
           {retryLabel}
         </Button>
       ) : retryHref ? (
         <Button variant="outline" asChild className="mt-2">
-          <Link href={retryHref}>{retryLabel}</Link>
+          {retryReloads ? (
+            <a href={retryHref}>{retryLabel}</a>
+          ) : (
+            <Link href={retryHref}>{retryLabel}</Link>
+          )}
         </Button>
       ) : null}
       {requestId ? (

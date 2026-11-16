@@ -104,7 +104,8 @@ describe("SessionKeepAlive", () => {
     render(<SessionKeepAlive />);
 
     expect(apiFetchMock).toHaveBeenCalledTimes(1);
-    expect(apiFetchMock).toHaveBeenCalledWith("/auth/me");
+    // `refresh=1` asks for the cookie again with the stored expiry (T25, D-114).
+    expect(apiFetchMock).toHaveBeenCalledWith("/auth/me?refresh=1");
   });
 
   it("asks again once the interval has passed", () => {

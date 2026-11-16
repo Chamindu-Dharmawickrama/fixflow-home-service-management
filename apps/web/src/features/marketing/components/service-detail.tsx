@@ -117,7 +117,7 @@ export function ServiceDetail({ slug, result }: ServiceDetailProps) {
         headingId="service-about-heading"
         className={related.length > 0 ? "" : "border-b-0"}
       >
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-14">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-14">
           <div className="flex flex-col gap-10">
             <ServiceImage
               imageKey={service.imageKey}

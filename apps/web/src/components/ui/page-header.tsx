@@ -49,7 +49,9 @@ export function PageHeader({
             </div>
           ) : null}
           {description ? (
-            <p className="max-w-2xl text-pretty text-base text-ink-secondary">{description}</p>
+            <p className="max-w-2xl text-pretty text-base text-ink-secondary [overflow-wrap:anywhere]">
+              {description}
+            </p>
           ) : null}
         </div>
         {actions ? (

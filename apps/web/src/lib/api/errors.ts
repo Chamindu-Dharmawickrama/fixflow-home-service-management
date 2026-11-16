@@ -96,6 +96,18 @@ export async function errorFromResponse(response: Response): Promise<ApiError> {
   });
 }
 
+/**
+ * True when the API could not answer at all or failed on its side (no connection, a timeout, a `5xx`,
+ * or a rate limit): the request may work if it is repeated in a moment. A cold start of the hosted API
+ * looks like this (D-87). `4xx` answers other than `429` are real answers and are not included.
+ */
+export function isServiceProblem(error: unknown): error is ApiError {
+  return (
+    isApiError(error) &&
+    (error.code === "NETWORK_ERROR" || error.status >= 500 || error.status === 429)
+  );
+}
+
 export function networkError(): ApiError {
   return new ApiError({ status: 0, code: "NETWORK_ERROR", message: NETWORK_ERROR_MESSAGE });
 }

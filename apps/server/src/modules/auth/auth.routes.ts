@@ -146,6 +146,13 @@ export function createAuthRouter(deps: AppDeps): Router {
   });
 
   router.get("/me", requireAuth, async (req, res) => {
+    // `?refresh=1` is the browser's keep-alive (D-70, D-114): pages are rendered by the web server,
+    // whose own call may renew the session and cannot pass the new cookie on, so the keep-alive asks
+    // for the cookie again with the expiry as stored now. Any other value, or none, changes nothing.
+    const token = readSessionToken(req, config);
+    if (req.query.refresh === "1" && token !== undefined && req.sessionExpiresAt !== undefined) {
+      setSessionCookie(res, config, token, req.sessionExpiresAt, clock.now());
+    }
     res.json({ data: await getCurrentUser(deps, authOf(req)) });
   });
 

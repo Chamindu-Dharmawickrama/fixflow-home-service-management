@@ -34,7 +34,12 @@ export function QuotationPageHeader({
 }) {
   return (
     <PageHeader
-      title={`Quotation ${quotation.reference}`}
+      // The reference stays on one line: "QT-2026-" / "00018" split at 1024 px (T25).
+      title={
+        <>
+          Quotation <span className="whitespace-nowrap">{quotation.reference}</span>
+        </>
+      }
       status={<StatusBadge kind="quotation" status={quotation.status} />}
       breadcrumbs={[
         { label: "Requests", href: QUEUE_PATH },
@@ -43,10 +48,10 @@ export function QuotationPageHeader({
       ]}
       meta={
         <>
-          <span>{quotation.serviceName}</span>
+          <span className="min-w-0 [overflow-wrap:anywhere]">{quotation.serviceName}</span>
           <Link
             href={adminCustomerPath(quotation.customer.id)}
-            className="font-medium text-brand underline-offset-4 hover:underline"
+            className="min-w-0 font-medium text-brand underline-offset-4 [overflow-wrap:anywhere] hover:underline"
           >
             {quotation.customer.name}
           </Link>

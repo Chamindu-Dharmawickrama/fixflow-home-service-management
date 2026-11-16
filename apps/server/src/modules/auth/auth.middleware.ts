@@ -112,6 +112,7 @@ export function createAuthMiddleware(deps: AuthDeps): AuthMiddleware {
     }
 
     req.auth = resolved.auth;
+    req.sessionExpiresAt = resolved.expiresAt;
     if (resolved.renewedUntil !== undefined) {
       setSessionCookie(res, config, token, resolved.renewedUntil, clock.now());
     }

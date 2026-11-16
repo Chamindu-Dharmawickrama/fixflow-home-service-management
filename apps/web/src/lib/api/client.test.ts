@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { navigateWithFullReload } from "@/lib/auth/navigate";
+
 import { apiFetch, apiFetchEnvelope } from "./client";
 import { ApiError, describeWait, errorFromResponse, isApiError } from "./errors";
+
+// jsdom cannot navigate; the test only needs to know where the page would have gone.
+vi.mock("@/lib/auth/navigate", () => ({ navigateWithFullReload: vi.fn() }));
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(body), {
@@ -23,6 +28,7 @@ function stubFetch(outcome: Response | (() => Response) | { reject: Error }) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  window.history.replaceState(null, "", "/");
 });
 
 describe("apiFetch", () => {
@@ -167,6 +173,69 @@ describe("apiFetchEnvelope", () => {
       status: 401,
       code: "UNAUTHENTICATED",
     });
+  });
+});
+
+describe("a session that ends in the middle of a signed-in page", () => {
+  const unauthenticated = () =>
+    jsonResponse(
+      {
+        error: { code: "UNAUTHENTICATED", message: "Authentication is required.", requestId: "r" },
+      },
+      { status: 401 },
+    );
+
+  afterEach(() => {
+    vi.mocked(navigateWithFullReload).mockClear();
+  });
+
+  it("goes to sign-in, coming back to the same page and query afterwards, and still throws", async () => {
+    window.history.replaceState(null, "", "/app/requests?status=SUBMITTED&page=2");
+    stubFetch(unauthenticated);
+
+    await expect(
+      apiFetch("/admin/requests/abc/status", { method: "PATCH", body: {} }),
+    ).rejects.toMatchObject({ status: 401 });
+
+    expect(navigateWithFullReload).toHaveBeenCalledTimes(1);
+    expect(navigateWithFullReload).toHaveBeenCalledWith(
+      `/login?returnTo=${encodeURIComponent("/app/requests?status=SUBMITTED&page=2")}`,
+    );
+  });
+
+  it("does the same in the portal and on the customers' request form", async () => {
+    stubFetch(unauthenticated);
+    for (const path of ["/portal/invoices/1", "/request-service"]) {
+      window.history.replaceState(null, "", path);
+      await expect(apiFetch("/requests", { method: "POST", body: {} })).rejects.toBeInstanceOf(
+        ApiError,
+      );
+    }
+    expect(vi.mocked(navigateWithFullReload).mock.calls).toEqual([
+      [`/login?returnTo=${encodeURIComponent("/portal/invoices/1")}`],
+      [`/login?returnTo=${encodeURIComponent("/request-service")}`],
+    ]);
+  });
+
+  it("stays put for the auth routes (a wrong password is a 401), on public pages, and for other errors", async () => {
+    window.history.replaceState(null, "", "/app/account");
+    stubFetch(unauthenticated);
+    await expect(apiFetch("/auth/password/change", { method: "POST" })).rejects.toBeDefined();
+    window.history.replaceState(null, "", "/login");
+    await expect(apiFetch("/auth/login", { method: "POST" })).rejects.toBeDefined();
+    window.history.replaceState(null, "", "/services");
+    await expect(apiFetch("/notifications/me")).rejects.toBeDefined();
+
+    window.history.replaceState(null, "", "/app/requests");
+    stubFetch(() =>
+      jsonResponse(
+        { error: { code: "FORBIDDEN", message: "No.", requestId: "r" } },
+        { status: 403 },
+      ),
+    );
+    await expect(apiFetch("/admin/requests")).rejects.toMatchObject({ status: 403 });
+
+    expect(navigateWithFullReload).not.toHaveBeenCalled();
   });
 });
 

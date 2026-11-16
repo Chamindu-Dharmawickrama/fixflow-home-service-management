@@ -38,8 +38,10 @@ function Banner({
       data-testid="quotation-banner"
       className={cn("flex flex-col gap-1 rounded-xl border p-4 print:hidden", BANNER_TONES[tone])}
     >
-      <p className="text-base font-semibold">{headline}</p>
-      {children === undefined ? null : <div className="text-sm">{children}</div>}
+      <p className="min-w-0 text-base font-semibold [overflow-wrap:anywhere]">{headline}</p>
+      {children === undefined ? null : (
+        <div className="min-w-0 text-sm [overflow-wrap:anywhere]">{children}</div>
+      )}
     </div>
   );
 }

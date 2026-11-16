@@ -1,8 +1,5 @@
 import { dateOnlyInTimeZone } from "@fixflow/shared";
 
-/** How many quotations awaiting a decision the portal home lists; a customer rarely has more than a few. */
-export const AWAITING_DECISION_COUNT = 5;
-
 /** The customer's quotation page (IA-C03). The API only ever shows a customer their own. */
 export function portalQuotationPath(id: string): string {
   return `/portal/quotations/${encodeURIComponent(id)}`;

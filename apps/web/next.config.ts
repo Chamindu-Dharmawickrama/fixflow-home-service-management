@@ -1,6 +1,8 @@
 import { API_PREFIX } from "@fixflow/shared";
 import type { NextConfig } from "next";
 
+import { securityHeaders } from "./src/lib/security-headers";
+
 // Server-only (never NEXT_PUBLIC_*): where the Next.js server reaches the Express API.
 // The browser only ever calls `/api/v1/*` on the web origin, so the session cookie stays
 // first-party (D-06). Deployments must set API_INTERNAL_URL; the default is for local development.
@@ -27,6 +29,15 @@ const nextConfig: NextConfig = {
   // Project instructions live in CLAUDE.md; do not let `next dev` generate competing AGENTS.md files.
   agentRules: false,
   transpilePackages: ["@fixflow/shared"],
+  // CSP and the other security headers on every page and file (T25, D-113). The API's answers through
+  // the proxy below are left alone: they carry the API's own (helmet) headers.
+  headers: () =>
+    Promise.resolve([
+      {
+        source: "/((?!api/).*)",
+        headers: securityHeaders({ development: process.env.NODE_ENV !== "production" }),
+      },
+    ]),
   rewrites: () =>
     Promise.resolve([
       {

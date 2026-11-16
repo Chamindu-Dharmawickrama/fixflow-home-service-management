@@ -69,3 +69,69 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  e2e:
+    name: End-to-end (Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      # The suite's own databases on the service below. The guards insist on "e2e" in their names,
+      # and both are created, migrated and seeded by the suites' global setups.
+      E2E_DATABASE_URL: postgresql://fixflow_test:fixflow_test@localhost:5432/fixflow_e2e
+      E2E_SHOWCASE_DATABASE_URL: postgresql://fixflow_test:fixflow_test@localhost:5432/fixflow_e2e_showcase
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: fixflow_e2e
+          POSTGRES_USER: fixflow_test
+          POSTGRES_PASSWORD: fixflow_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fixflow_test -d fixflow_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install the Playwright browser
+        run: npx playwright install --with-deps chromium
+        working-directory: e2e
+
+      - name: Build the shared package and the Prisma client
+        run: npm run build:shared && npm run db:generate
+
+      # The config starts the API (:4000), the fault proxy (:4100) and two web servers (:3000, :3001),
+      # and its global setup migrates and seeds the E2E database (the base seed, demo accounts).
+      - name: End-to-end tests (main suite, Chromium)
+        run: npx playwright test --project=chromium
+        working-directory: e2e
+
+      # The read-only showcase suite and the T25 screen sweep, on its own seeded database.
+      - name: End-to-end tests (showcase data and screen sweep)
+        run: npx playwright test -c playwright.showcase.config.ts
+        working-directory: e2e
+
+      - name: Upload the Playwright report and traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report
+            e2e/playwright-report-showcase
+            e2e/test-results
+            e2e/test-results-showcase
+          retention-days: 14

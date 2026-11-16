@@ -28,9 +28,9 @@ function remember(time: number): void {
  * Keeps the session cookie as fresh as the session. The API renews a session after an hour of
  * use (D-10) and sends a new `Set-Cookie` with the response, but pages that only read data are
  * rendered on the web server, which cannot pass that header on. So, at most every 30 minutes,
- * and only while the tab is visible, this asks the API who is signed in through the browser,
- * which lets the renewed cookie reach the browser. It renders nothing. A failure is ignored: the
- * next real request tells the person if they have been signed out.
+ * and only while the tab is visible, this asks the API who is signed in through the browser, with
+ * `?refresh=1`, so the cookie reaches the browser with the session's current expiry. It renders
+ * nothing. A failure is ignored: the next real request tells the person if they have been signed out.
  */
 export function SessionKeepAlive() {
   useEffect(() => {
@@ -39,7 +39,10 @@ export function SessionKeepAlive() {
       const now = Date.now();
       if (now - lastCheck() < KEEP_ALIVE_INTERVAL_MS) return;
       remember(now);
-      void apiFetch("/auth/me").catch(() => undefined);
+      // `refresh=1`: the API re-issues the cookie with the expiry as stored now. A page load's own
+      // server-side call may have renewed the session a moment earlier, and its new cookie never
+      // reached the browser (T25, D-114).
+      void apiFetch("/auth/me?refresh=1").catch(() => undefined);
     };
 
     check();

@@ -8,8 +8,6 @@ import {
   invoicesApiQuery,
   invoicesFilterHref,
   isOutstandingStatus,
-  OUTSTANDING_INVOICES_COUNT,
-  outstandingApiQuery,
   overdueByText,
   paidDirectlyNote,
   parseInvoicesQuery,
@@ -82,14 +80,6 @@ describe("the API's query", () => {
     expect(new URLSearchParams(invoicesApiQuery({ filter: "paid", page: 1 })).get("status")).toBe(
       "PAID",
     );
-  });
-
-  it("asks for the soonest due first, a few of them, for the portal home", () => {
-    const params = new URLSearchParams(outstandingApiQuery());
-    expect(params.get("status")).toBe("ISSUED,PARTIALLY_PAID,OVERDUE");
-    expect(params.get("sort")).toBe("dueDate");
-    expect(params.get("order")).toBe("asc");
-    expect(params.get("pageSize")).toBe(String(OUTSTANDING_INVOICES_COUNT));
   });
 });
 

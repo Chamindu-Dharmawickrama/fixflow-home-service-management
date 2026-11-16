@@ -9,14 +9,16 @@ import { PortalShell } from "@/components/layout/portal-shell";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { PermissionDenied } from "@/components/ui/permission-denied";
 import { AreaSkeleton } from "@/features/auth/components/area-skeleton";
+import { AreaUnavailablePage } from "@/features/auth/components/area-unavailable";
 import { NoAccessPage } from "@/features/auth/components/no-access";
 import { SessionKeepAlive } from "@/features/auth/components/session-keep-alive";
 import { UserMenu } from "@/features/auth/components/user-menu";
 import { DemoBanner } from "@/features/marketing/components/demo-banner";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
+import { isServiceProblem } from "@/lib/api/errors";
 import { currentPath } from "@/lib/auth/current-path";
 import { loginUrl, roleHomePath } from "@/lib/auth/paths";
-import { getSession } from "@/lib/auth/session";
+import { getSession, type SessionState } from "@/lib/auth/session";
 import { isDemoMode } from "@/lib/demo-mode";
 
 export const metadata: Metadata = {
@@ -39,7 +41,22 @@ export default function AdminAreaLayout({ children }: { children: ReactNode }) {
  * allowlist on every call, so this gate is about what to show, never the only control (CLAUDE.md §7).
  */
 async function AdminGate({ children }: { children: ReactNode }) {
-  const session = await getSession();
+  let session: SessionState;
+  try {
+    session = await getSession();
+  } catch (error) {
+    // The API did not answer (a cold start, an outage): say so, with a retry, instead of the generic
+    // error page (T25).
+    if (isServiceProblem(error)) {
+      return (
+        <AreaUnavailablePage
+          retryHref={(await currentPath()) ?? roleHomePath(Role.BUSINESS_ADMIN)}
+          requestId={error.requestId}
+        />
+      );
+    }
+    throw error;
+  }
 
   if (session.status === "signed-out") {
     redirect(loginUrl(await currentPath()));

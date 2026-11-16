@@ -1,7 +1,23 @@
 import type { ApiResponse } from "@fixflow/shared";
 
+import { navigateWithFullReload } from "@/lib/auth/navigate";
+import { areaOf, loginUrl } from "@/lib/auth/paths";
+
 import { ApiError, errorFromResponse, networkError } from "./errors";
 import { apiPath } from "./paths";
+
+/**
+ * A `401` from the API in the middle of a signed-in page means the session has ended (it expired, it
+ * was signed out elsewhere, the password was reset). The page cannot do anything useful any more, so
+ * go to sign-in and come back here afterwards (T25). Not for the auth routes themselves (a wrong
+ * password on the sign-in form is a `401` too), and not on public pages, which need no session.
+ */
+function sendToSignInWhenSessionEnded(route: string, status: number): void {
+  if (status !== 401 || route.startsWith("/auth/") || typeof window === "undefined") return;
+  const { pathname, search } = window.location;
+  if (areaOf(pathname) === undefined) return;
+  navigateWithFullReload(loginUrl(`${pathname}${search}`));
+}
 
 export interface ApiRequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -55,7 +71,10 @@ export async function apiFetchEnvelope<Body extends object>(
   }
 
   if (!response.ok) {
-    throw await errorFromResponse(response);
+    const error = await errorFromResponse(response);
+    sendToSignInWhenSessionEnded(route, response.status);
+    // Still thrown: the caller stops its pending state and shows no success while the page leaves.
+    throw error;
   }
   try {
     const parsed: unknown = await response.json();

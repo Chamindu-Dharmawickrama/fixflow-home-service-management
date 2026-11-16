@@ -6,6 +6,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import {
   expectHydrated,
+  expectInsideScreen,
   expectNoHorizontalOverflow,
   NAVIGATION_TIMEOUT,
   useViewport,
@@ -110,7 +111,7 @@ test.describe("responsive layout (no horizontal overflow, with screenshots)", ()
 
   for (const width of WIDTHS) {
     for (const example of EXAMPLES) {
-      test(`${example.name} at ${width}px`, async ({ page }) => {
+      test(`${example.name} at ${width}px`, async ({ page, browserName }) => {
         await useViewport(page, width);
         await open(page, example);
         await expectNoHorizontalOverflow(page);
@@ -118,9 +119,20 @@ test.describe("responsive layout (no horizontal overflow, with screenshots)", ()
         // Hydration and fonts are settled before the picture is taken.
         await expectHydrated(page.locator("main a, main button, header button, header a"));
         await page.evaluate(() => document.fonts.ready);
+        // Firefox and WebKit pictures go beside Chromium's, not over them (T25, F-21). WebKit cannot
+        // take a picture taller than 32,767 px (the styleguide at 360 px is): the sections below
+        // cover it there.
+        const folder =
+          browserName === "chromium"
+            ? resolve(SCREENSHOT_DIR, `${width}`)
+            : resolve(SCREENSHOT_DIR, browserName, `${width}`);
+        // In device pixels: the WebKit desktop profile draws at twice the CSS size.
+        const height = await page.evaluate(
+          () => document.documentElement.scrollHeight * window.devicePixelRatio,
+        );
         await page.screenshot({
-          path: resolve(SCREENSHOT_DIR, `${width}`, `${example.name}.png`),
-          fullPage: true,
+          path: resolve(folder, `${example.name}.png`),
+          fullPage: browserName !== "webkit" || height < 32_000,
           animations: "disabled",
           style: HIDE_DEV_TOOLS,
         });
@@ -129,7 +141,7 @@ test.describe("responsive layout (no horizontal overflow, with screenshots)", ()
         if (example.name === "styleguide") {
           for (const id of SECTION_IDS) {
             await page.locator(`section#${id}`).screenshot({
-              path: resolve(SCREENSHOT_DIR, `${width}`, "sections", `${id}.png`),
+              path: resolve(folder, "sections", `${id}.png`),
               animations: "disabled",
               style: HIDE_DEV_TOOLS,
             });
@@ -289,6 +301,22 @@ test.describe("accessibility (axe, no serious or critical violations)", () => {
       await open(page, example);
       const violations = await scan(page);
       expect(violations, describeViolations(violations)).toEqual([]);
+    });
+  }
+
+  // F-50 (T25): the shared dialog once overflowed a 360 px screen by 16 px (T10) while the page itself
+  // did not scroll, so the page-overflow checks above could not see it. Measure the open dialog.
+  for (const width of WIDTHS) {
+    test(`the open dialog stays inside the screen at ${String(width)}px`, async ({ page }) => {
+      await useViewport(page, width);
+      await open(page, EXAMPLES[0] as Example);
+      const opener = page.getByRole("button", { name: "Open dialog" });
+      await expectHydrated(opener);
+      await opener.click();
+      const dialog = page.getByRole("dialog", { name: "Add an internal note" });
+      await expect(dialog).toBeVisible();
+      await expectInsideScreen(page, dialog, `The dialog at ${String(width)}px`);
+      await expectNoHorizontalOverflow(page);
     });
   }
 

@@ -10,9 +10,6 @@ export function jobPath(id: string): string {
   return `${JOBS_PATH}/${encodeURIComponent(id)}`;
 }
 
-/** How many visits "Upcoming visits" on the portal home shows before it links to the whole list. */
-export const UPCOMING_VISITS_COUNT = 3;
-
 /** The upcoming section is not paged: a customer has a handful of jobs under way, and this is a safe ceiling. */
 export const UPCOMING_JOBS_LIMIT = LIMITS.pagination.maxPageSize;
 
@@ -47,13 +44,5 @@ export function pastQuery(page: number): string {
     group: "past",
     page: String(page),
     pageSize: String(PAST_JOBS_PAGE_SIZE),
-  }).toString();
-}
-
-/** `GET /work-orders/me` for the portal home: the first few upcoming visits. */
-export function homeUpcomingQuery(): string {
-  return new URLSearchParams({
-    group: "upcoming",
-    pageSize: String(UPCOMING_VISITS_COUNT),
   }).toString();
 }

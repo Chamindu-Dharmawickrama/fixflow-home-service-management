@@ -72,6 +72,8 @@ async function openCustomer(page: Page, userId: string, query = ""): Promise<str
  * (the list reloads after a short pause in typing, so the address is what says it has happened).
  */
 async function searchFor(page: Page, text: string): Promise<void> {
+  // Text typed before the box's handler is attached is never searched for (seen under load in T25).
+  await expectHydrated(searchBox(page));
   await searchBox(page).fill(text);
   const wanted = text.trim().replace(/\s+/g, " ");
   await page.waitForURL((url) => url.searchParams.get("q") === wanted, {

@@ -35,8 +35,10 @@ export function PermissionDenied({
       <span className="flex size-12 items-center justify-center rounded-full bg-neutral-soft text-neutral">
         <Lock aria-hidden="true" className="size-6" />
       </span>
-      <Heading className="text-lg font-semibold text-ink">{title}</Heading>
-      <p className="max-w-md text-sm text-ink-secondary">{message}</p>
+      <Heading className="max-w-full text-lg font-semibold text-ink [overflow-wrap:anywhere]">
+        {title}
+      </Heading>
+      <p className="max-w-md text-sm text-ink-secondary [overflow-wrap:anywhere]">{message}</p>
       {action ? <div className="mt-2">{action}</div> : null}
     </div>
   );

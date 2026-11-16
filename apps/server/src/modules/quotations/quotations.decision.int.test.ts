@@ -385,10 +385,15 @@ describe("a quotation that cannot be answered (G.3)", () => {
     messagePattern: RegExp,
     currentStatus: string,
   ) {
+    // Emails go out in the background after the response: let the earlier decision's settle before
+    // counting (a slow run once counted it late, T25), and the refused call's too, so an email it
+    // wrongly queued would be counted.
+    await w.deps.emailDispatcher.idle();
     const before = await quotationSnapshot(prisma, sent.id);
     const events = await footprint(w);
 
     const response = await send();
+    await w.deps.emailDispatcher.idle();
 
     const error = expectApiError(response, {
       status: 409,

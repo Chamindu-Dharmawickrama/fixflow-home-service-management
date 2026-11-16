@@ -207,6 +207,21 @@ describe("state components", () => {
     );
   });
 
+  it("wraps a long unbroken word in the shared sentences instead of widening the page (F-75)", () => {
+    const word = "W".repeat(120);
+    render(
+      <>
+        <ErrorState title={`Title ${word}`} message={`Message ${word}`} />
+        <PermissionDenied title={`Denied ${word}`} message={`Because ${word}`} />
+        <PageHeader title="Heading" description={`About ${word}`} />
+      </>,
+    );
+    for (const text of [`Title ${word}`, `Message ${word}`, `Denied ${word}`, `Because ${word}`]) {
+      expect(screen.getByText(text)).toHaveClass("[overflow-wrap:anywhere]");
+    }
+    expect(screen.getByText(`About ${word}`)).toHaveClass("[overflow-wrap:anywhere]");
+  });
+
   it("ErrorState without retry or reference shows neither", () => {
     render(<ErrorState message="Something failed." />);
     expect(screen.queryByRole("button")).toBeNull();

@@ -25,7 +25,7 @@ export function CardTitle({ as: Heading = "h3", className, ...props }: CardTitle
 }
 
 export function CardDescription({ className, ...props }: ComponentProps<"p">) {
-  return <p className={cn("text-sm text-ink-secondary", className)} {...props} />;
+  return <p className={cn("text-sm text-ink-secondary break-words", className)} {...props} />;
 }
 
 export function CardContent({ className, ...props }: ComponentProps<"div">) {

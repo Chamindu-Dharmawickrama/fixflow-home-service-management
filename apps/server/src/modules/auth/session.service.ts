@@ -43,6 +43,8 @@ export interface ResolvedSession {
   auth: AuthContext;
   /** Set when the session was renewed by this request: the new expiry, for re-issuing the cookie. */
   renewedUntil?: Date;
+  /** The session's expiry as stored now (after a renewal, the new one). */
+  expiresAt: Date;
 }
 
 /**
@@ -99,9 +101,9 @@ export async function resolveSession(
       where: { id: session.id },
       data: { lastUsedAt: now, expiresAt: renewedUntil },
     });
-    return { auth, renewedUntil };
+    return { auth, renewedUntil, expiresAt: renewedUntil };
   }
-  return { auth };
+  return { auth, expiresAt: session.expiresAt };
 }
 
 /** Deletes the session a cookie token belongs to. Idempotent: an unknown token is not an error. */

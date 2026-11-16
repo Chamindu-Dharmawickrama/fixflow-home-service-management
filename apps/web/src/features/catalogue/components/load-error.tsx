@@ -29,13 +29,18 @@ export function loadErrorState({
   if (!isApiError(error) || (error.status >= 400 && error.status < 500 && error.status !== 429)) {
     throw error;
   }
+  // The API's own sentence often already says to try again (a 500 does); add it only when it does
+  // not, so the page never reads "Please try again. Try again in a moment." (T25).
+  const said = describeApiError(error);
   return (
     <ErrorState
       title={title}
       message={
         error.code === "NETWORK_ERROR"
           ? "We couldn't reach the server. Check your connection and try again."
-          : `${describeApiError(error)} Try again in a moment.`
+          : /try again/i.test(said)
+            ? said
+            : `${said} Try again in a moment.`
       }
       requestId={error.requestId}
       retryHref={retryHref}

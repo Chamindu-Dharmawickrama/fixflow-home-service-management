@@ -104,7 +104,7 @@ async function RequestContent({ params, searchParams }: RequestPageProps) {
         breadcrumbs={[{ label: "Requests", href: REQUESTS_PATH }, { label: request.reference }]}
         meta={
           <>
-            <span>{request.serviceName}</span>
+            <span className="min-w-0 [overflow-wrap:anywhere]">{request.serviceName}</span>
             <span>
               Sent <DateTimeText value={request.submittedAt} timeZone={timeZone} display="date" />
             </span>

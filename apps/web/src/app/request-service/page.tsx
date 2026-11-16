@@ -25,7 +25,7 @@ import { resolveServicePreselection, serviceSlugParam } from "@/features/portal/
 import { serverApiGet, serverApiGetPublic } from "@/lib/api/server";
 import { currentPath } from "@/lib/auth/current-path";
 import { loginUrl, roleHomePath } from "@/lib/auth/paths";
-import { getSession } from "@/lib/auth/session";
+import { getSession, type SessionState } from "@/lib/auth/session";
 import { getPublicSettings } from "@/lib/settings";
 import type { SearchParamsInput } from "@/lib/url";
 
@@ -87,7 +87,17 @@ async function RequestServiceContent({
 }: {
   searchParams: Promise<SearchParamsInput>;
 }) {
-  const session = await getSession();
+  let session: SessionState;
+  try {
+    session = await getSession();
+  } catch (error) {
+    // The API did not answer (a cold start, an outage): an error with a retry (T25).
+    return loadErrorState({
+      error,
+      title: "We can't reach FixFlow right now",
+      retryHref: (await currentPath()) ?? REQUEST_SERVICE_PATH,
+    });
+  }
 
   if (session.status === "signed-out") {
     redirect(loginUrl(await currentPath()));

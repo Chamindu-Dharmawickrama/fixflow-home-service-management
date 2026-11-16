@@ -86,7 +86,11 @@ async function InvoiceContent({ params }: InvoicePageProps) {
   return (
     <>
       <PageHeader
-        title={`Invoice ${invoice.invoiceNumber}`}
+        title={
+          <>
+            Invoice <span className="whitespace-nowrap">{invoice.invoiceNumber}</span>
+          </>
+        }
         status={<StatusBadge kind="invoice" status={invoice.status} />}
         breadcrumbs={[
           { label: "Invoices", href: PORTAL_INVOICES_PATH },

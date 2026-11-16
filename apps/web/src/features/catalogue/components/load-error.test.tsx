@@ -36,6 +36,20 @@ describe("loadErrorState", () => {
     expect(screen.getByText("req-42")).toBeInTheDocument();
   });
 
+  it("does not say 'try again' twice when the API's sentence already does (a 500, T25)", () => {
+    const error = new ApiError({
+      status: 500,
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong on our side. Please try again.",
+      requestId: "req-7",
+    });
+    render(<>{loadErrorState({ error, ...OPTIONS })}</>);
+
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("Something went wrong on our side. Please try again.");
+    expect(alert.textContent?.match(/try again/gi)).toHaveLength(2); // the sentence and the button
+  });
+
   it("explains an unreachable server in words that suggest checking the connection", () => {
     render(<>{loadErrorState({ error: failure(0, "NETWORK_ERROR"), ...OPTIONS })}</>);
 

@@ -22,6 +22,10 @@ const isCI = Boolean(process.env.CI);
 // does not exist there), only the tests tagged @smoke run, and the demo passwords are those of the
 // hosted seed (E2E_DEMO_ADMIN_PASSWORD, E2E_DEMO_CUSTOMER_PASSWORD).
 const remoteBaseUrl = process.env.BASE_URL;
+// Which hosted tests run: the read-mostly @smoke checks, or (E2E_HOSTED_TAG=@hosted-journey, T26) the
+// primary journey, which leaves a finished request, job and invoice behind and so is never the default.
+// The config's own filter is combined with a command-line --grep, not replaced by it, hence the variable.
+const hostedTag = process.env.E2E_HOSTED_TAG ?? "@smoke";
 
 /**
  * The specs each browser engine runs (T25). Chromium runs everything; Firefox and WebKit run the main
@@ -29,15 +33,20 @@ const remoteBaseUrl = process.env.BASE_URL;
  * (`BASE_URL`) runs the @smoke tests only.
  */
 const ALL_SPECS = ["tests/**/*.spec.ts", "journeys/**/*.spec.ts"];
+const HOSTED_PHONE_SPECS = ["tests/**/*.spec.ts"];
 const CROSS_BROWSER_SPECS = [
   "journeys/main-journey.spec.ts",
+  // The same journey with the screens as its only evidence: what T26 runs against the hosted site.
+  "journeys/hosted-journey.spec.ts",
   "tests/keyboard.spec.ts",
   "tests/styleguide.spec.ts",
 ];
 
 export default defineConfig({
   testDir: ".",
-  ...(remoteBaseUrl === undefined ? { globalSetup: "./global-setup.ts" } : { grep: /@smoke/ }),
+  ...(remoteBaseUrl === undefined
+    ? { globalSetup: "./global-setup.ts" }
+    : { grep: new RegExp(hostedTag) }),
   fullyParallel: true,
   // All workers share one `next dev` server, which compiles each route the first time it is
   // visited. Eight workers (the default on a big machine) made navigation assertions with the
@@ -68,6 +77,18 @@ export default defineConfig({
           { name: "chromium", testMatch: ALL_SPECS, use: { ...devices["Desktop Chrome"] } },
           // Safari's cookie rules are the reason for the same-origin proxy (D-06).
           { name: "webkit", testMatch: ALL_SPECS, use: { ...devices["Desktop Safari"] } },
+          // Phone emulation (T26): the same checks on a small touch screen, on Chromium and on WebKit. The
+          // journey is desktop-only (it sets its own window size), so these run the `tests/` specs only.
+          {
+            name: "mobile-chrome",
+            testMatch: HOSTED_PHONE_SPECS,
+            use: { ...devices["Pixel 7"] },
+          },
+          {
+            name: "mobile-safari",
+            testMatch: HOSTED_PHONE_SPECS,
+            use: { ...devices["iPhone 14"] },
+          },
         ],
   // Starts both servers from the repository root, configured for the E2E database, demo mode and
   // the log email transport. They are never reused: a server left over from `npm run dev` points at

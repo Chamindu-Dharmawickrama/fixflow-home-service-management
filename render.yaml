@@ -1,4 +1,4 @@
-# Render Blueprint for the FixFlow API (T09, D-48). Docs: docs/DEPLOYMENT.md
+# Render Blueprint for the FixFlow API (T09, D-48; production shape since T26). Docs: docs/DEPLOYMENT.md
 #
 # One web service for apps/server. The web app is deployed separately on Vercel, and the database is
 # Neon: neither is described here. Secret values are never written in this file: `sync: false` makes
@@ -10,7 +10,9 @@ services:
     name: fixflow-api
     runtime: node
     # The free plan sleeps after about 15 minutes without traffic (a cold start takes about a minute;
-    # the public website shows a retry message meanwhile, D-87). Use a paid plan for the public demo (Q-09).
+    # the public website shows a retry message meanwhile, D-87). Use a paid plan (`starter`) for the public
+    # demo (Q-09, T26): it does not sleep. Change this line before the Blueprint is applied, or change the
+    # plan in the Render dashboard afterwards.
     plan: free
     # A Render region cannot be changed later: it must be the one nearest the Neon project (this preview's
     # Neon endpoint is ap-southeast-1, Singapore; the first Blueprint was created in Oregon and failed to
@@ -80,6 +82,23 @@ services:
         sync: false
       - key: UPSTASH_REDIS_REST_TOKEN
         sync: false
-      # No SMTP on the preview: emails are only logged (masked), and password reset is unavailable.
+      # Real email (T26, FR-091). Production refuses to start with `smtp` unless ALL six values below are set.
+      # Mail to a reserved address (the seeded .test accounts) is still only logged, whatever the transport (D-52).
+      # For a deployment with no mail server (a throwaway preview) set EMAIL_TRANSPORT to `log` and delete the
+      # six SMTP_* / EMAIL_FROM keys: password reset is then unavailable (D-92).
       - key: EMAIL_TRANSPORT
-        value: log
+        value: smtp
+      # A sender the SMTP provider has verified, for example "CoolBreeze Home Services <hello@yourdomain>".
+      - key: EMAIL_FROM
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      # `true` = TLS from the first byte (port 465); `false` = STARTTLS (587), which production insists on.
+      - key: SMTP_SECURE
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false

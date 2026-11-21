@@ -10,7 +10,9 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # A newer push replaces the older run of a pull request, but never a run on main: the end-to-end job
+  # is long, and a second push to main would cancel the first one half way ("The operation was canceled").
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
@@ -73,7 +75,9 @@ jobs:
   e2e:
     name: End-to-end (Chromium)
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # The main suite (two workers) plus the showcase suite on a shared runner: 60 minutes is tight, and
+    # a timeout looks exactly like a cancel in the log.
+    timeout-minutes: 90
     env:
       # The suite's own databases on the service below. The guards insist on "e2e" in their names,
       # and both are created, migrated and seeded by the suites' global setups.
@@ -124,8 +128,9 @@ jobs:
         run: npx playwright test -c playwright.showcase.config.ts
         working-directory: e2e
 
+      # Also after a cancel or a timeout, so the traces of a run that never finished are not lost.
       - name: Upload the Playwright report and traces
-        if: failure()
+        if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report

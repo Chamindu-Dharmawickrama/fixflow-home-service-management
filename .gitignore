@@ -26,6 +26,7 @@ coverage/
 playwright-report/
 test-results/
 test-results-showcase/
+test-results-screenshots/
 playwright-report-showcase/
 blob-report/
 /e2e/.auth/
@@ -44,7 +45,15 @@ Thumbs.db
 # deployment tooling
 .vercel/
 
-# private planning material - kept locally, never pushed to GitHub
-/docs/
+# private planning material - kept locally, never pushed to GitHub (D-116).
+# Only the documents that the README links to are published: the rest of docs/ stays private.
+/docs/*
+!/docs/ARCHITECTURE.md
+!/docs/API.md
+!/docs/DEPLOYMENT.md
+!/docs/DESIGN_SYSTEM.md
+!/docs/DEMO_SCRIPT.md
+!/docs/PORTFOLIO_CASE_STUDY.md
+!/docs/screenshots/
 /prompts/
 CLAUDE.md

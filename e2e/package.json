@@ -8,6 +8,7 @@
     "install:browsers": "playwright install chromium",
     "test:e2e": "playwright test && playwright test -c playwright.showcase.config.ts",
     "test:e2e:showcase": "playwright test -c playwright.showcase.config.ts",
+    "screenshots": "playwright test -c playwright.screenshots.config.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

@@ -11,10 +11,12 @@
     "tests",
     "journeys",
     "showcase",
+    "screenshots",
     "support",
     "fixtures",
     "global-setup.ts",
     "playwright.config.ts",
-    "playwright.showcase.config.ts"
+    "playwright.showcase.config.ts",
+    "playwright.screenshots.config.ts"
   ]
 }

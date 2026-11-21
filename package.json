@@ -25,6 +25,7 @@
     "test": "npm run build:shared && npm run db:generate && npm run test --workspaces --if-present",
     "test:integration": "npm run build:shared && npm run db:generate && npm run test:integration -w @fixflow/server",
     "test:e2e": "npm run build:shared && npm run db:generate && npm run test:e2e -w @fixflow/e2e",
+    "screenshots": "npm run build:shared && npm run db:generate && npm run screenshots -w @fixflow/e2e",
     "db:generate": "npm run db:generate -w @fixflow/server",
     "db:migrate": "npm run db:migrate -w @fixflow/server --",
     "db:deploy": "npm run db:deploy -w @fixflow/server",

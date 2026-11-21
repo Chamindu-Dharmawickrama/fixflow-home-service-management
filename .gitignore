@@ -57,3 +57,11 @@ Thumbs.db
 !/docs/screenshots/
 /prompts/
 CLAUDE.md
+
+# AI assistant tooling (agent skills and their lock file) - kept locally, never pushed to GitHub.
+.agents/
+.claude/
+.windsurf/
+.cursor/
+AGENTS.md
+skills-lock.json

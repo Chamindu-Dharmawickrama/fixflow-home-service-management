@@ -68,12 +68,16 @@ export async function getDashboardSummary(
   query: DashboardSummaryQuery,
 ): Promise<AdminDashboardSummaryDto> {
   const { prisma, clock } = deps;
-  await Promise.all([syncExpiredQuotationsIfDue(deps), syncOverdueInvoicesIfDue(deps)]);
-
-  const settings = await prisma.businessSettings.findUnique({
-    where: { id: BUSINESS_SETTINGS_ID },
-    select: { timeZone: true, currencyCode: true },
-  });
+  // The settings are read beside the two syncs, which never change them: one round trip for all
+  // three instead of three in a row (D-118).
+  const [settings] = await Promise.all([
+    prisma.businessSettings.findUnique({
+      where: { id: BUSINESS_SETTINGS_ID },
+      select: { timeZone: true, currencyCode: true },
+    }),
+    syncExpiredQuotationsIfDue(deps),
+    syncOverdueInvoicesIfDue(deps),
+  ]);
   if (settings === null) {
     throw serviceUnavailable("The business settings have not been set up yet.");
   }

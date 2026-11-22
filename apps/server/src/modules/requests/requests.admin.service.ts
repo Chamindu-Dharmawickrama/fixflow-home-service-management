@@ -102,8 +102,11 @@ export async function listAdminRequests(
   query: AdminRequestsQuery,
 ): Promise<AdminRequestListResponse> {
   // A quotation that ran out of time moves its request back under review: save that before listing (D-23).
-  await syncExpiredQuotationsIfDue(deps);
-  const business = await loadBusiness(deps.prisma);
+  // The settings are read beside the sync, which never changes them (D-118).
+  const [business] = await Promise.all([
+    loadBusiness(deps.prisma),
+    syncExpiredQuotationsIfDue(deps),
+  ]);
   const base = filtersWhere(query, business.timeZone);
   const where = withStatus(base, query);
 

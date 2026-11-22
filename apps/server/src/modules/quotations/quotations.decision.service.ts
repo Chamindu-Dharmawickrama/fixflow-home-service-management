@@ -70,9 +70,8 @@ export async function listMyQuotations(
 ): Promise<CustomerQuotationListResponse> {
   const { prisma, clock } = deps;
   const customerId = customerIdOf(auth);
-  await syncExpiredQuotationsIfDue(deps);
-
-  const settings = await loadSettings(prisma);
+  // The settings are read beside the sync, which never changes them (D-118).
+  const [settings] = await Promise.all([loadSettings(prisma), syncExpiredQuotationsIfDue(deps)]);
   const context: QuotationViewContext = { now: clock.now(), timeZone: settings.timeZone };
 
   // `sentAt` is set for every quotation a customer was sent, and for nothing else.

@@ -129,26 +129,33 @@ function lineRows(lines: readonly QuotationLineBody[], totals: DocumentTotalsRes
 
 /**
  * Saves any expiry that is due before a read or an action looks at a quotation or at a request's
- * status (D-23). Two cheap queries decide whether there is anything to do; only then does a
- * transaction run. Safe to call from any read, from any number of requests at once.
+ * status (D-23). Two cheap queries, sent together in one round trip (D-118), decide whether there is
+ * anything to do; only then does a transaction run. Safe to call from any read, from any number of
+ * requests at once.
+ *
+ * "Is any sent quotation past its last day?" is asked as "is the sent quotation that runs out first
+ * past it?", the same question, so it does not have to wait for the time zone to be read.
  */
 export async function syncExpiredQuotationsIfDue(
   deps: Pick<AppDeps, "prisma" | "clock">,
 ): Promise<void> {
-  const settings = await deps.prisma.businessSettings.findUnique({
-    where: { id: BUSINESS_SETTINGS_ID },
-    select: { timeZone: true },
-  });
+  const now = deps.clock.now();
+  const [settings, first] = await Promise.all([
+    deps.prisma.businessSettings.findUnique({
+      where: { id: BUSINESS_SETTINGS_ID },
+      select: { timeZone: true },
+    }),
+    deps.prisma.quotation.findFirst({
+      where: { status: QuotationStatus.SENT },
+      orderBy: [{ validUntil: "asc" }, { id: "asc" }],
+      select: { validUntil: true },
+    }),
+  ]);
   if (settings === null) {
     return; // the read that follows reports the missing settings itself
   }
-  const now = deps.clock.now();
-  const today = dateOnlyInTimeZone(now, settings.timeZone);
-  const due = await deps.prisma.quotation.findFirst({
-    where: { status: QuotationStatus.SENT, validUntil: { lt: fromDateOnly(today) } },
-    select: { id: true },
-  });
-  if (due === null) {
+  const today = fromDateOnly(dateOnlyInTimeZone(now, settings.timeZone));
+  if (first === null || first.validUntil.getTime() >= today.getTime()) {
     return;
   }
   await deps.prisma.$transaction((tx) => syncExpiredQuotations(tx, now));

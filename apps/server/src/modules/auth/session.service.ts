@@ -1,3 +1,5 @@
+import type { Role } from "@fixflow/shared";
+
 import type { Config } from "../../config/env.js";
 import type { Clock } from "../../lib/clock.js";
 import type { DbClient, PrismaClient } from "../../lib/db.js";
@@ -47,6 +49,44 @@ export interface ResolvedSession {
   expiresAt: Date;
 }
 
+/** A session with what authorization needs from its user and customer record. */
+interface SessionLookupRow {
+  id: string;
+  expiresAt: Date;
+  lastUsedAt: Date;
+  userId: string;
+  email: string;
+  role: Role;
+  isActive: boolean;
+  customerId: string | null;
+}
+
+/**
+ * Reads the session, its user and the user's customer record in ONE query (D-118). This runs before
+ * every protected request. Prisma would load the nested relations with one query per level, three
+ * round trips in a row, and each round trip costs the full distance to the database in production.
+ * The integration tests of `requireAuth` (auth.session.int.test.ts) cover every column read here.
+ */
+async function findSession(
+  prisma: PrismaClient,
+  tokenHash: string,
+): Promise<SessionLookupRow | undefined> {
+  const rows = await prisma.$queryRaw<SessionLookupRow[]>`
+    SELECT s.id,
+           s.expires_at   AS "expiresAt",
+           s.last_used_at AS "lastUsedAt",
+           u.id           AS "userId",
+           u.email,
+           u.role::text   AS role,
+           u.is_active    AS "isActive",
+           c.id           AS "customerId"
+      FROM sessions s
+      JOIN users u ON u.id = s.user_id
+      LEFT JOIN customer_profiles c ON c.user_id = u.id
+     WHERE s.token_hash = ${tokenHash}`;
+  return rows[0];
+}
+
 /**
  * Finds the session and its user in one query and applies the rules of D-10: unknown, expired
  * (deleted on the way) and inactive-user sessions are all `undefined`; a session not used for over
@@ -57,24 +97,8 @@ export async function resolveSession(
   token: string,
 ): Promise<ResolvedSession | undefined> {
   const { prisma, clock, config } = deps;
-  const session = await prisma.session.findUnique({
-    where: { tokenHash: hashToken(token, config.auth.sessionSecret) },
-    select: {
-      id: true,
-      expiresAt: true,
-      lastUsedAt: true,
-      user: {
-        select: {
-          id: true,
-          email: true,
-          role: true,
-          isActive: true,
-          customerProfile: { select: { id: true } },
-        },
-      },
-    },
-  });
-  if (session === null) {
+  const session = await findSession(prisma, hashToken(token, config.auth.sessionSecret));
+  if (session === undefined) {
     return undefined;
   }
 
@@ -83,16 +107,16 @@ export async function resolveSession(
     await prisma.session.deleteMany({ where: { id: session.id } });
     return undefined;
   }
-  if (!session.user.isActive) {
+  if (!session.isActive) {
     return undefined;
   }
 
   const auth: AuthContext = {
-    userId: session.user.id,
-    role: session.user.role,
-    email: session.user.email,
+    userId: session.userId,
+    role: session.role,
+    email: session.email,
     sessionId: session.id,
-    ...(session.user.customerProfile !== null && { customerId: session.user.customerProfile.id }),
+    ...(session.customerId !== null && { customerId: session.customerId }),
   };
 
   if (shouldRenewSession(session.lastUsedAt, now)) {

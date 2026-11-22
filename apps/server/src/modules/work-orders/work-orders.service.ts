@@ -88,19 +88,19 @@ export async function getAdminWorkOrder(
   const { prisma, clock } = deps;
   // The job's invoice link says whether it is overdue (D-23), so any overdue invoice is saved first.
   await syncOverdueInvoicesIfDue(deps);
-  const row = await prisma.workOrder.findUnique({ where: { id }, select: ADMIN_DETAIL_SELECT });
+  // Three independent reads, side by side (D-118). For an unknown id the timeline read finds
+  // nothing and is discarded with the 404.
+  const [row, timeline, settings] = await Promise.all([
+    prisma.workOrder.findUnique({ where: { id }, select: ADMIN_DETAIL_SELECT }),
+    getTimeline(prisma, { entityType: ActivityEntityType.WORK_ORDER, entityId: id }, "admin"),
+    prisma.businessSettings.findUnique({
+      where: { id: BUSINESS_SETTINGS_ID },
+      select: { timeZone: true },
+    }),
+  ]);
   if (row === null) {
     throw notFound();
   }
-  const timeline = await getTimeline(
-    prisma,
-    { entityType: ActivityEntityType.WORK_ORDER, entityId: id },
-    "admin",
-  );
-  const settings = await prisma.businessSettings.findUnique({
-    where: { id: BUSINESS_SETTINGS_ID },
-    select: { timeZone: true },
-  });
   if (settings === null) {
     throw serviceUnavailable("The business settings have not been set up yet.");
   }

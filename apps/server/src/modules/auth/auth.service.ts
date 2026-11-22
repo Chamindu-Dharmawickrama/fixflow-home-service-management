@@ -554,10 +554,15 @@ export async function signOut(deps: AuthServiceDeps, token: string | undefined):
  * an admin area whose every call would fail (D-08).
  */
 export async function getCurrentUser(deps: AuthServiceDeps, auth: AuthContext): Promise<AuthMeDto> {
-  const user = await deps.prisma.user.findUniqueOrThrow({
-    where: { id: auth.userId },
-    select: { ...AUTH_USER_SELECT, customerProfile: { select: { id: true, phone: true } } },
-  });
+  // Side by side, not as a nested select: Prisma would read the customer record only after the
+  // user, one more round trip on every page a signed-in person opens (D-118).
+  const [user, customerProfile] = await Promise.all([
+    deps.prisma.user.findUniqueOrThrow({ where: { id: auth.userId }, select: AUTH_USER_SELECT }),
+    deps.prisma.customerProfile.findUnique({
+      where: { userId: auth.userId },
+      select: { id: true, phone: true },
+    }),
+  ]);
   if (
     user.role === Role.BUSINESS_ADMIN &&
     !isAdminEmail(user.email, deps.config.auth.adminEmails)
@@ -568,5 +573,5 @@ export async function getCurrentUser(deps: AuthServiceDeps, auth: AuthContext): 
       "This account no longer has administrator access.",
     );
   }
-  return toAuthMeDto(user, user.customerProfile);
+  return toAuthMeDto(user, customerProfile);
 }

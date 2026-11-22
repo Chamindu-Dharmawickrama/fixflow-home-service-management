@@ -18,11 +18,18 @@ export const BUSINESS_SETTINGS_ID = "00000000-0000-4000-8000-000000000001";
  * Connection pool limits. Neon scales its compute to zero when idle, so the first connection can
  * take a few seconds; the generous connect timeout covers that. Pooled URLs (PgBouncer) multiplex
  * these connections on Neon's side, so a modest pool is plenty.
+ *
+ * An idle connection is kept for five minutes (D-118). Opening one costs several round trips plus
+ * a TLS handshake, which is slow on a small instance; with a 30 s limit, a person who reads a page
+ * for a minute paid that again on the next click. Keeping it does not keep Neon awake: through the
+ * pooler (transaction mode) an idle client connection holds no Postgres connection, and Neon
+ * suspends after five minutes without queries. Five minutes also stays under the ~350 s after which
+ * common cloud NAT gateways silently drop an idle TCP connection.
  */
 const POOL_OPTIONS = {
   max: 10,
   connectionTimeoutMillis: 10_000,
-  idleTimeoutMillis: 30_000,
+  idleTimeoutMillis: 5 * 60_000,
 } as const;
 
 /**

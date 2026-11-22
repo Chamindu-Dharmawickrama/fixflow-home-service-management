@@ -173,8 +173,8 @@ export async function exportRequests(
 ): Promise<CsvExport> {
   const { prisma, clock } = deps;
   // A quotation that ran out of time moves its request back under review: save that first (D-23).
-  await syncExpiredQuotationsIfDue(deps);
-  const business = await loadBusiness(prisma);
+  // The settings are read beside the sync, which never changes them (D-118).
+  const [business] = await Promise.all([loadBusiness(prisma), syncExpiredQuotationsIfDue(deps)]);
   const where = requestWithStatus(requestFilters(query, business.timeZone), query);
   const chunks = await startExport({
     readBatch: (afterId) =>
@@ -229,8 +229,11 @@ export async function exportInvoices(
   query: AdminInvoicesQuery,
 ): Promise<CsvExport> {
   const { prisma, clock } = deps;
-  await syncOverdueInvoicesIfDue(deps);
-  const settings = await loadInvoiceSettings(prisma);
+  // The settings are read beside the sync, which never changes them (D-118).
+  const [settings] = await Promise.all([
+    loadInvoiceSettings(prisma),
+    syncOverdueInvoicesIfDue(deps),
+  ]);
   const now = clock.now();
   const context = { now, timeZone: settings.timeZone };
   const where = invoiceWithStatus(invoiceFilters(query), query);

@@ -128,30 +128,36 @@ function lineRows(lines: readonly InvoiceLineBody[], totals: DocumentTotalsResul
 // ---- Overdue before reads (D-23) -----------------------------------------------------------------
 
 /**
- * Saves any overdue invoice that is due before a read or an action looks at one (D-23). One cheap
- * query decides whether there is anything to do; only then does a transaction run. Safe to call from
- * any read, from any number of requests at once.
+ * Saves any overdue invoice that is due before a read or an action looks at one (D-23). Two cheap
+ * queries, sent together in one round trip (D-118), decide whether there is anything to do; only
+ * then does a transaction run. Safe to call from any read, from any number of requests at once.
+ *
+ * "Is any unpaid invoice past its due date?" is asked as "is the unpaid invoice that falls due first
+ * past it?", the same question, so it does not have to wait for the time zone to be read.
  */
 export async function syncOverdueInvoicesIfDue(
   deps: Pick<AppDeps, "prisma" | "clock">,
 ): Promise<void> {
-  const settings = await deps.prisma.businessSettings.findUnique({
-    where: { id: BUSINESS_SETTINGS_ID },
-    select: { timeZone: true },
-  });
+  const now = deps.clock.now();
+  const [settings, first] = await Promise.all([
+    deps.prisma.businessSettings.findUnique({
+      where: { id: BUSINESS_SETTINGS_ID },
+      select: { timeZone: true },
+    }),
+    deps.prisma.invoice.findFirst({
+      where: {
+        status: { in: [InvoiceStatus.ISSUED, InvoiceStatus.PARTIALLY_PAID] },
+        dueDate: { not: null },
+      },
+      orderBy: [{ dueDate: "asc" }, { id: "asc" }],
+      select: { dueDate: true },
+    }),
+  ]);
   if (settings === null) {
     return; // the read that follows reports the missing settings itself
   }
-  const now = deps.clock.now();
-  const today = dateOnlyInTimeZone(now, settings.timeZone);
-  const due = await deps.prisma.invoice.findFirst({
-    where: {
-      status: { in: [InvoiceStatus.ISSUED, InvoiceStatus.PARTIALLY_PAID] },
-      dueDate: { lt: fromDateOnly(today) },
-    },
-    select: { id: true },
-  });
-  if (due === null) {
+  const today = fromDateOnly(dateOnlyInTimeZone(now, settings.timeZone));
+  if (first === null || first.dueDate === null || first.dueDate.getTime() >= today.getTime()) {
     return;
   }
   await deps.prisma.$transaction((tx) => syncOverdueInvoices(tx, now));
@@ -254,9 +260,9 @@ export async function listAdminInvoices(
   query: AdminInvoicesQuery,
 ): Promise<AdminInvoiceListResponse> {
   const { prisma, clock } = deps;
-  await syncOverdueInvoicesIfDue(deps);
+  // The settings are read beside the sync, which never changes them (D-118).
+  const [settings] = await Promise.all([loadSettings(prisma), syncOverdueInvoicesIfDue(deps)]);
   const now = clock.now();
-  const settings = await loadSettings(prisma);
 
   const base = filtersWhere(query);
   const where = withStatus(base, query);

@@ -285,7 +285,7 @@ The same toolkit is used everywhere a duplicate or a race would be wrong:
 Nothing runs on a timer. A quotation expires and an invoice becomes overdue **when the data is next read**, and the clock decides:
 
 - `effectiveQuotationStatus` is pure: a sent quotation is expired once the business's date is after `validUntil`, so it is valid through 23:59:59 of its last day in the business's zone even when UTC has moved on.
-- `syncExpiredQuotations` and `syncOverdueInvoices` persist the change (the system as actor, a history event, the request returning to `UNDER_REVIEW`). Each locks and re-reads before moving a record, so concurrent runs and a customer's answer racing the sync cannot double-record. They are idempotent, and each runs first behind a cheap "is anything due?" check before the screens that depend on it (the quotation and request reads, the invoice list and detail, the dashboard).
+- `syncExpiredQuotations` and `syncOverdueInvoices` persist the change (the system as actor, a history event, the request returning to `UNDER_REVIEW`). Each locks and re-reads before moving a record, so concurrent runs and a customer's answer racing the sync cannot double-record. They are idempotent, and each runs first behind a cheap "is anything due?" check before the screens that depend on it (the quotation and request reads, the invoice list and detail, the dashboard). The check costs one database round trip: it reads the business's time zone and the earliest-expiring candidate together and compares them in code. Reads that a sync cannot change, such as the business settings, run beside it.
 - Nothing is sent when time passes.
 
 ## 7. Data model

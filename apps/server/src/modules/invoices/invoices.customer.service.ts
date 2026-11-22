@@ -46,8 +46,8 @@ export async function listMyInvoices(
 ): Promise<CustomerInvoiceListResponse> {
   const { prisma, clock } = deps;
   const customerId = customerIdOf(auth);
-  await syncOverdueInvoicesIfDue(deps);
-  const settings = await loadSettings(prisma);
+  // The settings are read beside the sync, which never changes them (D-118).
+  const [settings] = await Promise.all([loadSettings(prisma), syncOverdueInvoicesIfDue(deps)]);
 
   const where: Prisma.InvoiceWhereInput = {
     customerId,
